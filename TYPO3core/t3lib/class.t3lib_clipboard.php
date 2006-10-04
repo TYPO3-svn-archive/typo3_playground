@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -50,36 +50,36 @@
  *
  *              SECTION: Clipboard HTML renderings
  *  306:     function printClipboard()
- *  408:     function printContentFromTab($pad)
- *  482:     function padTitleWrap($str,$pad)
- *  499:     function linkItemText($str,$rec,$table='')
- *  526:     function selUrlDB($table,$uid,$copy=0,$deselect=0,$baseArray=array())
- *  542:     function selUrlFile($path,$copy=0,$deselect=0,$baseArray=array())
- *  559:     function pasteUrl($table,$uid,$setRedirect=1)
- *  576:     function deleteUrl($setRedirect=1,$file=0)
- *  593:     function editUrl()
- *  614:     function removeUrl($table,$uid)
- *  627:     function confirmMsg($table,$rec,$type,$clElements)
- *  671:     function clLabel($key,$Akey='labels')
- *  680:     function exportClipElementParameters()
+ *  413:     function printContentFromTab($pad)
+ *  487:     function padTitleWrap($str,$pad)
+ *  504:     function linkItemText($str,$rec,$table='')
+ *  531:     function selUrlDB($table,$uid,$copy=0,$deselect=0,$baseArray=array())
+ *  547:     function selUrlFile($path,$copy=0,$deselect=0,$baseArray=array())
+ *  564:     function pasteUrl($table,$uid,$setRedirect=1)
+ *  581:     function deleteUrl($setRedirect=1,$file=0)
+ *  598:     function editUrl()
+ *  619:     function removeUrl($table,$uid)
+ *  632:     function confirmMsg($table,$rec,$type,$clElements)
+ *  680:     function clLabel($key,$Akey='labels')
+ *  689:     function exportClipElementParameters()
  *
  *              SECTION: Helper functions
- *  730:     function removeElement($el)
- *  742:     function saveClipboard()
- *  752:     function currentMode()
- *  762:     function cleanCurrent()
- *  789:     function elFromTable($matchTable='',$pad='')
- *  820:     function isSelected($table,$uid)
- *  834:     function getSelectedRecord($table='',$uid='')
- *  852:     function isElements()
+ *  739:     function removeElement($el)
+ *  751:     function saveClipboard()
+ *  761:     function currentMode()
+ *  771:     function cleanCurrent()
+ *  798:     function elFromTable($matchTable='',$pad='')
+ *  829:     function isSelected($table,$uid)
+ *  843:     function getSelectedRecord($table='',$uid='')
+ *  861:     function isElements()
  *
  *              SECTION: FOR USE IN tce_db.php:
- *  893:     function makePasteCmdArray($ref,$CMD)
- *  922:     function makeDeleteCmdArray($CMD)
+ *  902:     function makePasteCmdArray($ref,$CMD)
+ *  931:     function makeDeleteCmdArray($CMD)
  *
  *              SECTION: FOR USE IN tce_file.php:
- *  965:     function makePasteCmdArray_file($ref,$FILE)
- *  987:     function makeDeleteCmdArray_file($FILE)
+ *  974:     function makePasteCmdArray_file($ref,$FILE)
+ *  996:     function makeDeleteCmdArray_file($FILE)
  *
  * TOTAL FUNCTIONS: 31
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -325,19 +325,24 @@ class t3lib_clipboard {
 		$opt[]='<option value="" selected="selected">'.$this->clLabel('menu','rm').'</option>';
 				// Import / Export link:
 		if ($elCount && t3lib_extMgm::isLoaded('impexp'))	{
-			$opt[] = '<option value="'.htmlspecialchars("document.location='".$this->backPath.t3lib_extMgm::extRelPath('impexp').'app/index.php'.$this->exportClipElementParameters().'\';').'">'.$this->clLabel('export','rm').'</option>';
+			$opt[] = '<option value="'.htmlspecialchars("window.location.href='".$this->backPath.t3lib_extMgm::extRelPath('impexp').'app/index.php'.$this->exportClipElementParameters().'\';').'">'.$this->clLabel('export','rm').'</option>';
 		}
 				// Edit:
 		if (!$this->fileMode && $elCount)	{
-			$opt[]='<option value="'.htmlspecialchars("document.location='".$this->editUrl()."&returnUrl='+top.rawurlencode(document.location);").'">'.$this->clLabel('edit','rm').'</option>';
+			$opt[]='<option value="'.htmlspecialchars("window.location.href='".$this->editUrl()."&returnUrl='+top.rawurlencode(window.location.href);").'">'.$this->clLabel('edit','rm').'</option>';
 		}
 				// Delete:
 		if ($elCount)	{
-			$opt[]='<option value="'.htmlspecialchars("
+			if($GLOBALS['BE_USER']->jsConfirmation(4))	{
+				$js = "
 			if(confirm(".$GLOBALS['LANG']->JScharCode(sprintf($LANG->sL('LLL:EXT:lang/locallang_core.php:mess.deleteClip'),$elCount)).")){
-				document.location='".$this->deleteUrl(0,$this->fileMode?1:0)."&redirect='+top.rawurlencode(document.location);
+				window.location.href='".$this->deleteUrl(0,$this->fileMode?1:0)."&redirect='+top.rawurlencode(window.location.href);
 			}
-			").'">'.$this->clLabel('delete','rm').'</option>';
+					";
+			} else {
+				$js = " window.location.href='".$this->deleteUrl(0,$this->fileMode?1:0)."&redirect='+top.rawurlencode(window.location.href); ";
+			}
+			$opt[]='<option value="'.htmlspecialchars($js).'">'.$this->clLabel('delete','rm').'</option>';
 		}
 		$selector_menu = '<select name="_clipMenu" onchange="eval(this.options[this.selectedIndex].value);this.selectedIndex=0;">'.implode('',$opt).'</select>';
 
@@ -440,7 +445,7 @@ class t3lib_clipboard {
 							$this->changed=1;
 						}
 					} else {	// Rendering records:
-						$rec=t3lib_BEfunc::getRecord($table,$uid);
+						$rec=t3lib_BEfunc::getRecordWSOL($table,$uid);
 						if (is_array($rec))	{
 							$lines[]='
 								<tr>
@@ -625,6 +630,7 @@ class t3lib_clipboard {
 	 * @return	string		JavaScript "confirm" message
 	 */
 	function confirmMsg($table,$rec,$type,$clElements)	{
+		if($GLOBALS['BE_USER']->jsConfirmation(2))	{
 		$labelKey = 'LLL:EXT:lang/locallang_core.php:mess.'.($this->currentMode()=='copy'?'copy':'move').($this->current=='normal'?'':'cb').'_'.$type;
 		$msg = $GLOBALS['LANG']->sL($labelKey);
 
@@ -658,6 +664,9 @@ class t3lib_clipboard {
 			t3lib_div::fixed_lgd_cs($selRecTitle,30),
 			t3lib_div::fixed_lgd_cs($thisRecTitle,30)
 			)).')';
+		} else {
+			$conf = '';
+		}
 		return $conf;
 	}
 
@@ -838,7 +847,7 @@ class t3lib_clipboard {
 			list($table,$uid) = explode('|',key($elArr));
 		}
 		if ($this->isSelected($table,$uid))	{
-			$selRec = t3lib_BEfunc::getRecord($table,$uid);
+			$selRec = t3lib_BEfunc::getRecordWSOL($table,$uid);
 			$selRec['_RECORD_TITLE'] = t3lib_BEfunc::getRecordTitle($table,$selRec);
 			return $selRec;
 		}
@@ -970,7 +979,7 @@ class t3lib_clipboard {
 			// Traverse elements and make CMD array
 		reset($elements);
 		while(list($tP,$path)=each($elements))	{
-			$FILE[$mode][]=array('data'=>$path,'target'=>$pUid);
+			$FILE[$mode][]=array('data'=>$path,'target'=>$pUid,'altName'=>1);
 			if ($mode=='move')	$this->removeElement($tP);
 		}
 		$this->endClipboard();

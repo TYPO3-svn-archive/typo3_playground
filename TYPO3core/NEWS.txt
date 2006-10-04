@@ -1,21 +1,47 @@
 ************************************************************************
-CHANGES & IMPROVEMENTS in TYPO3 4.0
+CHANGES & IMPROVEMENTS between TYPO3 4.0 and 4.1
 (for technical details see ChangeLog)
 ************************************************************************
 
-Access Control
-===============
-
-	* FE-groups are now nested and content elements. Additionally, pages can have more than one group assigned. (Michael Stucki <michael@typo3.org> integrating extension "fenestgrp" by Glen Gibb and extension "ingmar_accessctrl" by Ingmar Schlecht)
-
 Compatibility
-==============
+=============
 
-	* GMENU_LAYERS and TMENU_LAYERS and image rollovers now work with Opera browsers (Martin Kutschker <martin.t.kutschker@blackbox.net>)
+	* Changed the default value of $TYPO3_CONF_VARS[SYS][devIPmask]
 
-2005-07-02
+Speed improvements
+==================
 
-Security
-=========
+	* TODO Dmitry: explain cache_pagesection speedup
+	* TODO Dmitry: explain speedup using .htaccess
 
-	* A debug script exposed system information provided by phpinfo(). For details, see http://typo3.org /teams/security/security-bulletins/typo3-20050725-1/ (Michael Stucki <michael@typo3.org>)
+Installation/Upgrade
+====================
+
+	* ...
+
+Database changes
+================
+
+	* Changed many BLOB fields from int/varchar/whatever to tinyint(1) - this is the field type which is actually intended by MySQL for BLOBs
+
+DBAL
+====
+
+	* ...
+
+Frontend features
+=================
+
+	* Autologin for Frontend users is now possible!
+	  -> Users can decide on their own whether they want to "Stay logged in" using a checkbox. The latest version of the "newloginbox" extension is required for that.
+	  -> Needs to be configured in the Install Tool ("All Configuration" -> "permalogin" and "lifetime")
+
+Backend skin
+============
+
+	* ...
+
+Important bugfixes
+==================
+
+	* ...

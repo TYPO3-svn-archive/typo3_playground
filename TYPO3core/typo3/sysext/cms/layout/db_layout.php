@@ -44,22 +44,22 @@
  *  117:     function wrapRecordTitle($str,$row)
  *  130:     function wrapColumnHeader($str,$vv)
  *  144:     function onClickInsertRecord($row,$vv,$moveUid,$pid)
- *  161:     function wrapRecordHeader($str,$row)
+ *  160:     function wrapRecordHeader($str,$row)
  *
  *
- *  182: class SC_db_layout
- *  231:     function init()
- *  284:     function menuConfig()
- *  366:     function clearCache()
- *  381:     function main()
- *  482:     function renderQuickEdit()
- *  868:     function renderListContent()
- * 1147:     function printContent()
+ *  181: class SC_db_layout
+ *  230:     function init()
+ *  283:     function menuConfig()
+ *  372:     function clearCache()
+ *  387:     function main()
+ *  489:     function renderQuickEdit()
+ *  886:     function renderListContent()
+ * 1165:     function printContent()
  *
  *              SECTION: Other functions
- * 1174:     function getNumberOfHiddenElements()
- * 1187:     function local_linkThisScript($params)
- * 1199:     function exec_languageQuery($id)
+ * 1192:     function getNumberOfHiddenElements()
+ * 1205:     function local_linkThisScript($params)
+ * 1217:     function exec_languageQuery($id)
  *
  * TOTAL FUNCTIONS: 14
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -328,7 +328,9 @@ class SC_db_layout {
 			 // First, select all pages_language_overlay records on the current page. Each represents a possibility for a language on the page. Add these to language selector.
 		$res = $this->exec_languageQuery($this->id);
 		while($lrow = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res))	{
-			$this->MOD_MENU['language'][$lrow['uid']]=($lrow['hidden']?'('.$lrow['title'].')':$lrow['title']);
+			if ($GLOBALS['BE_USER']->checkLanguageAccess($lrow['uid']))	{
+				$this->MOD_MENU['language'][$lrow['uid']]=($lrow['hidden']?'('.$lrow['title'].')':$lrow['title']);
+			}
 		}
 
 			// Find if there are ANY languages at all (and if not, remove the language option from function menu).
@@ -355,6 +357,11 @@ class SC_db_layout {
 
 			// Clean up settings
 		$this->MOD_SETTINGS = t3lib_BEfunc::getModuleData($this->MOD_MENU, t3lib_div::_GP('SET'), $this->MCONF['name']);
+
+			// For all elements to be shown in draft workspaces:
+		if ($GLOBALS['BE_USER']->workspace!=0)	{
+			$this->MOD_SETTINGS['tt_content_showHidden'] = 1;
+		}
 	}
 
 	/**
@@ -395,23 +402,24 @@ class SC_db_layout {
 			$this->doc->docType='xhtml_trans';
 
 				// JavaScript:
-			$this->doc->JScode = '<script type="text/javascript" src="'.$BACK_PATH.'t3lib/jsfunc.updateform.js"></script>';
+			$this->doc->JScode = '<script type="text/javascript" src="'.$BACK_PATH.'../t3lib/jsfunc.updateform.js"></script>';
 			$this->doc->JScode.= $this->doc->wrapScriptTags('
 				if (top.fsMod) top.fsMod.recentIds["web"] = '.intval($this->id).';
+				if (top.fsMod) top.fsMod.navFrameHighlightedID["web"] = "pages'.intval($this->id).'_"+top.fsMod.currentBank; '.intval($this->id).';
 				function jumpToUrl(URL,formEl)	{	//
 					if (document.editform && document.TBE_EDITOR_isFormChanged)	{	// Check if the function exists... (works in all browsers?)
 						if (!TBE_EDITOR_isFormChanged())	{	//
-							document.location = URL;
+							window.location.href = URL;
 						} else if (formEl) {
 							if (formEl.type=="checkbox") formEl.checked = formEl.checked ? 0 : 1;
 						}
-					} else document.location = URL;
+					} else window.location.href = URL;
 				}
 			'.($this->popView ? t3lib_BEfunc::viewOnClick($this->id,$BACK_PATH,t3lib_BEfunc::BEgetRootLine($this->id)) : '').'
 
 				function deleteRecord(table,id,url)	{	//
 					if (confirm('.$LANG->JScharCode($LANG->getLL('deleteWarning')).'))	{
-						document.location = "'.$BACK_PATH.'tce_db.php?cmd["+table+"]["+id+"][delete]=1&redirect="+escape(url)+"&vC='.$BE_USER->veriCode().'&prErr=1&uPT=1";
+						window.location.href = "'.$BACK_PATH.'tce_db.php?cmd["+table+"]["+id+"][delete]=1&redirect="+escape(url)+"&vC='.$BE_USER->veriCode().'&prErr=1&uPT=1";
 					}
 					return false;
 				}
@@ -427,7 +435,7 @@ class SC_db_layout {
 				// Creating the top edit page icon:
 			if ($this->CALC_PERMS&2)	{
 				$params='&edit[pages]['.$this->id.']=edit';
-				$this->editIcon='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,$BACK_PATH)).'"><img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/edit2.gif','width="11" height="12"').' vspace="2" align="top" title="'.$LANG->getLL('editPageTitle',1).'" alt="" /></a>';
+				$this->editIcon='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,$BACK_PATH)).'"><img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/edit2.gif','width="11" height="12"').' vspace="2" align="top" title="'.$LANG->getLL('editPageProperties',1).'" alt="" /></a>';
 			} else {
 				$this->editIcon='';
 			}
@@ -500,7 +508,8 @@ class SC_db_layout {
 						'tt_content',
 						'pid='.intval($this->id).' AND colPos='.intval(substr($edit_record,10)).' AND sys_language_uid='.intval($this->current_sys_language).
 								($this->MOD_SETTINGS['tt_content_showHidden'] ? '' : t3lib_BEfunc::BEenableFields('tt_content')).
-								t3lib_BEfunc::deleteClause('tt_content'),
+								t3lib_BEfunc::deleteClause('tt_content').
+								t3lib_BEfunc::versioningPlaceholderClause('tt_content'),
 						'',
 						'sorting'
 					);
@@ -509,8 +518,8 @@ class SC_db_layout {
 				$idListA[] = $cRow['uid'];
 			}
 
-			$jumpUrl = $BACK_PATH.'alt_doc.php?edit[tt_content]['.implode(',',$idListA).']=edit&returnUrl='.rawurlencode($this->local_linkThisScript(array('edit_record'=>'')));
-			header('Location: '.t3lib_div::locationHeaderUrl($jumpUrl));
+			$url = $BACK_PATH.'alt_doc.php?edit[tt_content]['.implode(',',$idListA).']=edit&returnUrl='.rawurlencode($this->local_linkThisScript(array('edit_record'=>'')));
+			header('Location: '.t3lib_div::locationHeaderUrl($url));
 			exit;
 		}
 
@@ -538,16 +547,17 @@ class SC_db_layout {
 		} else {
 			$inValue = 'pages:'.$this->id;
 			$is_selected+=intval($edit_record==$inValue);
-			$opt[]='<option value="'.$inValue.'"'.($edit_record==$inValue?' selected="selected"':'').'>[ '.$LANG->getLL('editPageHeader',1).' ]</option>';
+			$opt[]='<option value="'.$inValue.'"'.($edit_record==$inValue?' selected="selected"':'').'>[ '.$LANG->getLL('editPageProperties',1).' ]</option>';
 		}
 
-			// Selecting all content elements from this language:
+			// Selecting all content elements from this language and allowed colPos:
 		$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
 					'*',
 					'tt_content',
-					'pid='.intval($this->id).' AND sys_language_uid='.intval($this->current_sys_language).
+					'pid='.intval($this->id).' AND sys_language_uid='.intval($this->current_sys_language).' AND colPos IN ('.$this->colPosList.')'.
 							($this->MOD_SETTINGS['tt_content_showHidden'] ? '' : t3lib_BEfunc::BEenableFields('tt_content')).
-							t3lib_Befunc::deleteClause('tt_content'),
+							t3lib_Befunc::deleteClause('tt_content').
+							t3lib_BEfunc::versioningPlaceholderClause('tt_content'),
 					'',
 					'colPos,sorting'
 				);
@@ -555,6 +565,7 @@ class SC_db_layout {
 		$first=1;
 		$prev=$this->id;	// Page is the pid if no record to put this after.
 		while($cRow = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res))	{
+			t3lib_BEfunc::workspaceOL('tt_content', $cRow);
 			if ($first)	{
 				if (!$edit_record)	{
 					$edit_record='tt_content:'.$cRow['uid'];
@@ -591,6 +602,8 @@ class SC_db_layout {
 			// Splitting the edit-record cmd value into table/uid:
 		$eRParts = explode(':',$edit_record);
 
+
+
 			// Delete-button flag?
 		$deleteButton = (t3lib_div::testInt($eRParts[1]) && $edit_record && (($eRParts[0]!='pages'&&$this->EDIT_CONTENT) || ($eRParts[0]=='pages'&&($this->CALC_PERMS&4))));
 
@@ -614,7 +627,7 @@ class SC_db_layout {
 		$closeUrl = $this->local_linkThisScript(array('SET'=>array('function'=>1)));	// Goes to 'Columns' view if close is pressed (default)
 
 		if ($BE_USER->uc['condensedMode'])	{
-			$closeUrl=$BACK_PATH.'alt_db_navframe.php';
+			$closeUrl = $BACK_PATH.'alt_db_navframe.php';
 		}
 		if ($this->returnUrl)	{
 			$closeUrl = $this->returnUrl;
@@ -640,7 +653,7 @@ class SC_db_layout {
 							'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/deletedok.gif','width="21" height="16"').' class="c-inputButton" title="'.$LANG->getLL('deleteItem',1).'" alt="" />'.
 							'</a>' : '').
 
-			($undoButton ? '<a href="#" onclick="'.htmlspecialchars('document.location=\''.$BACK_PATH.'show_rechis.php?element='.rawurlencode($eRParts[0].':'.$eRParts[1]).'&revert=ALL_FIELDS&sumUp=-1&returnUrl='.rawurlencode($R_URI).'\'; return false;').'">'.
+			($undoButton ? '<a href="#" onclick="'.htmlspecialchars('window.location.href=\''.$BACK_PATH.'show_rechis.php?element='.rawurlencode($eRParts[0].':'.$eRParts[1]).'&revert=ALL_FIELDS&sumUp=-1&returnUrl='.rawurlencode($R_URI).'\'; return false;').'">'.
 							'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/undo.gif','width="21" height="16"').' class="c-inputButton" title="'.htmlspecialchars(sprintf($LANG->getLL('undoLastChange'),t3lib_BEfunc::calcAge(time()-$undoButtonR['tstamp'],$LANG->sL('LLL:EXT:lang/locallang_core.php:labels.minutesHoursDaysYears')))).'" alt="" />'.
 							'</a>' : '');
 
@@ -661,14 +674,14 @@ class SC_db_layout {
 				'</a>';
 
 		$toolBar.='<a href="'.htmlspecialchars($this->local_linkThisScript(array('edit_record'=>'pages:'.$this->id))).'">'.
-				'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/edit2.gif','width="11" height="12"').' class="c-inputButton" title="'.$LANG->getLL('editPageHeader',1).'" alt="" />'.
+				'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/edit2.gif','width="11" height="12"').' class="c-inputButton" title="'.$LANG->getLL('editPageProperties',1).'" alt="" />'.
 				'</a>';
 		$toolBar.='<img src="clear.gif" width="15" height="1" align="top" alt="" />';
 
 			// CSH:
 		$toolBar.= t3lib_BEfunc::cshItem($this->descrTable,'quickEdit',$BACK_PATH,'',FALSE,'margin-top: 0px; margin-bottom: 0px;');
 
-			// Setting page header:
+			// Setting page properties:
 		$hS2 = '
 			<table border="0" cellpadding="0" cellspacing="0" width="460">
 				<tr>
@@ -695,6 +708,13 @@ class SC_db_layout {
 
 				// Splitting uid parts for special features, if new:
 			list($uidVal,$ex_pid,$ex_colPos) = explode('/',$eRParts[1]);
+
+				// Convert $uidVal to workspace version if any:
+			if ($uidVal!='new')	{
+				if ($draftRecord = t3lib_BEfunc::getWorkspaceVersionOfRecord($GLOBALS['BE_USER']->workspace, $eRParts[0], $uidVal, 'uid'))	{
+					$uidVal = $draftRecord['uid'];
+				}
+			}
 
 				// Initializing transfer-data object:
 			$trData = t3lib_div::makeInstance('t3lib_transferData');
@@ -1012,47 +1032,47 @@ class SC_db_layout {
 		$this->doc->postCode.= $CMparts[2];
 
 
-			// Draw the page header.
-		$headerSection = $this->doc->getHeader('pages',$this->pageinfo,$this->pageinfo['_thePath']).'<br />'.
+			// Draw the page properties.
+		$headerSection = $this->doc->getHeader('pages',$this->pageinfo,$this->pageinfo['_thePath'],$this->modTSconfig['properties']['disableIconToolbar']?1:0).'<br />'.
 						$LANG->sL('LLL:EXT:lang/locallang_core.php:labels.path',1).': '.
 						'<span title="'.htmlspecialchars($this->pageinfo['_thePathFull']).'">'.htmlspecialchars(t3lib_div::fixed_lgd_cs($this->pageinfo['_thePath'],-50)).'</span>';
 
+		if (!$this->modTSconfig['properties']['disableIconToolbar'])	{
+				// Create icon "toolbar" for common operations like creating/moving elements/pages etc.
+			$toolBar='';
+				// History:
+			$toolBar.='<a href="#" onclick="'.htmlspecialchars('jumpToUrl(\''.$BACK_PATH.'show_rechis.php?element='.rawurlencode('pages:'.$this->id).'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI')).'#latest\');return false;').'">'.
+						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/history2.gif','width="13" height="12"').' vspace="2" hspace="2" align="top" title="'.$LANG->getLL('recordHistory',1).'" alt="" />'.
+						'</a>';
+				// New content element
+			$toolBar.='<a href="'.htmlspecialchars('db_new_content_el.php?id='.$this->id.'&sys_language_uid='.$this->current_sys_language.'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI'))).'">'.
+						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/new_record.gif','width="16" height="12"').' vspace="2" hspace="1" align="top" title="'.$LANG->getLL('newContentElement',1).'" alt="" />'.
+						'</a>';
+				// Move page:
+			$toolBar.='<a href="'.htmlspecialchars($BACK_PATH.'move_el.php?table=pages&uid='.$this->id.'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI'))).'">'.
+						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/move_page.gif','width="11" height="12"').' vspace="2" hspace="2" align="top" title="'.$LANG->getLL('move_page',1).'" alt="" />'.
+						'</a>';
+				// Create new page (wizard):
+			$toolBar.='<a href="#" onclick="'.htmlspecialchars('jumpToUrl(\''.$BACK_PATH.'db_new.php?id='.$this->id.'&pagesOnly=1&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI')).'\');return false;').'">'.
+						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/new_page.gif','width="13" height="12"').' hspace="0" vspace="2" align="top" title="'.$LANG->getLL('newPage',1).'" alt="" />'.
+						'</a>';
+				// Edit page properties:
+			$params='&edit[pages]['.$this->id.']=edit';
+			$toolBar.='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,$BACK_PATH)).'">'.
+						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/edit2.gif','width="11" height="12"').' hspace="2" vspace="2" align="top" title="'.$LANG->getLL('editPageProperties',1).'" alt="" />'.
+						'</a>';
 
-			// Create icon "toolbar" for common operations like creating/moving elements/pages etc.
-		$toolBar='';
-			// History:
-		$toolBar.='<a href="#" onclick="'.htmlspecialchars('jumpToUrl(\''.$BACK_PATH.'show_rechis.php?element='.rawurlencode('pages:'.$this->id).'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI')).'#latest\');return false;').'">'.
-					'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/history2.gif','width="13" height="12"').' vspace="2" hspace="2" align="top" title="'.$LANG->getLL('recordHistory',1).'" alt="" />'.
-					'</a>';
-			// New content element
-		$toolBar.='<a href="'.htmlspecialchars('db_new_content_el.php?id='.$this->id.'&sys_language_uid='.$this->current_sys_language.'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI'))).'">'.
-					'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/new_record.gif','width="16" height="12"').' vspace="2" hspace="1" align="top" title="'.$LANG->getLL('newContentElement',1).'" alt="" />'.
-					'</a>';
-			// Move page:
-		$toolBar.='<a href="'.htmlspecialchars($BACK_PATH.'move_el.php?table=pages&uid='.$this->id.'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI'))).'">'.
-					'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/move_page.gif','width="11" height="12"').' vspace="2" hspace="2" align="top" title="'.$LANG->getLL('move_page',1).'" alt="" />'.
-					'</a>';
-			// Create new page (wizard):
-		$toolBar.='<a href="#" onclick="'.htmlspecialchars('jumpToUrl(\''.$BACK_PATH.'db_new.php?id='.$this->id.'&pagesOnly=1&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI')).'\');return false;').'">'.
-					'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/new_page.gif','width="13" height="12"').' hspace="0" vspace="2" align="top" title="'.$LANG->getLL('newPage',1).'" alt="" />'.
-					'</a>';
-			// Edit page header:
-		$params='&edit[pages]['.$this->id.']=edit';
-		$toolBar.='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,$BACK_PATH)).'">'.
-					'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/edit2.gif','width="11" height="12"').' hspace="2" vspace="2" align="top" title="'.$LANG->getLL('editPageHeader',1).'" alt="" />'.
-					'</a>';
+				// Add CSH (Context Sensitive Help) icon to tool bar:
+			$toolBar.= t3lib_BEfunc::cshItem($this->descrTable,'columns_'.$this->MOD_SETTINGS['function'],$BACK_PATH,'',FALSE,'margin-top: 0px; margin-bottom: 0px;');
 
-			// Add CSH (Context Sensitive Help) icon to tool bar:
-		$toolBar.= t3lib_BEfunc::cshItem($this->descrTable,'columns_'.$this->MOD_SETTINGS['function'],$BACK_PATH,'',FALSE,'margin-top: 0px; margin-bottom: 0px;');
-
-			// Wrap the toolbar into a table:
-		$headerSection.='
-			<table border="0" cellpadding="0" cellspacing="0" class="bgColor4">
-				<tr>
-					<td>'.$toolBar.'</td>
-				</tr>
-			</table>';
-
+				// Wrap the toolbar into a table:
+			$headerSection.='
+				<table border="0" cellpadding="0" cellspacing="0" class="bgColor4">
+					<tr>
+						<td>'.$toolBar.'</td>
+					</tr>
+				</table>';
+		}
 
 			// Create menu of table-icons for jumping to table-listing anchor points:
 		if ($this->MOD_SETTINGS['function']!=3 && count($tableOutput)>1)	{
@@ -1072,7 +1092,7 @@ class SC_db_layout {
 				</tr>
 			</table>';
 
-			// Create page header:
+			// Create page properties:
 		$this->content.=$this->doc->startPage($LANG->getLL('title'));
 		$this->content.=$this->doc->section('',$hS2);
 
@@ -1170,7 +1190,7 @@ class SC_db_layout {
 	 * @return	void
 	 */
 	function getNumberOfHiddenElements()	{
-		$q_res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('count(*)', 'tt_content', 'pid='.intval($this->id).' AND sys_language_uid='.intval($this->current_sys_language).t3lib_BEfunc::BEenableFields('tt_content',1).t3lib_BEfunc::deleteClause('tt_content'));
+		$q_res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('count(*)', 'tt_content', 'pid='.intval($this->id).' AND sys_language_uid='.intval($this->current_sys_language).t3lib_BEfunc::BEenableFields('tt_content',1).t3lib_BEfunc::deleteClause('tt_content').t3lib_BEfunc::versioningPlaceholderClause('tt_content'));
 		list($q_count) = $GLOBALS['TYPO3_DB']->sql_fetch_row($q_res);
 		return $q_count;
 	}
@@ -1195,8 +1215,8 @@ class SC_db_layout {
 	 * @return	string		Return query string.
 	 */
 	function exec_languageQuery($id)	{
-		$exQ = $GLOBALS['BE_USER']->isAdmin() ? '' : ' AND sys_language.hidden=0';
 		if ($id)	{
+			$exQ = t3lib_BEfunc::deleteClause('pages_language_overlay') . ($GLOBALS['BE_USER']->isAdmin()?'':' AND sys_language.hidden=0');
 			return $GLOBALS['TYPO3_DB']->exec_SELECTquery(
 							'sys_language.*',
 							'pages_language_overlay,sys_language',

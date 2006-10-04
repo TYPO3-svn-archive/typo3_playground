@@ -31,55 +31,51 @@
  *
  *
  *
- *  110: class tx_indexedsearch_modfunc1 extends t3lib_extobjbase
- *  124:     function modMenu()
- *  148:     function main()
+ *  106: class tx_indexedsearch_modfunc1 extends t3lib_extobjbase
+ *  120:     function modMenu()
+ *  144:     function main()
  *
  *              SECTION: Drawing table of indexed pages
- *  261:     function drawTableOfIndexedPages()
- *  312:     function indexed_info($data, $firstColContent)
- *  398:     function printPhashRow($row,$grouping=0,$extraGrListRows)
- *  539:     function printPhashRowHeader()
- *  594:     function returnNumberOfColumns()
+ *  248:     function drawTableOfIndexedPages()
+ *  299:     function indexed_info($data, $firstColContent)
+ *  386:     function printPhashRow($row,$grouping=0,$extraGrListRows)
+ *  527:     function printPhashRowHeader()
+ *  582:     function returnNumberOfColumns()
  *
  *              SECTION: Details display, phash row
- *  630:     function showDetailsForPhash($phash)
- *  747:     function listWords($ftrows,$header, $stopWordBoxes=FALSE, $page='')
- *  796:     function listMetaphoneStat($ftrows,$header)
- *  833:     function linkWordDetails($string,$wid)
- *  845:     function linkMetaPhoneDetails($string,$metaphone)
- *  855:     function flagsMsg($flags)
+ *  618:     function showDetailsForPhash($phash)
+ *  737:     function listWords($ftrows,$header, $stopWordBoxes=FALSE, $page='')
+ *  787:     function listMetaphoneStat($ftrows,$header)
+ *  824:     function linkWordDetails($string,$wid)
+ *  836:     function linkMetaPhoneDetails($string,$metaphone)
+ *  846:     function flagsMsg($flags)
  *
  *              SECTION: Details display, words / metaphone
- *  886:     function showDetailsForWord($wid)
- *  945:     function showDetailsForMetaphone($metaphone)
+ *  877:     function showDetailsForWord($wid)
+ *  936:     function showDetailsForMetaphone($metaphone)
  *
  *              SECTION: Helper functions
- * 1016:     function printRemoveIndexed($phash,$alt)
- * 1029:     function printReindex($resultRow,$alt)
- * 1044:     function linkDetails($string,$phash)
- * 1053:     function linkList()
- * 1064:     function showPageDetails($string,$id)
- * 1074:     function printExtraGrListRows($extraGrListRows)
- * 1091:     function printRootlineInfo($row)
- * 1125:     function makeItemTypeIcon($it,$alt='')
- * 1150:     function utf8_to_currentCharset($string)
+ * 1007:     function printRemoveIndexed($phash,$alt)
+ * 1020:     function printReindex($resultRow,$alt)
+ * 1035:     function linkDetails($string,$phash)
+ * 1044:     function linkList()
+ * 1055:     function showPageDetails($string,$id)
+ * 1065:     function printExtraGrListRows($extraGrListRows)
+ * 1082:     function printRootlineInfo($row)
+ * 1116:     function makeItemTypeIcon($it,$alt='')
+ * 1141:     function utf8_to_currentCharset($string)
  *
  *              SECTION: Reindexing
- * 1183:     function reindexPhash($phash, $pageId)
- * 1237:     function getUidRootLineForClosestTemplate($id)
- *
- *              SECTION: Indexing of configurations
- * 1278:     function extraIndexing()
- * 1389:     function indexExtUrlRecursively($url, $depth, $pageId, $rl, $cfgUid)
+ * 1173:     function reindexPhash($phash, $pageId)
+ * 1227:     function getUidRootLineForClosestTemplate($id)
  *
  *              SECTION: SQL functions
- * 1446:     function removeIndexedPhashRow($phashList,$clearPageCache=1)
- * 1483:     function getGrListEntriesForPhash($phash,$gr_list)
- * 1503:     function processStopWords($stopWords)
- * 1523:     function processPageKeywords($pageKeywords, $pageUid)
+ * 1270:     function removeIndexedPhashRow($phashList,$clearPageCache=1)
+ * 1314:     function getGrListEntriesForPhash($phash,$gr_list)
+ * 1334:     function processStopWords($stopWords)
+ * 1354:     function processPageKeywords($pageKeywords, $pageUid)
  *
- * TOTAL FUNCTIONS: 32
+ * TOTAL FUNCTIONS: 30
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -121,8 +117,8 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 	 *
 	 * @return	void
 	 */
-    function modMenu()    {
-        global $LANG;
+	function modMenu()	{
+		global $LANG;
 
 		return array (
 			'depth' => array(
@@ -136,19 +132,18 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 				0 => 'Overview',
 				1 => 'Technical Details',
 				2 => 'Words and content',
-//				3 => 'Indexing'
 			)
 		);
-    }
+	}
 
 	/**
 	 * Produces main content of the module
 	 *
 	 * @return	string		HTML output
 	 */
-    function main()    {
-            // Initializes the module. Done in this function because we may need to re-initialize if data is submitted!
-        global $SOBE,$BE_USER,$LANG,$BACK_PATH,$TCA_DESCR,$TCA,$CLIENT,$TYPO3_CONF_VARS;
+	function main()	{
+			// Initializes the module. Done in this function because we may need to re-initialize if data is submitted!
+		global $LANG,$TYPO3_CONF_VARS;
 
 			// Return if no page id:
 		if ($this->pObj->id<=0)		return;
@@ -217,22 +212,13 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 		} else {	// Detail listings:
 				// Depth function menu:
 			$h_func = t3lib_BEfunc::getFuncMenu($this->pObj->id,'SET[type]',$this->pObj->MOD_SETTINGS['type'],$this->pObj->MOD_MENU['type'],'index.php');
-			if (t3lib_div::inList('0,1,2',$this->pObj->MOD_SETTINGS['type']))	{
-				$h_func.= t3lib_BEfunc::getFuncMenu($this->pObj->id,'SET[depth]',$this->pObj->MOD_SETTINGS['depth'],$this->pObj->MOD_MENU['depth'],'index.php');
+			$h_func.= t3lib_BEfunc::getFuncMenu($this->pObj->id,'SET[depth]',$this->pObj->MOD_SETTINGS['depth'],$this->pObj->MOD_MENU['depth'],'index.php');
 
-					// Show title / function menu:
-				$theOutput.=$this->pObj->doc->spacer(5);
-				$theOutput.=$this->pObj->doc->section($LANG->getLL('title'),$h_func,0,1);
+				// Show title / function menu:
+			$theOutput.=$this->pObj->doc->spacer(5);
+			$theOutput.=$this->pObj->doc->section($LANG->getLL('title'),$h_func,0,1);
 
-				$theOutput.=$this->drawTableOfIndexedPages();
-			} else {
-
-					// Show title / function menu:
-				$theOutput.= $this->pObj->doc->spacer(5);
-				$theOutput.= $this->pObj->doc->section($LANG->getLL('title'),$h_func,0,1);
-
-				$theOutput.= $this->extraIndexing();
-			}
+			$theOutput.=$this->drawTableOfIndexedPages();
 		}
 
         return $theOutput;
@@ -317,7 +303,7 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 					'ISEC.*, IP.*, count(*) AS count_val',
 					'index_phash IP, index_section ISEC',
 					'IP.phash = ISEC.phash AND ISEC.page_id = '.intval($data['uid']),
-					'IP.phash,IP.phash_grouping,IP.cHashParams,IP.data_filename,IP.data_page_id,IP.data_page_reg1,IP.data_page_type,IP.data_page_mp,IP.gr_list,IP.item_type,IP.item_title,IP.item_description,IP.item_mtime,IP.tstamp,IP.item_size,IP.contentHash,IP.crdate,IP.parsetime,IP.sys_language_uid,IP.item_crdate,ISEC.phash,ISEC.phash_t3,ISEC.rl0,ISEC.rl1,ISEC.rl2,ISEC.page_id,ISEC.uniqid,IP.externalUrl,IP.recordUid,IP.freeIndexUid',
+					'IP.phash,IP.phash_grouping,IP.cHashParams,IP.data_filename,IP.data_page_id,IP.data_page_reg1,IP.data_page_type,IP.data_page_mp,IP.gr_list,IP.item_type,IP.item_title,IP.item_description,IP.item_mtime,IP.tstamp,IP.item_size,IP.contentHash,IP.crdate,IP.parsetime,IP.sys_language_uid,IP.item_crdate,ISEC.phash,ISEC.phash_t3,ISEC.rl0,ISEC.rl1,ISEC.rl2,ISEC.page_id,ISEC.uniqid,IP.externalUrl,IP.recordUid,IP.freeIndexUid,IP.freeIndexSetId',
 					'IP.item_type, IP.tstamp',
 					($this->maxListPerPage+1)
 				);
@@ -441,7 +427,7 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 				$lines[] = '<td>'.$this->printRootlineInfo($row).'</td>';
 				$lines[] = '<td>'.($row['page_id'] ? $row['page_id'] : '&nbsp;').'</td>';
 				$lines[] = '<td>'.($row['phash_t3']!=$row['phash'] ? $row['phash_t3'] : '&nbsp;').'</td>';
-				$lines[] = '<td>'.($row['freeIndexUid'] ? $row['freeIndexUid'] : '&nbsp;').'</td>';
+				$lines[] = '<td>'.($row['freeIndexUid'] ? $row['freeIndexUid'].($row['freeIndexSetId']?'/'.$row['freeIndexSetId']:'') : '&nbsp;').'</td>';
 				$lines[] = '<td>'.($row['recordUid'] ? $row['recordUid'] : '&nbsp;').'</td>';
 
 
@@ -546,7 +532,7 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 				$lines[] = '<td>&nbsp;</td>';
 				$lines[] = '<td>&nbsp;</td>';
 				$lines[] = '<td>Title</td>';
-				$lines[] = '<td bgcolor="red">'.$this->printRemoveIndexed(implode(',',$this->allPhashListed),'Clear ALL phash-rows below!').'</td>';
+				$lines[] = '<td bgcolor="red">'.$this->printRemoveIndexed('ALL','Clear ALL phash-rows below!').'</td>';
 
 				$lines[] = '<td>pHash</td>';
 				$lines[] = '<td>cHash</td>';
@@ -567,7 +553,7 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 				$lines[] = '<td>&nbsp;</td>';
 				$lines[] = '<td>&nbsp;</td>';
 				$lines[] = '<td>Title</td>';
-				$lines[] = '<td bgcolor="red">'.$this->printRemoveIndexed(implode(',',$this->allPhashListed),'Clear ALL phash-rows below!').'</td>';
+				$lines[] = '<td bgcolor="red">'.$this->printRemoveIndexed('ALL','Clear ALL phash-rows below!').'</td>';
 				$lines[] = '<td>Content<br/>
 							<img src="clear.gif" width="300" height="1" alt="" /></td>';
 				$lines[] = '<td>Words<br/>
@@ -577,7 +563,7 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 				$lines[] = '<td>&nbsp;</td>';
 				$lines[] = '<td>&nbsp;</td>';
 				$lines[] = '<td>Title</td>';
-				$lines[] = '<td bgcolor="red">'.$this->printRemoveIndexed(implode(',',$this->allPhashListed),'Clear ALL phash-rows below!').'</td>';
+				$lines[] = '<td bgcolor="red">'.$this->printRemoveIndexed('ALL','Clear ALL phash-rows below!').'</td>';
 				$lines[] = '<td>Description</td>';
 				$lines[] = '<td>Size</td>';
 				$lines[] = '<td>Indexed:</td>';
@@ -1239,12 +1225,12 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 	 * @return	array		Array where the root lines uid values are found.
 	 */
 	function getUidRootLineForClosestTemplate($id)	{
-		$tmpl = t3lib_div::makeInstance("t3lib_tsparser_ext");	// Defined global here!
+		$tmpl = t3lib_div::makeInstance('t3lib_tsparser_ext');	// Defined global here!
 		$tmpl->tt_track = 0;	// Do not log time-performance information
 		$tmpl->init();
 
 				// Gets the rootLine
-		$sys_page = t3lib_div::makeInstance("t3lib_pageSelect");
+		$sys_page = t3lib_div::makeInstance('t3lib_pageSelect');
 		$rootLine = $sys_page->getRootLine($id);
 		$tmpl->runThroughTemplates($rootLine,0);	// This generates the constants/config + hierarchy info for the template.
 
@@ -1255,172 +1241,6 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 		}
 
 		return $rootline_uids;
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-	/********************************
-	 *
-	 * Indexing of configurations
-	 *
-	 *******************************/
-
-	/**
-	 * [Describe function...]
-	 *
-	 * @return	[type]		...
-	 */
-	function extraIndexing()	{
-
-			// Select index configurations on this page
-		$ftrows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
-					'*',
-					'index_config',
-					'pid = '.intval($this->pObj->id).
-						' AND hidden=0'.
-						' AND starttime<'.time()
-				);
-
-
-		$rl = $this->getUidRootLineForClosestTemplate($this->pObj->id);
-
-		foreach($ftrows as $cfgRow)		{
-			switch($cfgRow['type'])	{
-				case 1:
-					if ($cfgRow['table2index'] && isset($GLOBALS['TCA'][$cfgRow['table2index']]))	{
-
-							// Init:
-						$pid = intval($cfgRow['alternative_source_pid']) ? intval($cfgRow['alternative_source_pid']) : $this->pObj->id;
-						$fieldList = t3lib_div::trimExplode(',',$cfgRow['fieldlist'],1);
-
-							// Select
-						$recs = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
-									'*',
-									$cfgRow['table2index'],
-									'pid = '.intval($pid)
-								);
-
-							// Traverse:
-						foreach($recs as $r)	{
-								// (Re)-Indexing a row from a table:
-							$indexerObj = &t3lib_div::makeInstance('tx_indexedsearch_indexer');
-							parse_str(str_replace('###UID###',$r['uid'],$cfgRow['get_params']),$GETparams);
-							$indexerObj->backend_initIndexer($this->pObj->id, 0, 0, '', $rl, $GETparams, $cfgRow['chashcalc'] ? TRUE : FALSE);
-							$indexerObj->backend_setFreeIndexUid($cfgRow['uid']);
-
-							$theContent = '';
-							foreach($fieldList as $k => $v)	{
-								if (!$k)	{
-									$theTitle = $r[$v];
-								} else {
-									$theContent.= $r[$v].' ';
-								}
-							}
-#debug($theContent,$theTitle);
-							$indexerObj->backend_indexAsTYPO3Page(
-									$theTitle,
-									'',
-									'',
-									$theContent,
-									$GLOBALS['LANG']->charSet,
-									$r[$GLOBALS['TCA'][$cfgRow['table2index']]['ctrl']['tstamp']],
-									$r[$GLOBALS['TCA'][$cfgRow['table2index']]['ctrl']['crdate']],
-									$r['uid']
-								);
-
-						}
-#debug($recs);
-					}
-				break;
-				case 2:
-					$readpath = $cfgRow['filepath'];
-					if (!t3lib_div::isAbsPath($readPath))	{
-						$readpath = t3lib_div::getFileAbsFileName($readpath);
-					}
-#debug($readpath,'$readpath');
-
-					if (t3lib_div::isAllowedAbsPath($readpath))	{
-						$extList = implode(',',t3lib_div::trimExplode(',',$cfgRow['extensions'],1));
-						$fileArr = array();
-						$files = t3lib_div::getAllFilesAndFoldersInPath($fileArr,$readpath,$extList,0,$cfgRow['depth']);
-						$files = t3lib_div::removePrefixPathFromList($files,PATH_site);
-#debug($files);
-						foreach($files as $path)	{
-								// (Re)-Indexing file on page.
-							$indexerObj = &t3lib_div::makeInstance('tx_indexedsearch_indexer');
-							$indexerObj->backend_initIndexer($this->pObj->id, 0, 0, '', $rl);
-							$indexerObj->backend_setFreeIndexUid($cfgRow['uid']);
-							$indexerObj->hash['phash'] = -1;	// EXPERIMENT - but to avoid phash_t3 being written to file sections (otherwise they are removed when page is reindexed!!!)
-
-							$indexerObj->indexRegularDocument($path, TRUE);
-
-#debug($indexerObj->internal_log,$resultRow['data_filename']);
-#debug($indexerObj->file_phash_arr,'file_phash_arr');
-#debug($indexerObj->hash,'hash');
-
-						}
-					}
-				break;
-				case 3:
-					if ($cfgRow['externalUrl'])	{
-						$this->indexExtUrlRecursively($cfgRow['externalUrl'], $cfgRow['depth'], $this->pObj->id, $rl, $cfgRow['uid']);
-					}
-				break;
-			}
-		}
-	}
-
-	/**
-	 * Indexing URL recursively
-	 * Still needs some work; eg. paramters to type, language, MP var is not passed yet...
-	 *
-	 * @param	string		URL, http://....
-	 * @param	integer		Depth of recursion. 0 (zero) = only input URL
-	 * @param	integer		Page id to relate indexing to.
-	 * @param	array		Rootline array to relate indexing to
-	 * @param	integer		Configuration UID
-	 * @return	void
-	 */
-	function indexExtUrlRecursively($url, $depth, $pageId, $rl, $cfgUid)	{
-
-			// Index external URL:
-		$indexerObj = &t3lib_div::makeInstance('tx_indexedsearch_indexer');
-		$indexerObj->backend_initIndexer($pageId, 0, 0, '', $rl);
-		$indexerObj->backend_setFreeIndexUid($cfgUid);
-
-		$indexerObj->indexExternalUrl($url);
-		$url_qParts = parse_url($url);
-
-			// Recursion:
-		if ($depth>0)	{
-			$list = $indexerObj->extractHyperLinks($indexerObj->indexExternalUrl_content);
-
-							// Traverse links:
-			foreach($list as $count => $linkInfo)	{
-
-					// Decode entities:
-				$linkSource = t3lib_div::htmlspecialchars_decode($linkInfo['href']);
-
-				$qParts = parse_url($linkSource);
-				if (!$qParts['scheme'])	{
-					$linkSource = $url_qParts['scheme'].'://'.$url_qParts['host'].'/'.$linkSource;
-				}
-
-				$this->indexExtUrlRecursively($linkSource, $depth-1, $pageId, $rl, $cfgUid);
-
-					// Temporary limit until we know how to handle hundreds of URLs with limited parsetime in PHP...
-				if ($count>3)	break;
-			}
-		}
 	}
 
 
@@ -1448,7 +1268,14 @@ class tx_indexedsearch_modfunc1 extends t3lib_extobjbase {
 	 * @return	void
 	 */
 	function removeIndexedPhashRow($phashList,$clearPageCache=1)	{
-		$phashRows = t3lib_div::trimExplode(',',$phashList,1);
+			// FIXME: This is only a workaround
+		if ($phashList=='ALL')	{
+			$this->drawTableOfIndexedPages();
+			$phashRows = $this->allPhashListed;
+			$this->allPhashListed = array();	// Reset it because it will be filled again later...
+		} else {
+			$phashRows = t3lib_div::trimExplode(',',$phashList,1);
+		}
 
 		foreach($phashRows as $phash)	{
 			$phash = intval($phash);

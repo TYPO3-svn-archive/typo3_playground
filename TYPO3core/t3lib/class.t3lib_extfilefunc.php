@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -48,13 +48,13 @@
  *              SECTION: File operation functions
  *  384:     function func_delete($cmds)
  *  451:     function func_copy($cmds)
- *  541:     function func_move($cmds)
- *  634:     function func_rename($cmds)
- *  680:     function func_newfolder($cmds)
- *  710:     function func_newfile($cmds)
- *  747:     function func_edit($cmds)
- *  779:     function func_upload($cmds)
- *  818:     function func_unzip($cmds)
+ *  542:     function func_move($cmds)
+ *  637:     function func_rename($cmds)
+ *  683:     function func_newfolder($cmds)
+ *  713:     function func_newfile($cmds)
+ *  750:     function func_edit($cmds)
+ *  782:     function func_upload($cmds)
+ *  821:     function func_unzip($cmds)
  *
  * TOTAL FUNCTIONS: 15
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -139,6 +139,8 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 		// Internal, dynamic:
 	var $internalUploadMap = array();	// Will contain map between upload ID and the final filename
 
+	var $lastError = '';
+
 
 
 
@@ -215,6 +217,19 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 
 		if (is_array($this->fileCmdMap))	{
 
+				// Check if there were uploads expected, but no one made
+			if ($this->fileCmdMap['upload'])	{
+				$uploads = $this->fileCmdMap['upload'];
+				foreach ($uploads as $arr)	{
+					if (!$_FILES['upload_'.$arr['data']]['name'])	{
+						unset($this->fileCmdMap['upload'][$arr['data']]);
+					}
+				}
+				if (count($this->fileCmdMap['upload']) == 0) {
+					$this->writelog(1,1,108,'No file was uploaded!','');
+				}
+			}
+				
 				// Traverse each set of actions
 			foreach($this->fileCmdMap as $action => $actionData)	{
 
@@ -302,7 +317,7 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 			$lines[] = '
 					<tr>
 						<td colspan="2" align="center"><br />'.
-						'<form action=""><input type="submit" value="Continue" onclick="'.htmlspecialchars('document.location=\''.$redirect.'\';return false;').'" /></form>'.
+						'<form action=""><input type="submit" value="Continue" onclick="'.htmlspecialchars('window.location.href=\''.$redirect.'\';return false;').'" /></form>'.
 						'</td>
 					</tr>';
 
@@ -359,6 +374,7 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 		if (is_object($GLOBALS['BE_USER']))	{
 			$GLOBALS['BE_USER']->writelog($type,$action,$error,$details_nr,$details,$data);
 		}
+		$this->lastError = vsprintf($details, $data);
 	}
 
 
@@ -484,6 +500,7 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 									$cmd = 'cp "'.$theFile.'" "'.$theDestFile.'"';
 									exec($cmd);
 								}
+								t3lib_div::fixPermissions($theDestFile);
 								clearstatcache();
 								if (@is_file($theDestFile))	{
 									$this->writelog(2,0,1,'File "%s" copied to "%s"',Array($theFile,$theDestFile));
@@ -605,6 +622,8 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 										rename($theFile, $theDestFile);
 									} else {
 										$cmd = 'mv "'.$theFile.'" "'.$theDestFile.'"';
+										$errArr = array();
+										$retVar = 0;
 										exec($cmd,$errArr,$retVar);
 									}
 									clearstatcache();
@@ -739,7 +758,7 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 	}
 
 	/**
-	 * Editing textfiles or foldes (action=9)
+	 * Editing textfiles or folders (action=9)
 	 *
 	 * @param	array		$cmds['data'] is the new content. $cmds['target'] is the target (file or dir)
 	 * @return	boolean		Returns true on success
@@ -805,7 +824,7 @@ class t3lib_extFileFunctions extends t3lib_basicFileFunctions	{
 					} else $this->writelog(1,1,104,'The uploaded file exceeds the size-limit of %s bytes',Array($this->maxUploadFileSize*1024));
 				} else $this->writelog(1,1,105,'You are not allowed to upload files!','');
 			} else $this->writelog(1,2,106,'The uploaded file did not exist!','');
-		}
+		} else $this->writelog(1,2,108,'No file was uploaded!','');
 	}
 
 	/**

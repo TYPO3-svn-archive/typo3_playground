@@ -41,12 +41,12 @@
  *  249:     function init()
  *  269:     function menuConfig()
  *  292:     function mergeExternalItems($modName,$menuKey,$menuArr)
- *  312:     function handleExternalFunctionValue($MM_key='function', $MS_value=NULL)
- *  330:     function getExternalItemConfig($modName,$menuKey,$value='')
- *  344:     function checkExtObj()
- *  358:     function checkSubExtObj()
- *  370:     function extObjHeader()
- *  379:     function extObjContent()
+ *  317:     function handleExternalFunctionValue($MM_key='function', $MS_value=NULL)
+ *  335:     function getExternalItemConfig($modName,$menuKey,$value='')
+ *  349:     function checkExtObj()
+ *  363:     function checkSubExtObj()
+ *  375:     function extObjHeader()
+ *  384:     function extObjContent()
  *
  * TOTAL FUNCTIONS: 9
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -294,7 +294,12 @@ class t3lib_SCbase {
 		if (is_array($mergeArray))	{
 			reset($mergeArray);
 			while(list($k,$v)=each($mergeArray))	{
-				$menuArr[$k]=$GLOBALS['LANG']->sL($v['title']);
+				if ((string)$v['ws']==='' ||
+					($GLOBALS['BE_USER']->workspace===0 && t3lib_div::inList($v['ws'],'online')) ||
+					($GLOBALS['BE_USER']->workspace===-1 && t3lib_div::inList($v['ws'],'offline')) ||
+					($GLOBALS['BE_USER']->workspace>0 && t3lib_div::inList($v['ws'],'custom')))	{
+						$menuArr[$k]=$GLOBALS['LANG']->sL($v['title']);
+				}
 			}
 		}
 		return $menuArr;

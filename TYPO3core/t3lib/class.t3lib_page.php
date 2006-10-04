@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -50,29 +50,29 @@
  *  314:     function getRecordOverlay($table,$row,$sys_language_content,$OLmode='')
  *
  *              SECTION: Page related: Menu, Domain record, Root line
- *  410:     function getMenu($uid,$fields='*',$sortField='sorting',$addWhere='')
- *  448:     function getDomainStartPage($domain, $path='',$request_uri='')
- *  496:     function getRootLine($uid, $MP='', $ignoreMPerrors=FALSE)
- *  617:     function getPathFromRootline($rl,$len=20)
- *  638:     function getExtURL($pagerow,$disable=0)
- *  662:     function getMountPointInfo($pageId, $pageRec=FALSE, $prevMountPids=array(), $firstPageUid=0)
+ *  413:     function getMenu($uid,$fields='*',$sortField='sorting',$addWhere='',$checkShortcuts=1)
+ *  471:     function getDomainStartPage($domain, $path='',$request_uri='')
+ *  519:     function getRootLine($uid, $MP='', $ignoreMPerrors=FALSE)
+ *  640:     function getPathFromRootline($rl,$len=20)
+ *  661:     function getExtURL($pagerow,$disable=0)
+ *  685:     function getMountPointInfo($pageId, $pageRec=FALSE, $prevMountPids=array(), $firstPageUid=0)
  *
  *              SECTION: Selecting records in general
- *  739:     function checkRecord($table,$uid,$checkPage=0)
- *  773:     function getRawRecord($table,$uid,$fields='*')
- *  797:     function getRecordsByField($theTable,$theField,$theValue,$whereClause='',$groupBy='',$orderBy='',$limit='')
+ *  762:     function checkRecord($table,$uid,$checkPage=0)
+ *  797:     function getRawRecord($table,$uid,$fields='*',$noWSOL=FALSE)
+ *  823:     function getRecordsByField($theTable,$theField,$theValue,$whereClause='',$groupBy='',$orderBy='',$limit='')
  *
  *              SECTION: Caching and standard clauses
- *  849:     function getHash($hash,$expTime=0)
- *  872:     function storeHash($hash,$data,$ident)
- *  890:     function deleteClause($table)
- *  910:     function enableFields($table,$show_hidden=-1,$ignore_array=array(),$noVersionPreview=FALSE)
- *  979:     function getMultipleGroupsWhereClause($field, $table)
+ *  875:     function getHash($hash,$expTime=0)
+ *  898:     function storeHash($hash,$data,$ident)
+ *  916:     function deleteClause($table)
+ *  936:     function enableFields($table,$show_hidden=-1,$ignore_array=array(),$noVersionPreview=FALSE)
+ * 1008:     function getMultipleGroupsWhereClause($field, $table)
  *
  *              SECTION: Versioning Preview
- * 1026:     function fixVersioningPid($table,&$rr)
- * 1066:     function versionOL($table,&$row)
- * 1121:     function getWorkspaceVersionOfRecord($workspace, $table, $uid, $fields='*')
+ * 1055:     function fixVersioningPid($table,&$rr)
+ * 1096:     function versionOL($table,&$row)
+ * 1151:     function getWorkspaceVersionOfRecord($workspace, $table, $uid, $fields='*')
  *
  * TOTAL FUNCTIONS: 24
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -107,7 +107,7 @@
  * @see tslib_fe::fetch_the_id()
  */
 class t3lib_pageSelect {
-	var $urltypes = Array('','http://','ftp://','mailto:');
+	var $urltypes = Array('','http://','ftp://','mailto:','https://');
 	var $where_hid_del = ' AND pages.deleted=0';	// This is not the final clauses. There will normally be conditions for the hidden,starttime and endtime fields as well. You MUST initialize the object by the init() function
 	var $where_groupAccess = '';	// Clause for fe_group access
 	var $sys_language_uid = 0;
@@ -141,11 +141,11 @@ class t3lib_pageSelect {
 
 			// Filter out new place-holder pages in case we are NOT in a versioning preview (that means we are online!)
 		if (!$this->versioningPreview)	{
-			$this->where_hid_del.= ' AND pages.t3ver_state!=1';
+			$this->where_hid_del.= ' AND NOT(pages.t3ver_state=1)';
 		} else {
 				// For version previewing, make sure that enable-fields are not de-selecting hidden pages - we need versionOL() to unset them only if the overlay record instructs us to.
 			$this->versioningPreview_where_hid_del = $this->where_hid_del;	// Copy where_hid_del to other variable (used in relation to versionOL())
-			$this->where_hid_del = '';	// Clear where_hid_del
+			$this->where_hid_del = ' AND pages.deleted=0 ';	// Clear where_hid_del
 		}
 	}
 
@@ -251,7 +251,7 @@ class t3lib_pageSelect {
 
 			// Initialize:
 		if ($lUid<0)	$lUid = $this->sys_language_uid;
-		unset($row);
+		$row = NULL;
 
 			// If language UID is different from zero, do overlay:
 		if ($lUid)	{
@@ -318,7 +318,7 @@ class t3lib_pageSelect {
 			if ($TCA[$table] && $TCA[$table]['ctrl']['languageField'] && $TCA[$table]['ctrl']['transOrigPointerField'])	{
 				if (!$TCA[$table]['ctrl']['transOrigPointerTable'])	{	// Will not be able to work with other tables (Just didn't implement it yet; Requires a scan over all tables [ctrl] part for first FIND the table that carries localization information for this table (which could even be more than a single table) and then use that. Could be implemented, but obviously takes a little more....)
 
-						// Will try to overlay a record only if the sys_language_content value is larger that zero.
+						// Will try to overlay a record only if the sys_language_content value is larger than zero.
 					if ($sys_language_content>0)	{
 
 							// Must be default language or [All], otherwise no overlaying:
@@ -326,16 +326,16 @@ class t3lib_pageSelect {
 
 								// Select overlay record:
 							$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-										'*',
-										$table,
-										'pid='.intval($row['pid']).
-											' AND '.$TCA[$table]['ctrl']['languageField'].'='.intval($sys_language_content).
-											' AND '.$TCA[$table]['ctrl']['transOrigPointerField'].'='.intval($row['uid']).
-											$this->enableFields($table),
-										'',
-										'',
-										'1'
-									);
+								'*',
+								$table,
+								'pid='.intval($row['pid']).
+									' AND '.$TCA[$table]['ctrl']['languageField'].'='.intval($sys_language_content).
+									' AND '.$TCA[$table]['ctrl']['transOrigPointerField'].'='.intval($row['uid']).
+									$this->enableFields($table),
+								'',
+								'',
+								'1'
+							);
 							$olrow = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
 							$this->versionOL($table,$olrow);
 	#debug($row);
@@ -349,6 +349,8 @@ class t3lib_pageSelect {
 												&& ($GLOBALS['TSFE']->TCAcachedExtras[$table]['l10n_mode'][$fN]!='mergeIfNotBlank' || strcmp(trim($olrow[$fN]),'')))	{
 											$row[$fN] = $olrow[$fN];
 										}
+									} elseif ($fN=='uid')	{
+										$row['_LOCALIZED_UID'] = $olrow['uid'];
 									}
 								}
 							} elseif ($OLmode==='hideNonTranslated' && $row[$TCA[$table]['ctrl']['languageField']]==0)	{	// Unset, if non-translated records should be hidden. ONLY done if the source record really is default language and not [All] in which case it is allowed.
@@ -404,10 +406,11 @@ class t3lib_pageSelect {
 	 * @param	string		List of fields to select. Default is "*" = all
 	 * @param	string		The field to sort by. Default is "sorting"
 	 * @param	string		Optional additional where clauses. Like "AND title like '%blabla%'" for instance.
+	 * @param	boolean		check if shortcuts exist, checks by default
 	 * @return	array		Array with key/value pairs; keys are page-uid numbers. values are the corresponding page records (with overlayed localized fields, if any)
 	 * @see tslib_fe::getPageShortcut(), tslib_menu::makeMenu(), tx_wizardcrpages_webfunc_2, tx_wizardsortpages_webfunc_2
 	 */
-	function getMenu($uid,$fields='*',$sortField='sorting',$addWhere='')	{
+	function getMenu($uid,$fields='*',$sortField='sorting',$addWhere='',$checkShortcuts=1)	{
 
 		$output = Array();
 		$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery($fields, 'pages', 'pid='.intval($uid).$this->where_hid_del.$this->where_groupAccess.' '.$addWhere, '', $sortField);
@@ -424,6 +427,26 @@ class t3lib_pageSelect {
 						$row = $mp_row;
 						$row['_MP_PARAM'] = $mount_info['MPvar'];
 					} else unset($row);	// If the mount point could not be fetched with respect to enableFields, unset the row so it does not become a part of the menu!
+				}
+
+					// if shortcut, look up if the target exists and is currently visible
+				if ($row['doktype'] == 4 && ($row['shortcut'] || $row['shortcut_mode']) && $checkShortcuts)	{
+					if ($row['shortcut_mode'] == 0)	{
+						$searchField = 'uid';
+						$searchUid = intval($row['shortcut']);
+					} else { // check subpages - first subpage or random subpage
+						$searchField = 'pid';
+							// If a shortcut mode is set and no valid page is given to select subpags from use the actual page.
+						$searchUid = intval($row['shortcut'])?intval($row['shortcut']):$row['uid'];
+					}
+					$res2 = $GLOBALS['TYPO3_DB']->exec_SELECTquery('uid', 'pages', $searchField.'='.$searchUid.$this->where_hid_del.$this->where_groupAccess.' '.$addWhere, '', $sortField);
+					if (!$GLOBALS['TYPO3_DB']->sql_num_rows($res2))	{
+						unset($row);
+					}
+					$GLOBALS['TYPO3_DB']->sql_free_result($res2);
+				} elseif ($row['doktype'] == 4 && $checkShortcuts)	{
+						// Neither shortcut target nor mode is set. Remove the page from the menu.
+					unset($row);
 				}
 
 					// Add to output array after overlaying language:
@@ -496,7 +519,7 @@ class t3lib_pageSelect {
 	function getRootLine($uid, $MP='', $ignoreMPerrors=FALSE)	{
 
 			// Initialize:
-		$selFields = t3lib_div::uniqueList('pid,uid,t3ver_oid,t3ver_wsid,t3ver_state,title,alias,nav_title,media,layout,hidden,starttime,endtime,fe_group,extendToSubpages,doktype,TSconfig,storage_pid,is_siteroot,mount_pid,mount_pid_ol,fe_login_mode,'.$GLOBALS['TYPO3_CONF_VARS']['FE']['addRootLineFields']);
+		$selFields = t3lib_div::uniqueList('pid,uid,t3ver_oid,t3ver_wsid,t3ver_state,t3ver_swapmode,title,alias,nav_title,media,layout,hidden,starttime,endtime,fe_group,extendToSubpages,doktype,TSconfig,storage_pid,is_siteroot,mount_pid,mount_pid_ol,fe_login_mode,'.$GLOBALS['TYPO3_CONF_VARS']['FE']['addRootLineFields']);
 		$this->error_getRootLine = '';
 		$this->error_getRootLine_failPid = 0;
 
@@ -518,7 +541,7 @@ class t3lib_pageSelect {
 			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery($selFields, 'pages', 'uid='.intval($uid).' AND pages.deleted=0 AND pages.doktype!=255');
 			if ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res))	{
 				$this->versionOL('pages',$row);
-				$this->fixVersioningPid('pages',$row,1);
+				$this->fixVersioningPid('pages',$row);
 
 				if (is_array($row))	{
 						// Mount Point page types are allowed ONLY a) if they are the outermost record in rootline and b) if the overlay flag is not set:
@@ -541,7 +564,7 @@ class t3lib_pageSelect {
 							$mp_row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
 
 							$this->versionOL('pages',$mp_row);
-							$this->fixVersioningPid('pages',$mp_row,2);
+							$this->fixVersioningPid('pages',$mp_row);
 
 							if (is_array($mp_row))	{
 								$mount_info = $this->getMountPointInfo($mp_row['uid'], $mp_row);
@@ -633,7 +656,7 @@ class t3lib_pageSelect {
 	 * @param	array		The page row to return URL type for
 	 * @param	boolean		A flag to simply disable any output from here.
 	 * @return	string		The URL type from $this->urltypes array. False if not found or disabled.
-	 * @see tslib_fe::checkJumpUrl()
+	 * @see tslib_fe::setExternalJumpUrl()
 	 */
 	function getExtURL($pagerow,$disable=0)	{
 		if ($pagerow['doktype']==3 && !$disable)	{
@@ -767,16 +790,19 @@ class t3lib_pageSelect {
 	 * @param	string		The table name to search
 	 * @param	integer		The uid to look up in $table
 	 * @param	string		The fields to select, default is "*"
+	 * @param	boolean		If set, no version overlay is applied
 	 * @return	mixed		Returns array (the record) if found, otherwise blank/0 (zero)
 	 * @see getPage_noCheck()
 	 */
-	function getRawRecord($table,$uid,$fields='*')	{
+	function getRawRecord($table,$uid,$fields='*',$noWSOL=FALSE)	{
 		global $TCA;
 		$uid = intval($uid);
 		if (is_array($TCA[$table]) || $table=='pages') {	// Excluding pages here so we can ask the function BEFORE TCA gets initialized. Support for this is followed up in deleteClause()...
 			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery($fields, $table, 'uid='.intval($uid).$this->deleteClause($table));
 			if ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res))	{
-				$this->versionOL($table,$row);
+				if (!$noWSOL)	{
+					$this->versionOL($table,$row);
+				}
 				if (is_array($row))	return $row;
 			}
 		}
@@ -908,6 +934,8 @@ class t3lib_pageSelect {
 	 * @see tslib_cObj::enableFields(), deleteClause()
 	 */
 	function enableFields($table,$show_hidden=-1,$ignore_array=array(),$noVersionPreview=FALSE)	{
+		global $TYPO3_CONF_VARS;
+
 		if ($show_hidden==-1 && is_object($GLOBALS['TSFE']))	{	// If show_hidden was not set from outside and if TSFE is an object, set it based on showHiddenPage and showHiddenRecords from TSFE
 			$show_hidden = $table=='pages' ? $GLOBALS['TSFE']->showHiddenPage : $GLOBALS['TSFE']->showHiddenRecords;
 		}
@@ -944,7 +972,7 @@ class t3lib_pageSelect {
 					}
 					if ($ctrl['enablecolumns']['fe_group'] && !$ignore_array['fe_group']) {
 						$field = $table.'.'.$ctrl['enablecolumns']['fe_group'];
-						$query.= t3lib_pageSelect::getMultipleGroupsWhereClause($field, $table);
+						$query.= $this->getMultipleGroupsWhereClause($field, $table);
 					}
 
 					// Call hook functions for additional enableColumns
@@ -980,13 +1008,12 @@ class t3lib_pageSelect {
 	function getMultipleGroupsWhereClause($field, $table)	{
 		$memberGroups = t3lib_div::intExplode(',',$GLOBALS['TSFE']->gr_list);
 		$orChecks=array();
-		$orChecks[]=$field.'=""';	// If the field is empty, then OK
-		$orChecks[]=$field.'="0"';	// If the field contsains zero, then OK
+		$orChecks[]=$field.'=\'\'';	// If the field is empty, then OK
+		$orChecks[]=$field.' IS NULL';	// If the field is NULL, then OK
+		$orChecks[]=$field.'=\'0\'';	// If the field contsains zero, then OK
 
 		foreach($memberGroups as $value)	{
-			// if ($value > 0)	{	// outcommented by Ingmar Schlecht because we want those pseudo groups like "hide at login" etc. to work. Original comment from Kasper was: "If user is member of a real group, not zero or negative pseudo group"
-				$orChecks[] = $GLOBALS['TYPO3_DB']->listQuery($field, $value, $table);
-			// }
+			$orChecks[] = $GLOBALS['TYPO3_DB']->listQuery($field, $value, $table);
 		}
 
 		return ' AND ('.implode(' OR ',$orChecks).')';
@@ -1034,7 +1061,7 @@ class t3lib_pageSelect {
 				$oid = $rr['t3ver_oid'];
 				$wsid = $rr['t3ver_wsid'];
 			} else {	// Otherwise we have to expect "uid" to be in the record and look up based on this:
-				$newPidRec = $this->getRawRecord($table,$rr['uid'],'t3ver_oid,t3ver_wsid');
+				$newPidRec = $this->getRawRecord($table,$rr['uid'],'t3ver_oid,t3ver_wsid',TRUE);
 				if (is_array($newPidRec))	{
 					$oid = $newPidRec['t3ver_oid'];
 					$wsid = $newPidRec['t3ver_wsid'];
@@ -1043,7 +1070,8 @@ class t3lib_pageSelect {
 
 				// If workspace ids matches and ID of current online version is found, look up the PID value of that:
 			if ($oid && !strcmp((int)$wsid,$this->versioningWorkspaceId))	{
-				$oidRec = $this->getRawRecord($table,$oid,'pid');
+				$oidRec = $this->getRawRecord($table,$oid,'pid',TRUE);
+
 				if (is_array($oidRec))	{
 					# SWAP uid as well? Well no, because when fixing a versioning PID happens it is assumed that this is a "branch" type page and therefore the uid should be kept (like in versionOL()). However if the page is NOT a branch version it should not happen - but then again, direct access to that uid should not happen!
 					$rr['_ORIG_pid'] = $rr['pid'];

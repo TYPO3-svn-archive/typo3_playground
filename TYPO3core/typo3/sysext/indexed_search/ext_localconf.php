@@ -13,6 +13,10 @@ $TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['headerNoCache']['tx_
 
 	// Register with "crawler" extension:
 $TYPO3_CONF_VARS['EXTCONF']['crawler']['procInstructions']['tx_indexedsearch_reindex'] = 'Re-indexing';
+$TYPO3_CONF_VARS['EXTCONF']['crawler']['cli_hooks']['tx_indexedsearch_crawl'] = 'EXT:indexed_search/class.crawler.php:&tx_indexedsearch_crawler';
+
+	// Register with TCEmain:
+$TYPO3_CONF_VARS['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass']['tx_indexedsearch'] = 'EXT:indexed_search/class.crawler.php:&tx_indexedsearch_crawler';
 
 	// Configure default document parsers:
 $TYPO3_CONF_VARS['EXTCONF']['indexed_search']['external_parsers'] = array(
@@ -24,6 +28,9 @@ $TYPO3_CONF_VARS['EXTCONF']['indexed_search']['external_parsers'] = array(
 	'sxc' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
 	'sxi' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
 	'sxw' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
+	'ods' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
+	'odp' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
+	'odt' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
 	'rtf' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
 	'txt' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
 	'html' => 'EXT:indexed_search/class.external_parser.php:&tx_indexed_search_extparse',
@@ -49,4 +56,9 @@ $TYPO3_CONF_VARS['EXTCONF']['indexed_search']['pi1_hooks'] = array (
 	// EXAMPLE of adding fields to root line:
 #$TYPO3_CONF_VARS['EXTCONF']['indexed_search']['addRootLineFields']['level3'] = 3;
 
+
+	// Example of crawlerhook (see also ext_tables.php!)
+/*
+	$TYPO3_CONF_VARS['EXTCONF']['indexed_search']['crawler']['tx_myext_example1'] = 'EXT:indexed_search/example/class.crawlerhook.php:&tx_indexedsearch_crawlerhook';
+*/
 ?>

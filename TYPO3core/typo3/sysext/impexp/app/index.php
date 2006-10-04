@@ -51,25 +51,25 @@
  *  387:     function exportData($inData)
  *  661:     function addRecordsForPid($k, $tables, $maxNumber)
  *  687:     function exec_listQueryPid($table,$pid,$limit)
- *  716:     function makeConfigurationForm($inData, &$row)
- *  884:     function makeAdvancedOptionsForm($inData, &$row)
- *  932:     function makeSaveForm($inData, &$row)
+ *  717:     function makeConfigurationForm($inData, &$row)
+ *  885:     function makeAdvancedOptionsForm($inData, &$row)
+ *  933:     function makeSaveForm($inData, &$row)
  *
  *              SECTION: IMPORT FUNCTIONS
- * 1063:     function importData($inData)
+ * 1064:     function importData($inData)
  *
  *              SECTION: Preset functions
- * 1355:     function processPresets(&$inData)
- * 1452:     function getPreset($uid)
+ * 1363:     function processPresets(&$inData)
+ * 1458:     function getPreset($uid)
  *
  *              SECTION: Helper functions
- * 1478:     function userTempFolder()
- * 1494:     function userSaveFolder()
- * 1517:     function checkUpload()
- * 1547:     function renderSelectBox($prefix,$value,$optValues)
- * 1570:     function tableSelector($prefix,$value,$excludeList='')
- * 1606:     function extensionSelector($prefix,$value)
- * 1631:     function filterPageIds($exclude)
+ * 1484:     function userTempFolder()
+ * 1500:     function userSaveFolder()
+ * 1523:     function checkUpload()
+ * 1553:     function renderSelectBox($prefix,$value,$optValues)
+ * 1576:     function tableSelector($prefix,$value,$excludeList='')
+ * 1612:     function extensionSelector($prefix,$value)
+ * 1637:     function filterPageIds($exclude)
  *
  * TOTAL FUNCTIONS: 24
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -223,11 +223,11 @@ class localPageTree extends t3lib_browseTree {
 
 			// Set PM icon:
 		$cmd = $this->bank.'_'.($isOpen?'0_':'1_').$pid;
-		$icon = '<img'.t3lib_iconWorks::skinImg($this->backPath,'t3lib/gfx/ol/'.($isOpen?'minus':'plus').'only.gif','width="18" height="16"').' align="top" alt="" />';
+		$icon = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/ol/'.($isOpen?'minus':'plus').'only.gif','width="18" height="16"').' align="top" alt="" />';
 		$firstHtml = $this->PM_ATagWrap($icon,$cmd);
 
 		if ($pid>0)	{
-			$rootRec = t3lib_befunc::getRecord('pages',$pid);
+			$rootRec = t3lib_befunc::getRecordWSOL('pages',$pid);
 			$firstHtml.= $this->wrapIcon(t3lib_iconWorks::getIconImage('pages',$rootRec,$this->backPath,'align="top"'),$rootRec);
 		} else {
 			$rootRec = array(
@@ -239,7 +239,7 @@ class localPageTree extends t3lib_browseTree {
 		$this->tree[] = array('HTML'=>$firstHtml, 'row'=>$rootRec);
 		if ($isOpen)	{
 				// Set depth:
-			$depthD = '<img'.t3lib_iconWorks::skinImg($this->backPath,'t3lib/gfx/ol/blank.gif','width="18" height="16"').' align="top" alt="" />';
+			$depthD = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/ol/blank.gif','width="18" height="16"').' align="top" alt="" />';
 			if ($this->addSelfId)	$this->ids[] = $pid;
 			$this->getTree($pid,999,$depthD);
 
@@ -298,7 +298,7 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 		$this->doc->JScode = $this->doc->wrapScriptTags('
 			script_ended = 0;
 			function jumpToUrl(URL)	{	//
-				document.location = URL;
+				window.location.href = URL;
 			}
 		');
 
@@ -494,7 +494,7 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 						'title' => 'ROOT'
 					);
 				} else {
-					$sPage = t3lib_BEfunc::getRecord('pages',$inData['pagetree']['id'],'*',' AND '.$this->perms_clause);
+					$sPage = t3lib_BEfunc::getRecordWSOL('pages',$inData['pagetree']['id'],'*',' AND '.$this->perms_clause);
 				}
 				if (is_array($sPage))	{
 					$pid = $inData['pagetree']['id'];
@@ -692,7 +692,8 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 				'*',
 				$table,
 				'pid='.intval($pid).
-					t3lib_BEfunc::deleteClause($table),
+					t3lib_BEfunc::deleteClause($table).
+					t3lib_BEfunc::versioningPlaceholderClause($table),
 				'',
 				$GLOBALS['TYPO3_DB']->stripOrderBy($orderBy),
 				$limit
@@ -778,7 +779,7 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 				$tName = $rParts[0];
 				$rUid = $rParts[1];
 				$nameSuggestion.= $tName.'_'.$rUid;
-				$rec = t3lib_BEfunc::getRecord($tName,$rUid);
+				$rec = t3lib_BEfunc::getRecordWSOL($tName,$rUid);
 
 				$row[] = '
 				<tr class="bgColor4">
@@ -803,7 +804,7 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 				$tName = $rParts[0];
 
 				if ($GLOBALS['BE_USER']->check('tables_select',$tName))	{
-					$rec = t3lib_BEfunc::getRecord('pages', $rParts[1]);
+					$rec = t3lib_BEfunc::getRecordWSOL('pages', $rParts[1]);
 					$tblList.='Table "'.$tName.'" from '.t3lib_iconworks::getIconImage('pages',$rec,$GLOBALS['BACK_PATH'],' align="top"').
 					t3lib_BEfunc::getRecordTitle('pages',$rec,1).
 					'<input type="hidden" name="tx_impexp[list][]" value="'.htmlspecialchars($ref).'" /><br/>';
@@ -1234,14 +1235,41 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 
 				// Perform import or preview depending:
 			$overviewContent = '';
+			$extensionInstallationMessage = '';
+			$emURL = '';
 			$inFile = t3lib_div::getFileAbsFileName($inData['file']);
 			if ($inFile && @is_file($inFile))	{
 				$trow = array();
 				if ($import->loadFile($inFile,1))	{
 
+						// Check extension dependencies:
+					$extKeysToInstall = array();
+					if (is_array($import->dat['header']['extensionDependencies']))	{
+						foreach($import->dat['header']['extensionDependencies'] as $extKey)	{
+							if (!t3lib_extMgm::isLoaded($extKey))	{
+								$extKeysToInstall[] = $extKey;
+							}
+						}
+					}
+
+					if (count($extKeysToInstall)) {
+						$passParams = t3lib_div::_POST('tx_impexp');
+						unset($passParams['import_mode']);
+						unset($passParams['import_file']);
+
+						$thisScriptUrl = t3lib_div::getIndpEnv('REQUEST_URI').'?id='.$this->id.t3lib_div::implodeArrayForUrl('tx_impexp',$passParams);
+						$emURL = $this->doc->backPath.'mod/tools/em/index.php?CMD[requestInstallExtensions]='.implode(',',$extKeysToInstall).'&returnUrl='.rawurlencode($thisScriptUrl);
+						$extensionInstallationMessage = 'Before you can install this T3D file you need to install the extensions "'.implode('", "',$extKeysToInstall).'". Clicking Import will first take you to the Extension Manager so these dependencies can be resolved.';
+					} 
+
 					if ($inData['import_file'])	{
-						$import->importData($this->id);
-						t3lib_BEfunc::getSetUpdateSignal('updatePageTree');
+						if (!count($extKeysToInstall))	{
+							$import->importData($this->id);
+							t3lib_BEfunc::getSetUpdateSignal('updatePageTree');
+						} else {
+							header('Location: '.t3lib_div::locationHeaderUrl($emURL));
+							exit;
+						}
 					}
 
 					$import->display_import_pid_record = $this->pageinfo;
@@ -1325,6 +1353,9 @@ class SC_mod_tools_log_index extends t3lib_SCbase {
 
 				// Output tabs:
 			$content = $this->doc->getDynTabMenu($menuItems,'tx_impexp_import',-1);
+			if ($extensionInstallationMessage)	{
+				$content = '<div style="border: 1px black solid; margin: 10px 10px 10px 10px; padding: 10px 10px 10px 10px;">'.$this->doc->icons(1).htmlspecialchars($extensionInstallationMessage).'</div>'.$content;
+			}
 			$this->content.= $this->doc->section('',$content,0,1);
 
 

@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -41,33 +41,33 @@
  *
  *              SECTION: Checking functions
  *  133:     function init($mounts, $f_ext)
- *  150:     function getTotalFileInfo($wholePath)
- *  170:     function is_allowed($iconkey,$type)
- *  195:     function checkIfFullAccess($theDest)
- *  209:     function is_webpath($path)
- *  229:     function checkIfAllowed($ext, $theDest, $filename='')
- *  239:     function checkFileNameLen($fileName)
- *  249:     function is_directory($theDir)
- *  266:     function isPathValid($theFile)
- *  281:     function getUniqueName($theFile, $theDest, $dontCheckForUnique=0)
- *  324:     function checkPathAgainstMounts($thePath)
- *  340:     function findFirstWebFolder()
- *  360:     function blindPath($thePath)
- *  376:     function findTempFolder()
+ *  152:     function getTotalFileInfo($wholePath)
+ *  172:     function is_allowed($iconkey,$type)
+ *  197:     function checkIfFullAccess($theDest)
+ *  211:     function is_webpath($path)
+ *  231:     function checkIfAllowed($ext, $theDest, $filename='')
+ *  241:     function checkFileNameLen($fileName)
+ *  251:     function is_directory($theDir)
+ *  268:     function isPathValid($theFile)
+ *  283:     function getUniqueName($theFile, $theDest, $dontCheckForUnique=0)
+ *  326:     function checkPathAgainstMounts($thePath)
+ *  342:     function findFirstWebFolder()
+ *  362:     function blindPath($thePath)
+ *  378:     function findTempFolder()
  *
  *              SECTION: Cleaning functions
- *  410:     function cleanDirectoryName($theDir)
- *  420:     function rmDoubleSlash($string)
- *  430:     function slashPath($path)
- *  443:     function cleanFileName($fileName)
- *  454:     function formatSize($sizeInBytes)
+ *  412:     function cleanDirectoryName($theDir)
+ *  422:     function rmDoubleSlash($string)
+ *  432:     function slashPath($path)
+ *  446:     function cleanFileName($fileName,$charset='')
+ *  480:     function formatSize($sizeInBytes)
  *
  * TOTAL FUNCTIONS: 19
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
 
-
+require_once(PATH_t3lib.'class.t3lib_cs.php');
 
 
 /**
@@ -82,7 +82,7 @@ class t3lib_basicFileFunctions	{
 	var $getUniqueNamePrefix = '';	// Prefix which will be prepended the file when using the getUniqueName-function
 	var $maxNumber = 20;			// This number decides the highest allowed appended number used on a filename before we use naming with unique strings
 	var $uniquePrecision = 6;		// This number decides how many characters out of a unique MD5-hash that is appended to a filename if getUniqueName is asked to find an available filename.
-	var $maxInputNameLen = 30;		// This is the maximum length of names treated by cleanFileName()
+	var $maxInputNameLen = 60;		// This is the maximum length of names treated by cleanFileName()
 	var $tempFN = '_temp_';			// Temp-foldername. A folder in the root of one of the mounts with this name is regarded a TEMP-folder (used for upload from clipboard)
 
 		// internal
@@ -139,6 +139,8 @@ class t3lib_basicFileFunctions	{
 		$this->mounts = $mounts;
 		$this->webPath = t3lib_div::getIndpEnv('TYPO3_DOCUMENT_ROOT');
 		$this->isInit = 1;
+
+		$this->maxInputNameLen = $GLOBALS['TYPO3_CONF_VARS']['SYS']['maxFileNameLength'] ? $GLOBALS['TYPO3_CONF_VARS']['SYS']['maxFileNameLength'] : $this->maxInputNameLen;
 	}
 
 	/**
@@ -295,7 +297,7 @@ class t3lib_basicFileFunctions	{
 			}
 
 				// Well the filename in its pure form existed. Now we try to append numbers / unique-strings and see if we can find an available filename...
-			$theTempFileBody = ereg_replace('_[0-9][0-9]$','',$origFileInfo['filebody']);		// This removes _xx if appended to the file
+			$theTempFileBody = preg_replace('/_[0-9][0-9]$/','',$origFileInfo['filebody']);		// This removes _xx if appended to the file
 			$theOrigExt = $origFileInfo['realFileext'] ? '.'.$origFileInfo['realFileext'] : '';
 
 			for ($a=1; $a<=($this->maxNumber+1); $a++)	{
@@ -408,7 +410,7 @@ class t3lib_basicFileFunctions	{
 	 * @return	string		Output string
 	 */
 	function cleanDirectoryName($theDir)	{
-		return ereg_replace('[\/\. ]*$','',$this->rmDoubleSlash($theDir));
+		return preg_replace('/[\/\. ]*$/','',$this->rmDoubleSlash($theDir));
 	}
 
 	/**
@@ -438,11 +440,35 @@ class t3lib_basicFileFunctions	{
 	 * Returns a string where any character not matching [.a-zA-Z0-9_-] is substituted by '_'
 	 *
 	 * @param	string		Input string, typically the body of a filename
+	 * @param	string		Charset of the a filename (defaults to current charset; depending on context)
 	 * @return	string		Output string with any characters not matching [.a-zA-Z0-9_-] is substituted by '_'
 	 */
-	function cleanFileName($fileName)	{
-		$theNewName = ereg_replace('[^.[:alnum:]_-]','_',trim($fileName));
-		return $theNewName;
+	function cleanFileName($fileName,$charset='')	{
+		if (!is_object($this->csConvObj))	{
+			if (TYPO3_MODE=='FE')	{
+				$this->csConvObj = &$GLOBALS['TSFE']->csConvObj;
+			} elseif (is_object($GLOBALS['LANG']))	{	// BE assumed:
+				$this->csConvObj = &$GLOBALS['LANG']->csConvObj;
+			} else {	// The object may not exist yet, so we need to create it now. Happens in the Install Tool for example.
+				$this->csConvObj = &t3lib_div::makeInstance('t3lib_cs');
+			}
+		}
+
+		if (!$charset)	{
+			if (TYPO3_MODE=='FE')	{
+				$charset = $GLOBALS['TSFE']->renderCharset;
+			} elseif (is_object($GLOBALS['LANG']))	{	// BE assumed:
+				$charset = $GLOBALS['LANG']->charSet;
+			} else {	// best guess
+				$charset = $GLOBALS['TYPO3_CONF_VARS']['BE']['forceCharset'];
+			}
+		}
+
+		if ($charset)	{
+			$fileName = $this->csConvObj->specCharsToASCII($charset,$fileName);
+		}
+
+		return preg_replace('/[^.[:alnum:]_-]/','_',trim($fileName));
 	}
 
 	/**

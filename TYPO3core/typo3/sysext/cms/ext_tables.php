@@ -151,7 +151,8 @@ if (TYPO3_MODE=='BE')	{
 					Array('LLL:EXT:lang/locallang_general.php:LGL.any_login', -2),
 					Array('LLL:EXT:lang/locallang_general.php:LGL.usergroups', '--div--')
 				),
-				'foreign_table' => 'fe_groups'
+				'exclusiveKeys' => '-1,-2',
+				'foreign_table' => 'fe_groups',
 			)
 		),
 		'extendToSubpages' => Array (
@@ -206,7 +207,7 @@ if (TYPO3_MODE=='BE')	{
 			'config' => Array (
 				'type' => 'input',
 				'size' => '10',
-				'max' => '20',
+				'max' => '32',
 				'eval' => 'nospace,alphanum_x,lower,unique',
 				'softref' => 'notify'
 			)
@@ -228,6 +229,7 @@ if (TYPO3_MODE=='BE')	{
 				'items' => Array (
 					Array('', '0'),
 					Array('http://', '1'),
+					Array('https://', '4'),
 					Array('ftp://', '2'),
 					Array('mailto:', '3')
 				),
@@ -430,7 +432,6 @@ if (TYPO3_MODE=='BE')	{
 					Array('LLL:EXT:cms/locallang_tca.php:pages.module.I.2', 'board'),
 					Array('LLL:EXT:cms/locallang_tca.php:pages.module.I.3', 'news'),
 					Array('LLL:EXT:cms/locallang_tca.php:pages.module.I.4', 'fe_users'),
-					Array('LLL:EXT:cms/locallang_tca.php:pages.module.I.5', 'dmail'),
 					Array('LLL:EXT:cms/locallang_tca.php:pages.module.I.6', 'approve')
 				),
 				'default' => ''
@@ -465,14 +466,14 @@ if (TYPO3_MODE=='BE')	{
 	$TCA['pages']['interface']['showRecordFieldList'].=',alias,hidden,starttime,endtime,fe_group,url,target,no_cache,shortcut,keywords,description,abstract,newUntil,lastUpdated,cache_timeout';
 
 		// Setting main palette
-	$TCA['pages']['ctrl']['mainpalette']='1';
+	$TCA['pages']['ctrl']['mainpalette']='1,15';
 
 		// Totally overriding all type-settings:
 	$TCA['pages']['types'] = Array (
 		'1' => Array('showitem' => 'hidden;;;;1-1-1, doktype;;2;button, title;;3;;2-2-2, subtitle, nav_hide, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg'),
 		'2' => Array('showitem' => 'hidden;;;;1-1-1, doktype;;2;button, title;;3;;2-2-2, subtitle, nav_hide, nav_title, --div--, abstract;;5;;3-3-3, keywords, description, media;;;;4-4-4, --div--, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg, fe_login_mode, module, content_from_pid'),
-		'3' => Array('showitem' => 'hidden;;;;1-1-1, doktype, title;;3;;2-2-2, nav_hide, url;;;;3-3-3, urltype, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg'),
-		'4' => Array('showitem' => 'hidden;;;;1-1-1, doktype, title;;3;;2-2-2, nav_hide, shortcut;;;;3-3-3, shortcut_mode, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg'),
+		'3' => Array('showitem' => 'hidden;;;;1-1-1, doktype, title;;3;;2-2-2, subtitle, nav_hide, url;;;;3-3-3, urltype, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg'),
+		'4' => Array('showitem' => 'hidden;;;;1-1-1, doktype, title;;3;;2-2-2, subtitle, nav_hide, shortcut;;;;3-3-3, shortcut_mode, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg'),
 		'5' => Array('showitem' => 'hidden;;;;1-1-1, doktype;;2;button, title;;3;;2-2-2, subtitle, nav_hide, nav_title, --div--, media;;;;4-4-4, --div--, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg, fe_login_mode, module, content_from_pid'),
 		'7' => Array('showitem' => 'hidden;;;;1-1-1, doktype;;2;button, title;;3;;2-2-2, subtitle, nav_hide, nav_title, --div--, mount_pid;;;;3-3-3, mount_pid_ol, media;;;;4-4-4, --div--, TSconfig;;6;nowrap;5-5-5, storage_pid;;7, l18n_cfg, fe_login_mode, module, content_from_pid'),
 		'199' => Array('showitem' => 'hidden;;;;1-1-1, doktype, title;;;;2-2-2, TSconfig;;6;nowrap;5-5-5, storage_pid;;7'),
@@ -482,7 +483,8 @@ if (TYPO3_MODE=='BE')	{
 		// Merging palette settings:
 		// t3lib_div::array_merge() MUST be used - otherwise the keys will be re-numbered!
 	$TCA['pages']['palettes'] = t3lib_div::array_merge($TCA['pages']['palettes'],Array(
-		'1' => Array('showitem' => 'starttime,endtime,fe_group,extendToSubpages'),
+		'1' => Array('showitem' => 'starttime,endtime,extendToSubpages'),
+		'15' => Array('showitem' => 'fe_group'),
 		'2' => Array('showitem' => 'layout, lastUpdated, newUntil, no_search'),
 		'3' => Array('showitem' => 'alias, target, no_cache, cache_timeout'),
 		'5' => Array('showitem' => 'author,author_email'),
@@ -511,6 +513,7 @@ $TCA['tt_content'] = Array (
 		'prependAtCopy' => 'LLL:EXT:lang/locallang_general.php:LGL.prependAtCopy',
 		'copyAfterDuplFields' => 'colPos,sys_language_uid',
 		'useColumnsForDefaultValues' => 'colPos,sys_language_uid',
+		'shadowColumnsForNewPlaceholders' => 'sys_language_uid,l18n_parent,colPos,header',
 		'transOrigPointerField' => 'l18n_parent',
 		'transOrigDiffSourceField' => 'l18n_diffsource',
 		'languageField' => 'sys_language_uid',
@@ -540,7 +543,7 @@ $TCA['tt_content'] = Array (
 			'div' => 'tt_content_div.gif',
 			'html' => 'tt_content_html.gif'
 		),
-		'mainpalette' => '1',
+		'mainpalette' => '1,15',
 		'thumbnail' => 'image',
 		'requestUpdate' => 'list_type',
 		'dynamicConfigFile' => t3lib_extMgm::extPath($_EXTKEY).'tbl_tt_content.php'
@@ -621,6 +624,7 @@ $TCA['pages_language_overlay'] = Array (
 		'origUid' => 't3_origuid',
 		'crdate' => 'crdate',
 		'cruser_id' => 'cruser_id',
+		'delete' => 'deleted',
 		'enablecolumns' => Array (
 			'disabled' => 'hidden',
 			'starttime' => 'starttime',
@@ -629,6 +633,7 @@ $TCA['pages_language_overlay'] = Array (
 		'transOrigPointerField' => 'pid',
 		'transOrigPointerTable' => 'pages',
 		'transOrigDiffSourceField' => 'l18n_diffsource',
+		'shadowColumnsForNewPlaceholders' => 'sys_language_uid,title',
 		'languageField' => 'sys_language_uid',
 		'mainpalette' => 1,
 		'dynamicConfigFile' => t3lib_extMgm::extPath($_EXTKEY).'tbl_cms.php'

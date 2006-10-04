@@ -76,7 +76,7 @@ define('TYPO3_mainDir', 'typo3/');		// This is the directory of the backend admi
 // *******************************
 // Checking path
 // *******************************
-$temp_path = dirname(PATH_thisScript).'/';
+$temp_path = str_replace('\\','/',dirname(PATH_thisScript).'/');
 $temp_modPath='';
 	// If TYPO3_MOD_PATH is defined we must calculate the modPath since init.php must be included by a module
 if (substr($temp_path,-strlen(TYPO3_mainDir))!=TYPO3_mainDir)	{
@@ -96,6 +96,16 @@ if (substr($temp_path,-strlen(TYPO3_mainDir))!=TYPO3_mainDir)	{
 
 // OUTPUT error message and exit if there are problems with the path. Otherwise define constants and continue.
 if (!$temp_path || substr($temp_path,-strlen(TYPO3_mainDir))!=TYPO3_mainDir)	{	// This must be the case in order to proceed
+	if (TYPO3_OS=='WIN')	{
+		$thisPath_base = basename(substr($temp_path,-strlen(TYPO3_mainDir)));
+		$mainPath_base = basename(TYPO3_mainDir);
+		if (!strcasecmp($thisPath, $mainPath))	{	// Seems like the requested URL is not case-specific. This may happen on Windows only. -case. Otherwise, redirect to the correct URL. TYPO3_mainDir must be lower-case!!
+			$script_name = (php_sapi_name()=='cgi'||php_sapi_name()=='cgi-fcgi')&&($_SERVER['ORIG_PATH_INFO']?$_SERVER['ORIG_PATH_INFO']:$_SERVER['PATH_INFO']) ? ($_SERVER['ORIG_PATH_INFO']?$_SERVER['ORIG_PATH_INFO']:$_SERVER['PATH_INFO']) : ($_SERVER['ORIG_SCRIPT_NAME']?$_SERVER['ORIG_SCRIPT_NAME']:$_SERVER['SCRIPT_NAME']);	// Copied from t3lib_div::getIndpEnv()
+			header('Location: '.str_replace($thisPath_base, $mainPath_base, $script_name));
+			exit;
+		}
+	}
+
 	echo ('Error in init.php: Path to TYPO3 main dir could not be resolved correctly. <br /><br />
 		This happens if the last '.strlen(TYPO3_mainDir).' characters of this path, '.$temp_path.', (\$temp_path) is NOT "'.TYPO3_mainDir.'" for some reason. <br />
 		You may have a strange server configuration.
@@ -121,7 +131,8 @@ if (!$temp_path || substr($temp_path,-strlen(TYPO3_mainDir))!=TYPO3_mainDir)	{	/
 	define('PATH_typo3', $temp_path);			// Abs. path of the TYPO3 admin dir (PATH_site + TYPO3_mainDir).
 	define('PATH_typo3_mod', $temp_modPath);	// Relative path (from the PATH_typo3) to a properly configured module
 	define('PATH_site', substr(PATH_typo3,0,-strlen(TYPO3_mainDir)));	// Abs. path to directory with the frontend (one above the admin-dir)
-	define('PATH_t3lib', PATH_typo3.'t3lib/');			// Abs. path to t3lib/ (general TYPO3 library) within the TYPO3 admin dir
+	$temp_path_t3lib = @is_dir(PATH_site.'t3lib/') ? PATH_site.'t3lib/' : PATH_typo3.'t3lib/';
+	define('PATH_t3lib', $temp_path_t3lib);			// Abs. path to t3lib/ (general TYPO3 library) within the TYPO3 admin dir
 	define('PATH_typo3conf', PATH_site.'typo3conf/');	// Abs. TYPO3 configuration path (local, not part of source)
 }
 
@@ -180,9 +191,15 @@ if (trim($TYPO3_CONF_VARS['BE']['IPmaskList']))	{
 // **********************
 // Check SSL (https)
 // **********************
-if (intval($TYPO3_CONF_VARS['BE']['lockSSL']))	{
-	if (!t3lib_div::getIndpEnv('TYPO3_SSL'))	{
-		if ($TYPO3_CONF_VARS['BE']['lockSSL']==2)	{
+if (intval($TYPO3_CONF_VARS['BE']['lockSSL']) && !(defined('TYPO3_cliMode') && TYPO3_cliMode))	{
+	if ($TYPO3_CONF_VARS['BE']['lockSSL'] == 3)	{
+		$requestStr = substr(t3lib_div::getIndpEnv('TYPO3_REQUEST_SCRIPT'), strlen(t3lib_div::getIndpEnv('TYPO3_SITE_URL').TYPO3_mainDir));
+		if($requestStr == 'index.php' && !t3lib_div::getIndpEnv('TYPO3_SSL'))	{
+			list(,$url) = explode('://',t3lib_div::getIndpEnv('TYPO3_REQUEST_URL'),2);
+			header('Location: https://'.$url);
+		}
+	} elseif (!t3lib_div::getIndpEnv('TYPO3_SSL') )	{
+		if ($TYPO3_CONF_VARS['BE']['lockSSL'] == 2)	{
 			list(,$url) = explode('://',t3lib_div::getIndpEnv('TYPO3_SITE_URL').TYPO3_mainDir,2);
 			header('Location: https://'.$url);	// Just point us away from here...
 		} else {

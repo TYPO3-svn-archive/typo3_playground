@@ -39,8 +39,8 @@
  *
  *   77: class SC_file_upload
  *  103:     function init()
- *  162:     function main()
- *  235:     function printContent()
+ *  171:     function main()
+ *  241:     function printContent()
  *
  * TOTAL FUNCTIONS: 3
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -108,6 +108,9 @@ class SC_file_upload {
 		$this->target = t3lib_div::_GP('target');
 		$this->returnUrl = t3lib_div::_GP('returnUrl');
 
+		if (empty($this->number) && $GLOBALS['BE_USER']->getTSConfig('options.defaultFileUploads'))	{
+			$this->number = t3lib_div::intInRange($GLOBALS['BE_USER']->getTSConfig('options.defaultFileUploads'),1,$this->uploadNumber);
+		}
 			// Init basic-file-functions object:
 		$this->basicff = t3lib_div::makeInstance('t3lib_basicFileFunctions');
 		$this->basicff->init($GLOBALS['FILEMOUNTS'],$TYPO3_CONF_VARS['BE']['fileExtensions']);
@@ -138,13 +141,19 @@ class SC_file_upload {
 		$this->doc->docType = 'xhtml_trans';
 		$this->doc->backPath = $BACK_PATH;
 		$this->doc->form='<form action="tce_file.php" method="post" name="editform" enctype="'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['form_enctype'].'">';
+
+		if($GLOBALS['BE_USER']->jsConfirmation(1))	{
+			$confirm = ' && confirm('.$LANG->JScharCode($LANG->sL('LLL:EXT:lang/locallang_core.php:mess.redraw')).')';
+		} else {
+			$confirm = '';
+		}
 		$this->doc->JScode=$this->doc->wrapScriptTags('
 			var path = "'.$this->target.'";
 
 			function reload(a)	{	//
-				if (!changed || (changed && confirm('.$LANG->JScharCode($LANG->sL('LLL:EXT:lang/locallang_core.php:mess.redraw')).')))	{
+				if (!changed || (changed '.$confirm.'))	{
 					var params = "&target="+escape(path)+"&number="+a+"&returnUrl='.htmlspecialchars($this->returnUrl).'";
-					document.location = "file_upload.php?"+params;
+					window.location.href = "file_upload.php?"+params;
 				}
 			}
 			function backToList()	{	//
@@ -222,9 +231,6 @@ class SC_file_upload {
 
 			// Add the HTML as a section:
 		$this->content.= $this->doc->section('',$code);
-
-			// Ending page
-		$this->content.= $this->doc->endPage();
 	}
 
 	/**
@@ -233,7 +239,8 @@ class SC_file_upload {
 	 * @return	void
 	 */
 	function printContent()	{
-
+		$this->content.= $this->doc->endPage();
+		$this->content = $this->doc->insertStylesAndJS($this->content);
 		echo $this->content;
 	}
 }

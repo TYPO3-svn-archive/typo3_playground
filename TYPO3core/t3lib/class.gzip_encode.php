@@ -1,18 +1,27 @@
 <?php
-
-// News: I had once said that when PHP4.0.5 comes out I will reccomend the built in
-// ob_gzhandler over my code unless you are generating flash or images on the fly.
-//
-// I was wrong. PHP4.0.5 is out and ob_gzhandler doesn't work for me.
-
-// Note: This is rather cool: http://Leknor.com/code/gziped.php
-// It will calculate the effects of this class on a page.
-// compression level, cpu time, download time, etc
-
-// Note: this may better for some sites:
-// http://www.remotecommunications.com/apache/mod_gzip/
-// I've read that the above doesn't work with php output.
-
+/**
+ * News: I had once said that when PHP 4.0.5 comes out I will reccomend the built in
+ * ob_gzhandler over my code unless you are generating flash or images on the fly.
+ *
+ * I was wrong. PHP 4.0.5 is out and ob_gzhandler doesn't work for me.
+ *
+ * Note: This is rather cool: http://leknor.com/code/gziped.php
+ * It will calculate the effects of this class on a page.
+ * compression level, cpu time, download time, etc
+ *
+ * Note: this may be better for some sites:
+ * http://www.remotecommunications.com/apache/mod_gzip/
+ * I've read that the above doesn't work with PHP output.
+ *
+ * Changes compared to the upstream version:
+ *
+ * 2005-12-09  Peter Niederlag  <peter@niederlag.de>
+ *	- Fixed bug #1976: PHP5 type-conversion of string 'true' and boolean
+ *
+ * $Id$
+ *
+ * @author	Sandy McArthur, Jr. <leknor@leknor.com>
+ */
 class gzip_encode {
     /*
      * gzip_encode - a class to gzip encode php output
@@ -20,6 +29,7 @@ class gzip_encode {
      * By Sandy McArthur, Jr. <Leknor@Leknor.com>
      *
      * Copyright 2001 (c) All Rights Reserved, All Responsibility Yours.
+     * One very slight modification 2005 for PHP5 compatibility reasons for TYPO3 port by Peter Niederlag
      *
      * This code is released under the GNU LGPL Go read it over here:
      * http://www.gnu.org/copyleft/lesser.html
@@ -165,7 +175,7 @@ class gzip_encode {
 	if (!$encoding) return;
 	$this->encoding = $encoding;
 
-	if ($level === true) {
+	if (strtolower($level) == 'true' || $level === true) {
 	    $level = $this->get_complevel();
 	}
 	$this->level = $level;
@@ -308,6 +318,7 @@ class gzip_encode {
      */
     function freebsd_loadavg() {
 	$buffer= `uptime`;
+	$load = array();
 	ereg("averag(es|e): ([0-9][.][0-9][0-9]), ([0-9][.][0-9][0-9]), ([0-9][.][0-9][0-9]*)", $buffer, $load);
 
 	return max((float)$load[2], (float)$load[3], (float)$load[4]);

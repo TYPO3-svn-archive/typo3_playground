@@ -35,12 +35,12 @@
  *
  *
  *   68: class wslib
- *   80:     function getCmdArrayForPublishWS($wsid, $doSwap)
- *  127:     function selectVersionsInWorkspace($wsid,$filter=0)
+ *   81:     function getCmdArrayForPublishWS($wsid, $doSwap,$pageId=0)
+ *  127:     function selectVersionsInWorkspace($wsid,$filter=0,$stage=-99,$pageId=-1)
  *
  *              SECTION: CLI functions
- *  180:     function CLI_main()
- *  190:     function autoPublishWorkspaces()
+ *  183:     function CLI_main()
+ *  193:     function autoPublishWorkspaces()
  *
  * TOTAL FUNCTIONS: 4
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -75,17 +75,27 @@ class wslib {
 	 *
 	 * @param	integer		Real workspace ID, cannot be ONLINE (zero).
 	 * @param	boolean		If set, then the currently online versions are swapped into the workspace in exchange for the offline versions. Otherwise the workspace is emptied.
+	 * @param	[type]		$pageId: ...
 	 * @return	array		Command array for tcemain
 	 */
-	function getCmdArrayForPublishWS($wsid, $doSwap)	{
+	function getCmdArrayForPublishWS($wsid, $doSwap,$pageId=0)	{
 
 		$wsid = intval($wsid);
 		$cmd = array();
 
 		if ($wsid>=-1 && $wsid!==0)	{
 
+				// Define stage to select:
+			$stage = -99;
+			if ($wsid>0)	{
+				$workspaceRec = t3lib_BEfunc::getRecord('sys_workspace',$wsid);
+				if ($workspaceRec['publish_access']&1)	{
+					$stage = 10;
+				}
+			}
+
 				// Select all versions to swap:
-			$versions = $this->selectVersionsInWorkspace($wsid);
+			$versions = $this->selectVersionsInWorkspace($wsid,0,$stage,($pageId?$pageId:-1));
 
 				// Traverse the selection to build CMD array:
 			foreach($versions as $table => $records)	{
@@ -110,9 +120,11 @@ class wslib {
 	 *
 	 * @param	integer		Workspace ID. If -99, will select ALL versions from ANY workspace. If -98 will select all but ONLINE. >=-1 will select from the actual workspace
 	 * @param	integer		Lifecycle filter: 1 = select all drafts (never-published), 2 = select all published one or more times (archive/multiple), anything else selects all.
+	 * @param	integer		Stage filter: -99 means no filtering, otherwise it will be used to select only elements with that stage. For publishing, that would be "10"
+	 * @param	integer		Page id: Live page for which to find versions in workspace!
 	 * @return	array		Array of all records uids etc. First key is table name, second key incremental integer. Records are associative arrays with uid, t3ver_oid and t3ver_swapmode fields. The REAL pid of the online record is found as "realpid"
 	 */
-	function selectVersionsInWorkspace($wsid,$filter=0)	{
+	function selectVersionsInWorkspace($wsid,$filter=0,$stage=-99,$pageId=-1)	{
 		global $TCA;
 
 		$wsid = intval($wsid);
@@ -129,8 +141,10 @@ class wslib {
 					'A.uid, A.t3ver_oid,'.($table==='pages' ? ' A.t3ver_swapmode,':'').' B.pid AS realpid',
 					$table.' A,'.$table.' B',
 					'A.pid=-1'.	// Table A is the offline version and pid=-1 defines offline
+						($pageId!=-1 ? ($table==='pages' ? ' AND B.uid='.intval($pageId) : ' AND B.pid='.intval($pageId)) : '').
 						($wsid>-98 ? ' AND A.t3ver_wsid='.$wsid : ($wsid===-98 ? ' AND A.t3ver_wsid!=0' : '')).	// For "real" workspace numbers, select by that. If = -98, select all that are NOT online (zero). Anything else below -1 will not select on the wsid and therefore select all!
 						($filter===1 ? ' AND A.t3ver_count=0' : ($filter===2 ? ' AND A.t3ver_count>0' : '')).	// lifecycle filter: 1 = select all drafts (never-published), 2 = select all published one or more times (archive/multiple)
+						($stage!=-99 ? ' AND A.t3ver_stage='.intval($stage) : '').
 						' AND B.pid>=0'.	// Table B (online) must have PID >= 0 to signify being online.
 						' AND A.t3ver_oid=B.uid'.	// ... and finally the join between the two tables.
 						t3lib_BEfunc::deleteClause($table,'A').

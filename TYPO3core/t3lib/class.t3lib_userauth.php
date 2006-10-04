@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -39,45 +39,45 @@
  *
  *
  *  111: class t3lib_userAuth
- *  187:     function start()
- *  300:     function checkAuthentication()
+ *  195:     function start()
+ *  329:     function checkAuthentication()
  *
  *              SECTION: User Sessions
- *  531:     function createUserSession ($tempuser)
- *  568:     function fetchUserSession()
- *  619:     function logoff()
+ *  569:     function createUserSession ($tempuser)
+ *  606:     function fetchUserSession()
+ *  657:     function logoff()
  *
  *              SECTION: SQL Functions
- *  655:     function user_where_clause()
- *  669:     function ipLockClause()
- *  687:     function ipLockClause_remoteIPNumber($parts)
- *  708:     function hashLockClause()
- *  719:     function hashLockClause_getHashInt()
+ *  713:     function user_where_clause()
+ *  727:     function ipLockClause()
+ *  745:     function ipLockClause_remoteIPNumber($parts)
+ *  766:     function hashLockClause()
+ *  777:     function hashLockClause_getHashInt()
  *
  *              SECTION: Session and Configuration Handling
- *  751:     function writeUC($variable='')
- *  766:     function unpack_uc($theUC='')
- *  782:     function pushModuleData($module,$data,$noSave=0)
- *  795:     function getModuleData($module,$type='')
- *  808:     function getSessionData($key)
- *  821:     function setAndSaveSessionData($key,$data)
+ *  809:     function writeUC($variable='')
+ *  824:     function unpack_uc($theUC='')
+ *  840:     function pushModuleData($module,$data,$noSave=0)
+ *  853:     function getModuleData($module,$type='')
+ *  866:     function getSessionData($key)
+ *  879:     function setAndSaveSessionData($key,$data)
  *
  *              SECTION: Misc
- *  854:     function getLoginFormData()
- *  881:     function processLoginData($loginData, $security_level='')
- *  915:     function getAuthInfoArray()
- *  945:     function compareUident($user, $loginData, $security_level='')
- *  983:     function gc()
- *  997:     function redirect()
- * 1019:     function writelog($type,$action,$error,$details_nr,$details,$data,$tablename,$recuid,$recpid)
- * 1028:     function checkLogFailures()
- * 1041:     function setBeUserByUid($uid)
- * 1053:     function setBeUserByName($name)
- * 1064:     function getRawUserByUid($uid)
- * 1082:     function getRawUserByName($name)
+ *  912:     function getLoginFormData()
+ *  939:     function processLoginData($loginData, $security_level='')
+ *  981:     function getAuthInfoArray()
+ * 1011:     function compareUident($user, $loginData, $security_level='')
+ * 1050:     function gc()
+ * 1064:     function redirect()
+ * 1086:     function writelog($type,$action,$error,$details_nr,$details,$data,$tablename,$recuid,$recpid)
+ * 1095:     function checkLogFailures()
+ * 1108:     function setBeUserByUid($uid)
+ * 1120:     function setBeUserByName($name)
+ * 1131:     function getRawUserByUid($uid)
+ * 1149:     function getRawUserByName($name)
  *
  *              SECTION: Create/update user - EXPERIMENTAL
- * 1121:     function fetchUserRecord($dbUser, $username, $extraWhere='' )
+ * 1188:     function fetchUserRecord($dbUser, $username, $extraWhere='' )
  *
  * TOTAL FUNCTIONS: 29
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -136,9 +136,9 @@ class t3lib_userAuth {
 
 	var $auth_include = '';			// this is the name of the include-file containing the login form. If not set, login CAN be anonymous. If set login IS needed.
 
-	var $auth_timeout_field = 0;		// if > 0 : session-timeout in seconds. if string: The string is fieldname from the usertable where the timeout can be found.
-	var $lifetime = 0;			// 0 = Session-cookies. If session-cookies, the browser will stop session when the browser is closed. Else it keeps the session for $lifetime seconds.
-	var $gc_time = 24;			// GarbageCollection. Purge all session data older than $gc_time hours.
+	var $auth_timeout_field = 0;		// Server session lifetime. If > 0: session-timeout in seconds. If false or <0: no timeout. If string: The string is a fieldname from the usertable where the timeout can be found.
+	var $lifetime = 0;			// Client session lifetime. 0 = Session-cookies. If session-cookies, the browser will stop the session when the browser is closed. Otherwise this specifies the lifetime of a cookie that keeps the session.
+	var $gc_time = 0;			// GarbageCollection. Purge all server session data older than $gc_time seconds. 0 = default to $this->timeout or use 86400 seconds (1 day) if $this->lifetime is 0
 	var $gc_probability = 1;		// Possibility (in percent) for GarbageCollection to be run.
 	var $writeStdLog = FALSE;		// Decides if the writelog() function is called at login and logout
 	var $writeAttemptLog = FALSE;		// If the writelog() functions is called if a login-attempt has be tried without success
@@ -243,23 +243,6 @@ class t3lib_userAuth {
 			// Make certain that NO user is set initially
 		$this->user = '';
 
-			// Setting cookies
-			// If new session and the cookie is a sessioncookie, we need to set it only once!
-        if (($this->newSessionID || $this->forceSetCookie) && $this->lifetime==0 ) {
-			if (!$this->dontSetCookie)	{
-				SetCookie($this->name, $id, 0, '/');
-				if ($this->writeDevLog) 	t3lib_div::devLog('Set new Cookie: '.$id, 't3lib_userAuth');
-			}
-		}
-
-			// If it is NOT a session-cookie, we need to refresh it.
-        if ($this->lifetime > 0) {
-			if (!$this->dontSetCookie)	{
-				SetCookie($this->name, $id, time()+$this->lifetime, '/');
-				if ($this->writeDevLog) 	t3lib_div::devLog('Update Cookie: '.$id, 't3lib_userAuth');
-        	}
-		}
-
 			// Check to see if anyone has submitted login-information and if so register the user with the session. $this->user[uid] may be used to write log...
 		$this->checkAuthentication();
 
@@ -272,9 +255,47 @@ class t3lib_userAuth {
 		if ($this->writeDevLog AND is_array($this->user)) 	t3lib_div::devLog('User session finally read: '.t3lib_div::arrayToLogString($this->user, array($this->userid_column,$this->username_column)), 't3lib_userAuth', -1);
 		if ($this->writeDevLog AND !is_array($this->user)) t3lib_div::devLog('No user session found.', 't3lib_userAuth', 2);
 
-			// Hook for alternative ways of filling the $this->user array (is used by TIMTAW extension)
-		if(is_array($TYPO3_CONF_VARS['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['postUserLookUp']))	{
-			foreach($TYPO3_CONF_VARS['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['postUserLookUp'] as $funcName)	{
+			// Setting cookies
+		if ($TYPO3_CONF_VARS['SYS']['cookieDomain'])	{
+			if ($TYPO3_CONF_VARS['SYS']['cookieDomain']{0} == '/')	{
+				$matchCnt = @preg_match($TYPO3_CONF_VARS['SYS']['cookieDomain'], t3lib_div::getIndpEnv('TYPO3_HOST_ONLY'), $match);
+				if ($matchCnt === FALSE)	{
+					t3lib_div::sysLog('The regular expression of $TYPO3_CONF_VARS[SYS][cookieDomain] contains errors. The session is not shared across sub-domains.', 'Core', 3);
+				} elseif ($matchCnt)	{
+					$cookieDomain = $match[0];
+				}
+			} else {
+				$cookieDomain = $TYPO3_CONF_VARS['SYS']['cookieDomain'];
+			}
+		}
+
+			// If new session and the cookie is a sessioncookie, we need to set it only once!
+		if ($this->isSetSessionCookie())	{
+			if (!$this->dontSetCookie)	{
+				if ($cookieDomain)	{
+					SetCookie($this->name, $id, 0, '/', $cookieDomain);
+				} else {
+					SetCookie($this->name, $id, 0, '/');
+				}
+				if ($this->writeDevLog) 	t3lib_div::devLog('Set new Cookie: '.$id.($cookieDomain ? ', '.$cookieDomain : ''), 't3lib_userAuth');
+			}
+		}
+
+			// If it is NOT a session-cookie, we need to refresh it.
+		if ($this->isRefreshTimeBasedCookie())	{
+			if (!$this->dontSetCookie)	{
+				if ($cookieDomain)	{
+					SetCookie($this->name, $id, time()+$this->lifetime, '/', $cookieDomain);
+				} else {
+					SetCookie($this->name, $id, time()+$this->lifetime, '/');
+				}
+				if ($this->writeDevLog) 	t3lib_div::devLog('Update Cookie: '.$id.($cookieDomain ? ', '.$cookieDomain : ''), 't3lib_userAuth');
+			}
+		}
+
+			// Hook for alternative ways of filling the $this->user array (is used by the "timtaw" extension)
+		if (is_array($TYPO3_CONF_VARS['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['postUserLookUp']))	{
+			foreach ($TYPO3_CONF_VARS['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['postUserLookUp'] as $funcName)	{
 				$_params = array(
 					'pObj' => &$this,
 				);
@@ -293,10 +314,35 @@ class t3lib_userAuth {
 			header('Pragma: no-cache');
 		}
 
+			// Set $this->gc_time if not explicitely specified
+		if ($this->gc_time==0)	{
+			$this->gc_time = ($this->auth_timeout_field==0 ? 86400 : $this->auth_timeout_field);	// Default to 1 day if $this->auth_timeout_field is 0
+		}
+
 			// If we're lucky we'll get to clean up old sessions....
-		if ((rand()%100) <= $this->gc_probability) {
+		if ((rand()%100) <= $this->gc_probability)	{
 			$this->gc();
 		}
+	}
+
+	/**
+	 * Determins whether a session cookie needs to be set (lifetime=0)
+	 *
+	 * @return	boolean
+	 * @internal
+	 */
+	function isSetSessionCookie() {
+		return ($this->newSessionID || $this->forceSetCookie) && $this->lifetime==0;
+	}
+
+	/**
+	 * Determins whether a non-session cookie needs to be set (lifetime>0)
+	 *
+	 * @return	boolean
+	 * @internal
+	 */
+	function isRefreshTimeBasedCookie() {
+		return $this->lifetime > 0;
 	}
 
 	/**
@@ -496,6 +542,14 @@ class t3lib_userAuth {
 			if ($this->writeDevLog && $activeLogin) 	t3lib_div::devLog('User '.$tempuser[$this->username_column].' logged in from '.t3lib_div::getIndpEnv('REMOTE_ADDR').' ('.t3lib_div::getIndpEnv('REMOTE_HOST').')', 't3lib_userAuth', -1);
 			if ($this->writeDevLog && !$activeLogin) 	t3lib_div::devLog('User '.$tempuser[$this->username_column].' authenticated from '.t3lib_div::getIndpEnv('REMOTE_ADDR').' ('.t3lib_div::getIndpEnv('REMOTE_HOST').')', 't3lib_userAuth', -1);
 
+			if($GLOBALS['TYPO3_CONF_VARS']['BE']['lockSSL'] == 3 && $this->user_table == 'be_users')	{
+				$requestStr = substr(t3lib_div::getIndpEnv('TYPO3_REQUEST_SCRIPT'), strlen(t3lib_div::getIndpEnv('TYPO3_SITE_URL').TYPO3_mainDir));
+				if($requestStr == 'alt_main.php' && t3lib_div::getIndpEnv('TYPO3_SSL'))	{
+					list(,$url) = explode('://',t3lib_div::getIndpEnv('TYPO3_SITE_URL'),2);
+					header('Location: http://'.$url.TYPO3_mainDir.'alt_main.php');
+					exit;
+				}
+			}
 
 		} elseif ($activeLogin OR count($tempuserArr)) {
 			$this->loginFailure = TRUE;
@@ -549,14 +603,7 @@ class t3lib_userAuth {
 				);
 
 			// re-create session entry
-		$insertFields = array(
-			'ses_id' => $this->id,
-			'ses_name' => $this->name,
-			'ses_iplock' => $tempuser['disableIPlock'] ? '[DISABLED]' : $this->ipLockClause_remoteIPNumber($this->lockIP),
-			'ses_hashlock' => $this->hashLockClause_getHashInt(),
-			'ses_userid' => $tempuser[$this->userid_column],
-			'ses_tstamp' => $GLOBALS['EXEC_TIME']
-		);
+		$insertFields = $this->getNewSessionRecord($tempuser);
 		$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->session_table, $insertFields);
 
 			// Updating lastLogin_column carrying information about last login.
@@ -567,6 +614,23 @@ class t3lib_userAuth {
 									array($this->lastLogin_column => $GLOBALS['EXEC_TIME'])
 								);
 		}
+	}
+
+	/**
+	 * Returns a new session record for the current user for insertion into the DB.
+	 * This function is mainly there as a wrapper for inheriting classes to override it.
+	 *
+	 * @return	array		user session record
+	 */
+	function getNewSessionRecord($tempuser) {
+		return array(
+			'ses_id' => $this->id,
+			'ses_name' => $this->name,
+			'ses_iplock' => $tempuser['disableIPlock'] ? '[DISABLED]' : $this->ipLockClause_remoteIPNumber($this->lockIP),
+			'ses_hashlock' => $this->hashLockClause_getHashInt(),
+			'ses_userid' => $tempuser[$this->userid_column],
+			'ses_tstamp' => $GLOBALS['EXEC_TIME']
+		);
 	}
 
 	/**
@@ -629,10 +693,10 @@ class t3lib_userAuth {
 		if ($this->writeDevLog) 	t3lib_div::devLog('logoff: ses_id = '.$this->id, 't3lib_userAuth');
 
 			// Hook for pre-processing the logoff() method, requested and implemented by andreas.otto@dkd.de:
-		if ( is_array( $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_feuserauth.php']['logoff_pre_processing'] ) ) {
+		if (is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_pre_processing']))	{
 			$_params = array();
-			foreach( $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_feuserauth.php']['logoff_pre_processing'] as $_funcRef ) {
-				if ($_funcRef) {
+			foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_pre_processing'] as $_funcRef)	{
+				if ($_funcRef)	{
 					t3lib_div::callUserFunction($_funcRef,$_params,$this);
 				}
 			}
@@ -647,10 +711,10 @@ class t3lib_userAuth {
 		$this->user = '';
 
 			// Hook for post-processing the logoff() method, requested and implemented by andreas.otto@dkd.de:
-		if ( is_array( $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_feuserauth.php']['logoff_post_processing'] ) ) {
+		if (is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_post_processing']))	{
 			$_params = array();
-			foreach( $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_feuserauth.php']['logoff_post_processing'] as $_funcRef ) {
-				if ($_funcRef) {
+			foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_post_processing'] as $_funcRef)	{
+				if ($_funcRef)	{
 					t3lib_div::callUserFunction($_funcRef,$_params,$this);
 				}
 			}
@@ -1021,13 +1085,13 @@ class t3lib_userAuth {
 	function gc() {
 		$GLOBALS['TYPO3_DB']->exec_DELETEquery(
 					$this->session_table,
-					'ses_tstamp < '.intval(time()-($this->gc_time*60*60)).'
+					'ses_tstamp < '.intval(time()-($this->gc_time)).'
 						AND ses_name = '.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->name, $this->session_table)
 				);
 	}
 
 	/**
-	 * Redirect to somewhere. Obsolete, depreciated etc.
+	 * Redirect to somewhere. Obsolete, deprecated etc.
 	 *
 	 * @return	void
 	 * @ignore

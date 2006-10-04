@@ -32,8 +32,10 @@ CREATE TABLE index_phash (
   externalUrl tinyint(3) DEFAULT '0' NOT NULL,
   recordUid int(11) DEFAULT '0' NOT NULL,
   freeIndexUid int(11) DEFAULT '0' NOT NULL,
+  freeIndexSetId int(11) DEFAULT '0' NOT NULL,
   PRIMARY KEY (phash),
-  KEY phash_grouping (phash_grouping)
+  KEY phash_grouping (phash_grouping),
+  KEY freeIndexUid (freeIndexUid)
 );
 
 #
@@ -82,7 +84,7 @@ CREATE TABLE index_section (
   rl1 int(11) unsigned DEFAULT '0' NOT NULL,
   rl2 int(11) unsigned DEFAULT '0' NOT NULL,
   page_id int(11) DEFAULT '0' NOT NULL,
-  uniqid int(11) DEFAULT '0' NOT NULL auto_increment,
+  uniqid int(11) NOT NULL auto_increment,
   PRIMARY KEY (uniqid),
   KEY joinkey (phash,rl0),
 #  KEY phash_pid (phash,page_id),
@@ -99,7 +101,7 @@ CREATE TABLE index_grlist (
   phash_x int(11) DEFAULT '0' NOT NULL,
   hash_gr_list int(11) DEFAULT '0' NOT NULL,
   gr_list tinytext NOT NULL,
-  uniqid int(11) DEFAULT '0' NOT NULL auto_increment,
+  uniqid int(11) NOT NULL auto_increment,
   PRIMARY KEY (uniqid),
   KEY joinkey (phash,hash_gr_list),
   KEY phash_grouping (phash_x,hash_gr_list)
@@ -109,7 +111,7 @@ CREATE TABLE index_grlist (
 # Table structure for table 'index_stat_search'
 #
 CREATE TABLE index_stat_search (
-  uid int(11) DEFAULT '0' NOT NULL auto_increment,
+  uid int(11) NOT NULL auto_increment,
   searchstring tinytext NOT NULL,
   searchoptions blob NOT NULL,
   tstamp int(11) DEFAULT '0' NOT NULL,
@@ -125,7 +127,7 @@ CREATE TABLE index_stat_search (
 # Table structure for table 'index_stat_word'
 #
 CREATE TABLE index_stat_word (
-  uid int(11) DEFAULT '0' NOT NULL auto_increment,
+  uid int(11) NOT NULL auto_increment,
   word varchar(30) DEFAULT '' NOT NULL,
   index_stat_search_id int(11) DEFAULT '0' NOT NULL,
   tstamp int(11) DEFAULT '0' NOT NULL,
@@ -146,25 +148,37 @@ CREATE TABLE index_debug (
 # Table structure for table 'index_config'
 #
 CREATE TABLE index_config (
-    uid int(11) DEFAULT '0' NOT NULL auto_increment,
+    uid int(11) NOT NULL auto_increment,
     pid int(11) DEFAULT '0' NOT NULL,
-    tstamp int(11) unsigned DEFAULT '0' NOT NULL,
-    crdate int(11) unsigned DEFAULT '0' NOT NULL,
-    cruser_id int(11) unsigned DEFAULT '0' NOT NULL,
-    hidden tinyint(4) unsigned DEFAULT '0' NOT NULL,
-    starttime int(11) unsigned DEFAULT '0' NOT NULL,
+    tstamp int(11) DEFAULT '0' NOT NULL,
+    crdate int(11) DEFAULT '0' NOT NULL,
+    cruser_id int(11) DEFAULT '0' NOT NULL,
+    hidden tinyint(4) DEFAULT '0' NOT NULL,
+    starttime int(11) DEFAULT '0' NOT NULL,
+
+    set_id int(11) DEFAULT '0' NOT NULL,
+    session_data mediumtext NOT NULL,
+
     title tinytext NOT NULL,
     description text NOT NULL,
-    type int(11) unsigned DEFAULT '0' NOT NULL,
+    type varchar(30) DEFAULT '' NOT NULL,
     depth int(11) unsigned DEFAULT '0' NOT NULL,
     table2index tinytext NOT NULL,
     alternative_source_pid blob NOT NULL,
     get_params tinytext NOT NULL,
     fieldlist tinytext NOT NULL,
 	externalUrl tinytext NOT NULL,
+	indexcfgs text NOT NULL,
     chashcalc tinyint(3) unsigned DEFAULT '0' NOT NULL,
     filepath tinytext NOT NULL,
     extensions tinytext NOT NULL,
+
+	timer_next_indexing int(11) DEFAULT '0' NOT NULL,
+	timer_frequency int(11) DEFAULT '0' NOT NULL,
+	timer_offset int(11) DEFAULT '0' NOT NULL,
+	url_deny text NOT NULL,
+	recordsbatch int(11) DEFAULT '0' NOT NULL,
+	records_indexonchange tinyint(4) DEFAULT '0' NOT NULL,
 
     PRIMARY KEY (uid),
     KEY parent (pid)
@@ -175,7 +189,7 @@ CREATE TABLE index_config (
 # Table structure for table 'index_stat_word'
 #
 CREATE TABLE index_stat_word (
-  uid int(11) DEFAULT '0' NOT NULL auto_increment,
+  uid int(11) NOT NULL auto_increment,
   word varchar(30) DEFAULT '' NOT NULL,
   index_stat_search_id int(11) DEFAULT '0' NOT NULL,
   tstamp int(11) DEFAULT '0' NOT NULL,

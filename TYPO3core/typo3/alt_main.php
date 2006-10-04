@@ -39,14 +39,15 @@
  *
  *
  *
- *   71: class SC_alt_main
- *   90:     function init()
- *  112:     function generateJScode()
- *  370:     function editPageHandling()
- *  420:     function main()
- *  494:     function printContent()
+ *   72: class SC_alt_main
+ *   91:     function init()
+ *  113:     function generateJScode()
+ *  386:     function editPageHandling()
+ *  437:     function startModule()
+ *  459:     function main()
+ *  533:     function printContent()
  *
- * TOTAL FUNCTIONS: 5
+ * TOTAL FUNCTIONS: 6
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -173,6 +174,7 @@ class SC_alt_main {
 		this.openRefreshWindow = busy_OpenRefreshWindow;
 		this.busyloadTime=0;
 		this.openRefreshW=0;
+		this.reloginCancelled=0;
 	}
 	function busy_loginRefreshed()	{	//
 		var date = new Date();
@@ -182,7 +184,7 @@ class SC_alt_main {
 	function busy_checkLoginTimeout()	{	//
 		var date = new Date();
 		var theTime = Math.floor(date.getTime()/1000);
-		if (theTime > this.busyloadTime+'.intval($BE_USER->auth_timeout_field).'-10)	{
+		if (theTime > this.busyloadTime+'.intval($BE_USER->auth_timeout_field).'-30)	{
 			return true;
 		}
 	}
@@ -192,10 +194,11 @@ class SC_alt_main {
 		this.openRefreshW=1;
 	}
 	function busy_checkLoginTimeout_timer()	{	//
-
-		if (busy.checkLoginTimeout())	{
-			if (!busy.openRefreshW && confirm('.$GLOBALS['LANG']->JScharCode($LANG->sL('LLL:EXT:lang/locallang_core.php:mess.refresh_login')).'))	{
+		if (busy.checkLoginTimeout() && !busy.reloginCancelled && !busy.openRefreshW)	{
+			if (confirm('.$GLOBALS['LANG']->JScharCode($LANG->sL('LLL:EXT:lang/locallang_core.php:mess.refresh_login')).'))	{
 				busy.openRefreshWindow();
+			} else	{
+				busy.reloginCancelled = 1;
 			}
 		}
 		window.setTimeout("busy_checkLoginTimeout_timer();",2*1000);	// Each 2nd second is enough for checking. The popup will be triggered 10 seconds before the login expires (see above, busy_checkLoginTimeout())
@@ -320,7 +323,7 @@ class SC_alt_main {
 	/**
 	 * Function restoring previous selection in left menu after clearing cache
 	 */
-	function restoreHighlightedModuleMenuItem() {
+	function restoreHighlightedModuleMenuItem() {	//
 		if (currentlyHighLightedId) {
 			highlightModuleMenuItem(currentlyHighLightedId,currentlyHighLightedMain);
 		}
@@ -355,6 +358,7 @@ class SC_alt_main {
 		this.recentIds=new Array();					// used by frameset modules to track the most recent used id for list frame.
 		this.navFrameHighlightedID=new Array();		// used by navigation frames to track which row id was highlighted last time
 		this.currentMainLoaded="";
+		this.currentBank="0";
 	}
 	var fsMod = new fsModules();
 	'.$fsMod.'
@@ -370,6 +374,7 @@ class SC_alt_main {
 
 			// Check editing of page:
 		$this->editPageHandling();
+		$this->startModule();
 	}
 
 	/**
@@ -384,7 +389,7 @@ class SC_alt_main {
 		if (!t3lib_extMgm::isLoaded('cms'))	return;
 
 			// EDIT page:
-		$editId = ereg_replace('[^[:alnum:]_]','',t3lib_div::_GET('edit'));
+		$editId = preg_replace('/[^[:alnum:]_]/','',t3lib_div::_GET('edit'));
 		$theEditRec = '';
 
 		if ($editId)	{
@@ -392,12 +397,13 @@ class SC_alt_main {
 				// Looking up the page to edit, checking permissions:
 			$where = ' AND ('.$BE_USER->getPagePermsClause(2).' OR '.$BE_USER->getPagePermsClause(16).')';
 			if (t3lib_div::testInt($editId))	{
-				$theEditRec = t3lib_BEfunc::getRecord('pages',$editId,'*',$where);
+				$theEditRec = t3lib_BEfunc::getRecordWSOL('pages',$editId,'*',$where);
 			} else {
 				$records = t3lib_BEfunc::getRecordsByField('pages','alias',$editId,$where);
 				if (is_array($records))	{
 					reset($records);
 					$theEditRec = current($records);
+					t3lib_BEfunc::workspaceOL('pages', $theEditRec);
 				}
 			}
 
@@ -424,6 +430,28 @@ class SC_alt_main {
 	}
 
 	/**
+	 * Sets the startup module from either GETvars module and mpdParams or user configuration.
+	 *
+	 * @return	void
+	 */
+	function startModule() {
+		global $BE_USER;
+		$module = preg_replace('/[^[:alnum:]_]/','',t3lib_div::_GET('module'));
+		if (!$module && $BE_USER->uc['startInTaskCenter']) {
+			$module = 'user_task';
+		}
+
+		$params = t3lib_div::_GET('modParams');
+		if ($module) {
+			$this->mainJScode.='
+		// open in module:
+	window.setTimeout("top.goToModule(\''.$module.'\',false,\''.$params.'\');",500);
+			';
+		}
+	}
+
+
+	/**
 	 * Creates the header and frameset of the backend interface
 	 *
 	 * @return	void
@@ -438,7 +466,7 @@ class SC_alt_main {
 		$this->generateJScode();
 		$GLOBALS['TBE_TEMPLATE']->JScode= '
 			<script type="text/javascript" src="md5.js"></script>
-			<script type="text/javascript" src="t3lib/jsfunc.evalfield.js"></script>
+			<script type="text/javascript" src="../t3lib/jsfunc.evalfield.js"></script>
 			';
 		$GLOBALS['TBE_TEMPLATE']->JScode.=$GLOBALS['TBE_TEMPLATE']->wrapScriptTags($this->mainJScode);
 
@@ -449,7 +477,7 @@ class SC_alt_main {
 		$this->content.=$GLOBALS['TBE_TEMPLATE']->startPage($title);
 
 			// Creates frameset
-		$fr_content = '<frame name="content" src="'.($BE_USER->uc['startInTaskCenter']&&t3lib_extMgm::isLoaded('taskcenter')?t3lib_extMgm::extRelPath('taskcenter').'task/index.php':'alt_intro.php').'" marginwidth="0" marginheight="0" frameborder="0" scrolling="auto" noresize="noresize" />';
+		$fr_content = '<frame name="content" src="alt_intro.php" marginwidth="0" marginheight="0" frameborder="0" scrolling="auto" noresize="noresize" />';
 		$fr_toplogo = '<frame name="toplogo" src="alt_toplogo.php" marginwidth="0" marginheight="0" frameborder="0" scrolling="no" noresize="noresize" />';
 		$fr_topmenu = '<frame name="topmenuFrame" src="alt_topmenu_dummy.php" marginwidth="0" marginheight="0" frameborder="0" scrolling="no" noresize="noresize" />';
 

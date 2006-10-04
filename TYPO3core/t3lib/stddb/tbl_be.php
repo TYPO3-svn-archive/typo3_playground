@@ -252,7 +252,7 @@ $TCA['be_users'] = Array (
 					Array('Edit Draft (Offline)', 0),
 					Array('Create new workspace projects', 0),
 				),
-				'default' => 1
+				'default' => 3
 			)
 		),
 		'starttime' => Array (
@@ -287,20 +287,20 @@ $TCA['be_users'] = Array (
 				'items' => Array (
 					Array('English', ''),
 					Array('Arabic', 'ar'),
-					Array('Bahasa Malaysia', 'my'),
 					Array('Basque', 'eu'),
 					Array('Bosnian', 'ba'),
 					Array('Brazilian Portuguese', 'br'),
 					Array('Bulgarian', 'bg'),
 					Array('Catalan', 'ca'),
-					Array('Chinese (Simpl)', 'ch'),
-					Array('Chinese (Trad)', 'hk'),
+					Array('Chinese (Simpl.)', 'ch'),
+					Array('Chinese (Trad.)', 'hk'),
 					Array('Croatian', 'hr'),
 					Array('Czech', 'cz'),
 					Array('Danish', 'dk'),
 					Array('Dutch', 'nl'),
-					Array('Estonian', 'et'),
 					Array('Esperanto', 'eo'),
+					Array('Estonian', 'et'),
+					Array('Faroese', 'fo'),
 					Array('Finnish', 'fi'),
 					Array('French', 'fr'),
 					Array('German', 'de'),
@@ -315,11 +315,14 @@ $TCA['be_users'] = Array (
 					Array('Korean', 'kr'),
 					Array('Latvian', 'lv'),
 					Array('Lithuanian', 'lt'),
+					Array('Malay', 'my'),
 					Array('Norwegian', 'no'),
+					Array('Persian', 'fa'),
 					Array('Polish', 'pl'),
 					Array('Portuguese', 'pt'),
 					Array('Romanian', 'ro'),
 					Array('Russian', 'ru'),
+					Array('Serbian', 'sr'),	
 					Array('Slovak', 'sk'),
 					Array('Slovenian', 'si'),
 					Array('Spanish', 'es'),
@@ -338,7 +341,7 @@ $TCA['be_users'] = Array (
 				'special' => 'modListUser',
 				'size' => '5',
 				'autoSizeMax' => 50,
-				'maxitems' => '15',
+				'maxitems' => '100',
 				'renderMode' => $GLOBALS['TYPO3_CONF_VARS']['BE']['accessListRenderMode'],
 				'iconsInOptionTags' => 1,
 			)
@@ -369,7 +372,8 @@ $TCA['be_users'] = Array (
 					)
 				),
 				'softref' => 'TSconfig'
-			)
+			),
+			'defaultExtras' => 'fixed-font : enable-tab',
 		),
 		'createdByAction' => Array('config'=>array('type'=>'passthrough'))
 	),
@@ -409,7 +413,7 @@ $TCA['be_groups'] = Array (
 				'internal_type' => 'db',
 					'allowed' => 'pages',
 				'size' => '3',
-				'maxitems' => '10',
+				'maxitems' => '20',
 				'autoSizeMax' => 10,
 				'show_thumbs' => '1'
 			)
@@ -421,7 +425,7 @@ $TCA['be_groups'] = Array (
 				'foreign_table' => 'sys_filemounts',
 				'foreign_table_where' => ' AND sys_filemounts.pid=0 ORDER BY sys_filemounts.title',
 				'size' => '3',
-				'maxitems' => '10',
+				'maxitems' => '20',
 				'autoSizeMax' => 10,
 				'renderMode' => $GLOBALS['TYPO3_CONF_VARS']['BE']['accessListRenderMode'],
 				'iconsInOptionTags' => 1,
@@ -571,7 +575,7 @@ $TCA['be_groups'] = Array (
 				'special' => 'modListGroup',
 				'size' => '5',
 				'autoSizeMax' => 50,
-				'maxitems' => '15',
+				'maxitems' => '100',
 				'renderMode' => $GLOBALS['TYPO3_CONF_VARS']['BE']['accessListRenderMode'],
 				'iconsInOptionTags' => 1,
 			)
@@ -608,7 +612,8 @@ $TCA['be_groups'] = Array (
 					)
 				),
 				'softref' => 'TSconfig'
-			)
+			),
+			'defaultExtras' => 'fixed-font : enable-tab',
 		),
 		'hide_in_lists' => Array (
 			'label' => 'Hide in lists:',
@@ -622,7 +627,7 @@ $TCA['be_groups'] = Array (
 			'config' => Array (
 				'type' => 'select',
 				'foreign_table' => 'be_groups',
-				'foreign_table_where' => 'AND be_groups.uid != ###THIS_UID### AND NOT be_groups.hidden ORDER BY be_groups.title',
+				'foreign_table_where' => 'AND NOT(be_groups.uid = ###THIS_UID###) AND be_groups.hidden=0 ORDER BY be_groups.title',
 				'size' => '5',
 				'autoSizeMax' => 50,
 				'maxitems' => 20,
@@ -836,7 +841,7 @@ $TCA['sys_workspace'] = Array (
 			)
 		),
 		'vtypes' => Array (
-			'label' => 'Disable Versioning Types',
+			'label' => 'Disable Versioning Types (not for admins and owners):',
 			'config' => Array (
 				'type' => 'check',
 				'items' => Array (
@@ -846,9 +851,30 @@ $TCA['sys_workspace'] = Array (
 				),
 			)
 		),
+		'publish_access' => Array (
+			'label' => 'Publish access:',
+			'config' => Array (
+				'type' => 'check',
+				'items' => Array (
+					Array('Publish only content in publish stage',0),
+					Array('Only workspace owner can publish',0),
+				),
+			)
+		),
+		'stagechg_notification' => Array (
+			'label' => 'Stage change notification by email:',
+			'config' => Array (
+				'type' => 'select',
+				'items' => Array (
+					Array('',0),
+					Array('Notify users on next stage only',1),
+					Array('Notify all users on any change',10)
+				),
+			)
+		),
 	),
 	'types' => Array (
-		'0' => Array('showitem' => 'title,description,--div--,adminusers,members,reviewers,--div--,db_mountpoints,file_mountpoints,--div--,publish_time,unpublish_time,--div--,freeze,live_edit,disable_autocreate,swap_modes,vtypes')
+		'0' => Array('showitem' => 'title,description,--div--;Users,adminusers,members,reviewers,stagechg_notification,--div--;Mountpoints,db_mountpoints,file_mountpoints,--div--;Publishing,publish_time,unpublish_time,--div--;Other,freeze,live_edit,disable_autocreate,swap_modes,vtypes,publish_access')
 	)
 );
 
@@ -903,7 +929,7 @@ $TCA['sys_language'] = Array (
 				'items' => Array (
 					Array('',0),
 				),
-				'fileFolder' => 't3lib/gfx/flags/',	// Only shows if "t3lib/" is in the PATH_site...
+				'fileFolder' => 'typo3/gfx/flags/',	// Only shows if "t3lib/" is in the PATH_site...
 				'fileFolder_extList' => 'png,jpg,jpeg,gif',
 				'fileFolder_recursions' => 0,
 				'selicon_cols' => 8,

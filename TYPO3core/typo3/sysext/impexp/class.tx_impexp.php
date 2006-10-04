@@ -34,111 +34,105 @@
  *
  *
  *
- *  202: class tx_impexp
+ *  198: class tx_impexp
  *
  *              SECTION: Initialize
- *  265:     function init($dontCompress=0,$mode='')
+ *  261:     function init($dontCompress=0,$mode='')
  *
  *              SECTION: Export / Init + Meta Data
- *  296:     function setHeaderBasics()
- *  320:     function setCharset($charset)
- *  335:     function setMetaData($title,$description,$notes,$packager_username,$packager_name,$packager_email)
- *  355:     function addThumbnail($imgFilepath)
+ *  292:     function setHeaderBasics()
+ *  316:     function setCharset($charset)
+ *  331:     function setMetaData($title,$description,$notes,$packager_username,$packager_name,$packager_email)
+ *  351:     function addThumbnail($imgFilepath)
  *
  *              SECTION: Export / Init Page tree
- *  393:     function setPageTree($idH)
- *  406:     function unsetExcludedSections($idH)
- *  428:     function flatInversePageTree($idH,$a=array())
- *  451:     function flatInversePageTree_pid($idH,$a=array(),$pid=-1)
+ *  389:     function setPageTree($idH)
+ *  402:     function unsetExcludedSections($idH)
+ *  424:     function flatInversePageTree($idH,$a=array())
+ *  447:     function flatInversePageTree_pid($idH,$a=array(),$pid=-1)
  *
  *              SECTION: Export
- *  490:     function export_addRecord($table,$row,$relationLevel=0)
- *  540:     function export_addDBRelations($relationLevel=0)
- *  644:     function export_addDBRelations_registerRelation($fI, &$addR, $tokenID='')
- *  668:     function export_addFilesFromRelations()
- *  769:     function export_addFile($fI, $recordRef='', $fieldname='')
- *  897:     function getRelations($table,$row)
- * 1004:     function getRelations_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2, $structurePath)
- * 1053:     function getRelations_procFiles($value, $conf, $uid)
- * 1103:     function getRelations_procDB($value, $conf, $uid)
- * 1124:     function flatDBrels($dbrels)
- * 1150:     function flatSoftRefs($dbrels)
- * 1198:     function destPathFromUploadFolder($folder)
+ *  486:     function export_addRecord($table,$row,$relationLevel=0)
+ *  544:     function export_addDBRelations($relationLevel=0)
+ *  648:     function export_addDBRelations_registerRelation($fI, &$addR, $tokenID='')
+ *  672:     function export_addFilesFromRelations()
+ *  773:     function export_addFile($fI, $recordRef='', $fieldname='')
+ *  898:     function flatDBrels($dbrels)
+ *  924:     function flatSoftRefs($dbrels)
  *
  *              SECTION: File Output
- * 1223:     function compileMemoryToFileContent($type='')
- * 1249:     function createXML()
- * 1341:     function doOutputCompress()
- * 1352:     function addFilePart($data, $compress=FALSE)
+ *  988:     function compileMemoryToFileContent($type='')
+ * 1014:     function createXML()
+ * 1106:     function doOutputCompress()
+ * 1117:     function addFilePart($data, $compress=FALSE)
  *
  *              SECTION: Import
- * 1385:     function importData($pid)
- * 1426:     function writeRecords_pages($pid)
- * 1481:     function writeRecords_pages_order($pid)
- * 1519:     function writeRecords_records($pid)
- * 1569:     function writeRecords_records_order($mainPid)
- * 1618:     function addSingle($table,$uid,$pid)
- * 1692:     function addToMapId($substNEWwithIDs)
- * 1712:     function getNewTCE()
- * 1726:     function unlinkTempFiles()
+ * 1150:     function importData($pid)
+ * 1191:     function writeRecords_pages($pid)
+ * 1246:     function writeRecords_pages_order($pid)
+ * 1284:     function writeRecords_records($pid)
+ * 1334:     function writeRecords_records_order($mainPid)
+ * 1383:     function addSingle($table,$uid,$pid)
+ * 1457:     function addToMapId($substNEWwithIDs)
+ * 1477:     function getNewTCE()
+ * 1491:     function unlinkTempFiles()
  *
  *              SECTION: Import / Relations setting
- * 1764:     function setRelations()
- * 1818:     function setRelations_db($itemArray)
- * 1845:     function import_addFileNameToBeCopied($fI)
- * 1868:     function setFlexFormRelations()
- * 1951:     function remapListedDBRecords_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2, $path)
+ * 1529:     function setRelations()
+ * 1584:     function setRelations_db($itemArray)
+ * 1611:     function import_addFileNameToBeCopied($fI)
+ * 1634:     function setFlexFormRelations()
+ * 1718:     function remapListedDBRecords_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2, $path)
  *
  *              SECTION: Import / Soft References
- * 1993:     function processSoftReferences()
- * 2084:     function processSoftReferences_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2, $path)
- * 2123:     function processSoftReferences_substTokens($tokenizedContent, $softRefCfgs, $table, $uid)
- * 2187:     function processSoftReferences_saveFile($relFileName, $cfg, $table, $uid)
- * 2248:     function processSoftReferences_saveFile_createRelFile($origDirPrefix, $fileName, $fileID, $table, $uid)
- * 2337:     function writeFileVerify($fileName, $fileID, $bypassMountCheck=FALSE)
- * 2364:     function checkOrCreateDir($dirPrefix)
- * 2397:     function verifyFolderAccess($dirPrefix, $noAlternative=FALSE)
+ * 1760:     function processSoftReferences()
+ * 1851:     function processSoftReferences_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2, $path)
+ * 1890:     function processSoftReferences_substTokens($tokenizedContent, $softRefCfgs, $table, $uid)
+ * 1954:     function processSoftReferences_saveFile($relFileName, $cfg, $table, $uid)
+ * 2015:     function processSoftReferences_saveFile_createRelFile($origDirPrefix, $fileName, $fileID, $table, $uid)
+ * 2104:     function writeFileVerify($fileName, $fileID, $bypassMountCheck=FALSE)
+ * 2131:     function checkOrCreateDir($dirPrefix)
+ * 2164:     function verifyFolderAccess($dirPrefix, $noAlternative=FALSE)
  *
  *              SECTION: File Input
- * 2447:     function loadFile($filename,$all=0)
- * 2490:     function getNextFilePart($fd,$unserialize=0,$name='')
- * 2517:     function loadContent($filecontent)
- * 2535:     function getNextContentPart($filecontent,&$pointer,$unserialize=0,$name='')
- * 2560:     function loadInit()
- * 2576:     function fixCharsets()
+ * 2214:     function loadFile($filename,$all=0)
+ * 2257:     function getNextFilePart($fd,$unserialize=0,$name='')
+ * 2284:     function loadContent($filecontent)
+ * 2302:     function getNextContentPart($filecontent,&$pointer,$unserialize=0,$name='')
+ * 2327:     function loadInit()
+ * 2343:     function fixCharsets()
  *
  *              SECTION: Visual rendering of import/export memory, $this->dat
- * 2631:     function displayContentOverview()
- * 2739:     function traversePageTree($pT,&$lines,$preCode='')
- * 2774:     function traversePageRecords($pT,&$lines)
- * 2801:     function traverseAllRecords($pT,&$lines)
- * 2823:     function singleRecordLines($table,$uid,&$lines,$preCode,$checkImportInPidRecord=0)
- * 2980:     function addRelations($rels,&$lines,$preCode,$recurCheck=array(),$htmlColorClass='')
- * 3045:     function addFiles($rels,&$lines,$preCode,$htmlColorClass='',$tokenID='')
- * 3163:     function checkDokType($checkTable,$doktype)
- * 3179:     function renderControls($r)
- * 3207:     function softrefSelector($cfg)
+ * 2398:     function displayContentOverview()
+ * 2506:     function traversePageTree($pT,&$lines,$preCode='')
+ * 2541:     function traversePageRecords($pT,&$lines)
+ * 2568:     function traverseAllRecords($pT,&$lines)
+ * 2590:     function singleRecordLines($table,$uid,&$lines,$preCode,$checkImportInPidRecord=0)
+ * 2748:     function addRelations($rels,&$lines,$preCode,$recurCheck=array(),$htmlColorClass='')
+ * 2813:     function addFiles($rels,&$lines,$preCode,$htmlColorClass='',$tokenID='')
+ * 2931:     function checkDokType($checkTable,$doktype)
+ * 2947:     function renderControls($r)
+ * 2975:     function softrefSelector($cfg)
  *
  *              SECTION: Helper functions of kinds
- * 3283:     function isTableStatic($table)
- * 3297:     function inclRelation($table)
- * 3312:     function isExcluded($table,$uid)
- * 3324:     function includeSoftref($tokenID)
- * 3334:     function isReferenceField($conf)
- * 3344:     function checkPID($pid)
- * 3361:     function dontIgnorePid($table, $uid)
- * 3374:     function doesRecordExist($table,$uid,$fields='')
- * 3384:     function getRecordPath($pid)
- * 3401:     function renderSelectBox($prefix,$value,$optValues)
- * 3425:     function compareRecords($databaseRecord, $importRecord, $table, $inverseDiff=FALSE)
- * 3492:     function getRTEoriginalFilename($string)
- * 3509:     function &getFileProcObj()
+ * 3051:     function isTableStatic($table)
+ * 3065:     function inclRelation($table)
+ * 3080:     function isExcluded($table,$uid)
+ * 3092:     function includeSoftref($tokenID)
+ * 3102:     function checkPID($pid)
+ * 3119:     function dontIgnorePid($table, $uid)
+ * 3132:     function doesRecordExist($table,$uid,$fields='')
+ * 3142:     function getRecordPath($pid)
+ * 3159:     function renderSelectBox($prefix,$value,$optValues)
+ * 3183:     function compareRecords($databaseRecord, $importRecord, $table, $inverseDiff=FALSE)
+ * 3250:     function getRTEoriginalFilename($string)
+ * 3267:     function &getFileProcObj()
  *
  *              SECTION: Error handling
- * 3542:     function error($msg)
- * 3551:     function printErrorLog()
+ * 3299:     function error($msg)
+ * 3308:     function printErrorLog()
  *
- * TOTAL FUNCTIONS: 78
+ * TOTAL FUNCTIONS: 72
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -183,8 +177,10 @@ require_once (PATH_t3lib.'class.t3lib_parsehtml.php');
 
 require_once (PATH_t3lib.'class.t3lib_basicfilefunc.php');
 require_once (PATH_t3lib.'class.t3lib_extfilefunc.php');
+require_once (PATH_t3lib.'class.t3lib_refindex.php');
 
-
+@ini_set('max_execution_time',600);
+@ini_set('memory_limit','256m');
 
 
 
@@ -488,6 +484,9 @@ class tx_impexp {
 	 * @return	void
 	 */
 	function export_addRecord($table,$row,$relationLevel=0)	{
+
+		t3lib_BEfunc::workspaceOL($table,$row);
+
 		if (strcmp($table,'') && is_array($row) && $row['uid']>0 && !$this->excludeMap[$table.':'.$row['uid']])	{
 			if ($this->checkPID($table==='pages' ? $row['uid'] : $row['pid']))	{
 				if (!isset($this->dat['records'][$table.':'.$row['uid']]))	{
@@ -511,10 +510,15 @@ class tx_impexp {
 							// Create entry in the PID lookup:
 						$this->dat['header']['pid_lookup'][$row['pid']][$table][$row['uid']]=1;
 
+							// Initialize reference index object:
+						$refIndexObj = t3lib_div::makeInstance('t3lib_refindex');
+						$refIndexObj->WSOL = TRUE;	// Yes to workspace overlays for exporting....
+
 							// Data:
 						$this->dat['records'][$table.':'.$row['uid']] = array();
 						$this->dat['records'][$table.':'.$row['uid']]['data'] = $row;
-						$this->dat['records'][$table.':'.$row['uid']]['rels'] = $this->getRelations($table,$row);
+						$this->dat['records'][$table.':'.$row['uid']]['rels'] = $refIndexObj->getRelations($table,$row);
+						$this->errorLog = array_merge($this->errorLog,$refIndexObj->errorLog);	// Merge error logs.
 
 							// Add information about the relations in the record in the header:
 						$this->dat['header']['records'][$table][$row['uid']]['rels'] = $this->flatDBrels($this->dat['records'][$table.':'.$row['uid']]['rels']);
@@ -885,236 +889,6 @@ class tx_impexp {
 	}
 
 	/**
-	 * Returns relation information for a $table/$row-array
-	 * Traverses all fields in input row which are configured in TCA/columns
-	 * It looks for hard relations to files and records in the TCA types "select" and "group"
-	 *
-	 * @param	string		Table
-	 * @param	array		Row from table
-	 * @return	array		Array with information about relations
-	 * @see export_addRecord()
-	 */
-	function getRelations($table,$row)	{
-		global $TCA;
-
-			// Load full table description
-		t3lib_div::loadTCA($table);
-
-			// Initialize:
-		$uid = $row['uid'];
-		$nonFields = explode(',','uid,perms_userid,perms_groupid,perms_user,perms_group,perms_everybody,pid');
-
-		$outRow = array();
-		foreach($row as $field => $value)	{
-			if (!in_array($field,$nonFields) && is_array($TCA[$table]['columns'][$field]))	{
-				$conf = $TCA[$table]['columns'][$field]['config'];
-
-					// Add files
-				if ($result = $this->getRelations_procFiles($value, $conf, $uid))	{
-						// Creates an entry for the field with all the files:
-					$outRow[$field] = array(
-						'type' => 'file',
-						'newValueFiles' => $result,
-					);
-				}
-
-					// Add DB:
-				if ($result = $this->getRelations_procDB($value, $conf, $uid))	{
-						// Create an entry for the field with all DB relations:
-					$outRow[$field] = array(
-						'type' => 'db',
-						'itemArray' => $result,
-					);
-				}
-
-					// For "flex" fieldtypes we need to traverse the structure looking for file and db references of course!
-				if ($conf['type']=='flex')	{
-
-						// Get current value array:
-					$dataStructArray = t3lib_BEfunc::getFlexFormDS($conf, $row, $table);
-					$currentValueArray = t3lib_div::xml2array($value);
-
-						// Traversing the XML structure, processing files:
-					if (is_array($currentValueArray))	{
-						$this->temp_flexRelations = array(
-							'db' => array(),
-							'file' => array(),
-							'softrefs' => array()
-						);
-
-						$iteratorObj = t3lib_div::makeInstance('t3lib_TCEmain');
-						$iteratorObj->callBackObj = &$this;
-						$iteratorObj->checkValue_flex_procInData(
-									$currentValueArray['data'],
-									array(),	// Not used.
-									array(),	// Not used.
-									$dataStructArray,
-									array($table,$uid,$field),	// Parameters.
-									'getRelations_flexFormCallBack'
-								);
-
-							// Create an entry for the field:
-						$outRow[$field] = array(
-							'type' => 'flex',
-							'flexFormRels' => $this->temp_flexRelations,
-						);
-#debug($outRow[$field]);
-					}
-				}
-
-					// Soft References:
-				if (strlen($value) && $softRefs = t3lib_BEfunc::explodeSoftRefParserList($conf['softref'], $table, $field))	{
-					$softRefValue = $value;
-					foreach($softRefs as $spKey => $spParams)	{
-						$softRefObj = &t3lib_BEfunc::softRefParserObj($spKey);
-						if (is_object($softRefObj))	{
-							$resultArray = $softRefObj->findRef($table, $field, $uid, $softRefValue, $spKey, $spParams);
-							if (is_array($resultArray))	{
-								$outRow[$field]['softrefs']['keys'][$spKey] = $resultArray['elements'];
-								if (strlen($resultArray['content'])) {
-									$softRefValue = $resultArray['content'];
-								}
-							}
-						}
-					}
-
-					if (is_array($outRow[$field]['softrefs']) && count($outRow[$field]['softrefs']) && strcmp($value,$softRefValue) && strstr($softRefValue,'{softref:'))	{
-#debug($softRefValue,'tokenizedContent');
-						$outRow[$field]['softrefs']['tokenizedContent'] = $softRefValue;
-					}
-				}
-			}
-		}
-
-		return $outRow;
-	}
-
-	/**
-	 * Callback function for traversing the FlexForm structure in relation to finding file and DB references!
-	 *
-	 * @param	array		Array of parameters in num-indexes: table, uid, field
-	 * @param	array		TCA field configuration (from Data Structure XML)
-	 * @param	string		The value of the flexForm field
-	 * @param	string		Not used.
-	 * @param	string		Not used.
-	 * @param	string		Path of where in the data structure this element is.
-	 * @return	array		Result array with key "value" containing the value of the processing.
-	 * @see t3lib_TCEmain::checkValue_flex_procInData_travDS()
-	 */
-	function getRelations_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2, $structurePath)	{
-
-			// Implode parameter values:
-		list($table, $uid, $field) = $pParams;
-
-			// Add files
-		if ($result = $this->getRelations_procFiles($dataValue, $dsConf, $uid))	{
-
-				// Creates an entry for the field with all the files:
-			$this->temp_flexRelations['file'][$structurePath] = $result;
-		}
-
-			// Add DB:
-		if ($result = $this->getRelations_procDB($dataValue, $dsConf, $uid))	{
-
-				// Create an entry for the field with all DB relations:
-			$this->temp_flexRelations['db'][$structurePath] = $result;
-		}
-
-			// Soft References:
-		if (strlen($dataValue) && $softRefs = t3lib_BEfunc::explodeSoftRefParserList($dsConf['softref'], $table, $field))	{
-#debug($softRefs);
-			$softRefValue = $dataValue;
-			foreach($softRefs as $spKey => $spParams)	{
-				$softRefObj = &t3lib_BEfunc::softRefParserObj($spKey);
-				if (is_object($softRefObj))	{
-					$resultArray = $softRefObj->findRef($table, $field, $uid, $softRefValue, $spKey, $spParams, $structurePath);
-					if (is_array($resultArray) && is_array($resultArray['elements']))	{
-						$this->temp_flexRelations['softrefs'][$structurePath]['keys'][$spKey] = $resultArray['elements'];
-						if (strlen($resultArray['content'])) $softRefValue = $resultArray['content'];
-					}
-				}
-			}
-
-			if (count($this->temp_flexRelations['softrefs']) && strcmp($dataValue,$softRefValue))	{
-				$this->temp_flexRelations['softrefs'][$structurePath]['tokenizedContent'] = $softRefValue;
-#debug($this->temp_flexRelations['softrefs'][$structurePath], $structurePath);
-			}
-		}
-	}
-
-	/**
-	 * Check field configuration if it is a file relation field and extract file relations if any
-	 *
-	 * @param	string		Field value
-	 * @param	array		Field configuration array of type "TCA/columns"
-	 * @param	integer		Field uid
-	 * @return	array		If field type is OK it will return an array with the files inside. Else false
-	 */
-	function getRelations_procFiles($value, $conf, $uid)	{
-			// Take care of files...
-		if ($conf['type']=='group' && $conf['internal_type']=='file')	{
-
-				// Collect file values in array:
-			if ($conf['MM'])	{
-				$theFileValues = array();
-				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
-				$dbAnalysis->start('', 'files', $conf['MM'], $uid);
-
-				foreach($dbAnalysis->itemArray as $somekey => $someval)	{
-					if ($someval['id'])	{
-						$theFileValues[] = $someval['id'];
-					}
-				}
-			} else {
-				$theFileValues = explode(',',$value);
-			}
-
-				// Traverse the files and add them:
-			$uploadFolder = $conf['uploadfolder'];
-			$dest = $this->destPathFromUploadFolder($uploadFolder);
-			$newValue = array();
-			$newValueFiles = array();
-
-			foreach($theFileValues as $file)	{
-				if (trim($file))	{
-					$realFile = $dest.'/'.trim($file);
-					if (@is_file($realFile))	{
-						$newValueFiles[] = array(
-							'filename' => $file,
-							'ID' => md5($realFile),
-							'ID_absFile' => $realFile
-						);	// the order should be preserved here because.. (?)
-					} else $this->error('Missing file: '.$realFile);
-				}
-			}
-
-			return $newValueFiles;
-		}
-	}
-
-	/**
-	 * Check field configuration if it is a DB relation field and extract DB relations if any
-	 *
-	 * @param	string		Field value
-	 * @param	array		Field configuration array of type "TCA/columns"
-	 * @param	integer		Field uid
-	 * @return	array		If field type is OK it will return an array with the database relations. Else false
-	 */
-	function getRelations_procDB($value, $conf, $uid)	{
-
-			// DB record lists:
-		if ($this->isReferenceField($conf))	{
-			$allowedTables = $conf['type']=='group' ? $conf['allowed'] : $conf['foreign_table'].','.$conf['neg_foreign_table'];
-			$prependName = $conf['type']=='group' ? $conf['prepend_tname'] : $conf['neg_foreign_table'];
-
-			$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
-			$dbAnalysis->start($value,$allowedTables,$conf['MM'],$uid);
-
-			return $dbAnalysis->itemArray;
-		}
-	}
-
-	/**
 	 * DB relations flattend to 1-dim array.
 	 * The list will be unique, no table/uid combination will appear twice.
 	 *
@@ -1189,15 +963,6 @@ class tx_impexp {
 		return $list;
 	}
 
-	/**
-	 * Returns destination path to an upload folder given by $folder
-	 *
-	 * @param	string		Folder relative to PATH_site
-	 * @return	string		Input folder prefixed with PATH_site. No checking for existence is done. Output must be a folder without trailing slash.
-	 */
-	function destPathFromUploadFolder($folder)	{
-		return PATH_site.$folder;
-	}
 
 
 
@@ -1774,7 +1539,8 @@ class tx_impexp {
 
 				// If the record has been written and received a new id, then proceed:
 			if (is_array($this->import_mapId[$table]) && isset($this->import_mapId[$table][$uid]))	{
-				$thisNewUid = $this->import_mapId[$table][$uid];
+				$thisNewUid = t3lib_BEfunc::wsMapId($table,$this->import_mapId[$table][$uid]);
+
 				if (is_array($this->dat['records'][$table.':'.$uid]['rels']))	{
 					reset($this->dat['records'][$table.':'.$uid]['rels']);
 
@@ -1878,7 +1644,9 @@ class tx_impexp {
 
 				// If the record has been written and received a new id, then proceed:
 			if (is_array($this->import_mapId[$table]) && isset($this->import_mapId[$table][$uid]))	{
-				$thisNewUid = $this->import_mapId[$table][$uid];
+				$thisNewUid = t3lib_BEfunc::wsMapId($table,$this->import_mapId[$table][$uid]);
+#debug($thisNewUid,'$thisNewUid');
+#debug($this->dat['records'][$table.':'.$uid]['rels']);
 				if (is_array($this->dat['records'][$table.':'.$uid]['rels']))	{
 					reset($this->dat['records'][$table.':'.$uid]['rels']);
 					t3lib_div::loadTCA($table);
@@ -1900,10 +1668,10 @@ class tx_impexp {
 											// Get current data structure and value array:
 										$dataStructArray = t3lib_BEfunc::getFlexFormDS($conf, $origRecordRow, $table);
 										$currentValueArray = t3lib_div::xml2array($updateData[$table][$thisNewUid][$field]);
-	#debug($dataStructArray);
-	#debug($currentValueArray);remapListedDBRecords_flexFormCallBack
-	#debug($origRecordRow);
-	#debug($currentValueArray['data'],'BE');
+#	debug($dataStructArray);
+#	debug($currentValueArray);
+#	debug($origRecordRow);
+#	debug($currentValueArray['data'],'BE');
 											// Do recursive processing of the XML data:
 										$iteratorObj = t3lib_div::makeInstance('t3lib_TCEmain');
 										$iteratorObj->callBackObj = &$this;
@@ -1953,9 +1721,14 @@ class tx_impexp {
 			// Extract parameters:
 		list($table,$uid,$field,$config)	= $pParams;
 
+			// In case the $path is used as index without a trailing slash we will remove that 
+		if (!is_array($config['flexFormRels']['db'][$path]) && is_array($config['flexFormRels']['db'][ereg_replace('\/$','',$path)]))	{
+			$path = ereg_replace('\/$','',$path);
+		}	
 		if (is_array($config['flexFormRels']['db'][$path]))	{
 			$valArray = $this->setRelations_db($config['flexFormRels']['db'][$path]);
 			$dataValue = implode(',',$valArray);
+#	debug(array('value' => $dataValue));
 		}
 
 		if (is_array($config['flexFormRels']['file'][$path]))	{
@@ -1964,7 +1737,7 @@ class tx_impexp {
 			}
 			$dataValue = implode(',',$valArr);
 		}
-
+		
 			// Return
 		return array('value' => $dataValue);
 	}
@@ -2016,7 +1789,7 @@ class tx_impexp {
 						}
 
 							// The new id:
-						$thisNewUid = $this->import_mapId[$table][$uid];
+						$thisNewUid = t3lib_BEfunc::wsMapId($table,$this->import_mapId[$table][$uid]);
 
 							// Now, if there are any fields that require substitution to be done, lets go for that:
 						foreach($fieldsIndex as $field => $softRefCfgs)	{
@@ -2148,7 +1921,7 @@ class tx_impexp {
 									// Trying to map database element if found in the mapID array:
 								list($tempTable,$tempUid) = explode(':',$cfg['subst']['recordRef']);
 								if (isset($this->import_mapId[$tempTable][$tempUid]))	{
-									$insertValue = $this->import_mapId[$tempTable][$tempUid];
+									$insertValue = t3lib_BEfunc::wsMapId($tempTable,$this->import_mapId[$tempTable][$tempUid]);
 
 										// Look if reference is to a page and the original token value was NOT an integer - then we assume is was an alias and try to look up the new one!
 									if ($tempTable==='pages' && !t3lib_div::testInt($cfg['subst']['tokenValue']))	{
@@ -2493,18 +2266,20 @@ class tx_impexp {
 			// getting header data
 		$initStr = fread($fd, $initStrLen);
 		$initStrDat = explode(':',$initStr);
-		if (!strcmp($initStrDat[3],''))	{
-			$datString = fread($fd,intval($initStrDat[2]));
-			fread($fd,1);
-			if (!strcmp(md5($datString), $initStrDat[0]))	{
-				if ($initStrDat[1])	{
-					if ($this->compress)	{
-						$datString = gzuncompress($datString);
-					} else $this->error('Content read error: This file requires decompression, but this server does not offer gzcompress()/gzuncompress() functions.',1);
-				}
-				return $unserialize ? unserialize($datString) : $datString;
-			} else $this->error('MD5 check failed ('.$name.')');
-		} else $this->error('File read error: InitString had a wrong length. ('.$name.')');
+		if (strstr($initStrDat[0],'Warning') == FALSE)	{
+			if (!strcmp($initStrDat[3],''))	{
+				$datString = fread($fd,intval($initStrDat[2]));
+				fread($fd,1);
+				if (!strcmp(md5($datString), $initStrDat[0]))	{
+					if ($initStrDat[1])	{
+						if ($this->compress)	{
+							$datString = gzuncompress($datString);
+						} else $this->error('Content read error: This file requires decompression, but this server does not offer gzcompress()/gzuncompress() functions.',1);
+					}
+					return $unserialize ? unserialize($datString) : $datString;
+				} else $this->error('MD5 check failed ('.$name.')');
+			} else $this->error('File read error: InitString had a wrong length. ('.$name.')');
+		} else $this->error('File read error: Warning message in file. ('.$initStr.fgets($fd).')');
 	}
 
 	/**
@@ -2886,6 +2661,7 @@ class tx_impexp {
 					if ($newUid = $this->import_mapId[$table][$uid])	{
 						$diffInverse = FALSE;
 						$recInf = $this->doesRecordExist($table, $newUid, '*');
+						t3lib_BEfunc::workspaceOL($table,$recInf);
 					}
 					if (is_array($recInf))	{
 						$pInfo['showDiffContent'] = $this->compareRecords($recInf, $this->dat['records'][$table.':'.$uid]['data'], $table, $diffInverse);
@@ -2925,7 +2701,7 @@ class tx_impexp {
 			$preCode_B = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 			foreach($record['softrefs'] as $info)	{
 				$pInfo = array();
-				$pInfo['preCode'] = $preCode_A.'<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'t3lib/gfx/rel_softref.png','width="13" height="12"').' align="top" alt="" />';
+				$pInfo['preCode'] = $preCode_A.'<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/rel_softref.png','width="13" height="12"').' align="top" alt="" />';
 				$pInfo['title'] = '<em>'.$info['field'].', "'.$info['spKey'].'" </em>: <span title="'.htmlspecialchars($info['matchString']).'">'.htmlspecialchars(t3lib_div::fixed_lgd_cs($info['matchString'],60)).'</span>';
 				if ($info['subst']['type'])	{
 					if (strlen($info['subst']['title']))	{
@@ -3016,7 +2792,7 @@ class tx_impexp {
 					$staticFixed = TRUE;
 				}
 
-				$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'t3lib/gfx/rel_db'.$Iprepend.'.gif','width="13" height="12"').' align="top" title="'.htmlspecialchars($pInfo['ref']).'" alt="" />';
+				$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/rel_db'.$Iprepend.'.gif','width="13" height="12"').' align="top" title="'.htmlspecialchars($pInfo['ref']).'" alt="" />';
 				$pInfo['class'] = $htmlColorClass ? $htmlColorClass : 'bgColor3';
 				$pInfo['type'] = 'rel';
 
@@ -3057,7 +2833,7 @@ class tx_impexp {
 					return;
 				}
 			}
-			$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'t3lib/gfx/rel_file.gif','width="13" height="12"').' align="top" alt="" />';
+			$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/rel_file.gif','width="13" height="12"').' align="top" alt="" />';
 			$pInfo['title'] = htmlspecialchars($fI['filename']);
 			$pInfo['ref'] = 'FILE';
 			$pInfo['size'] = $fI['filesize'];
@@ -3116,7 +2892,7 @@ class tx_impexp {
 
 				$pInfo['showDiffContent'] = substr($this->fileIDMap[$ID],strlen(PATH_site));
 
-				$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'t3lib/gfx/rel_file.gif','width="13" height="12"').' align="top" alt="" />';
+				$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/rel_file.gif','width="13" height="12"').' align="top" alt="" />';
 				$pInfo['title'] = htmlspecialchars($fI['filename']).' <em>(Original)</em>';
 				$pInfo['ref'] = 'FILE';
 				$pInfo['size'] = $fI['filesize'];
@@ -3140,7 +2916,7 @@ class tx_impexp {
 
 					$pInfo['showDiffContent'] = substr($this->fileIDMap[$ID],strlen(PATH_site));
 
-					$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'t3lib/gfx/rel_file.gif','width="13" height="12"').' align="top" alt="" />';
+					$pInfo['preCode'] = $preCode.'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/rel_file.gif','width="13" height="12"').' align="top" alt="" />';
 					$pInfo['title'] = htmlspecialchars($fI['filename']).' <em>(Resource)</em>';
 					$pInfo['ref'] = 'FILE';
 					$pInfo['size'] = $fI['filesize'];
@@ -3326,16 +3102,6 @@ class tx_impexp {
 	}
 
 	/**
-	 * Returns true if the TCA/columns field type is a DB reference field
-	 *
-	 * @param	array		config array for TCA/columns field
-	 * @return	boolean		True if DB reference field (group/db or select with foreign-table)
-	 */
-	function isReferenceField($conf)	{
-		return ($conf['type']=='group' && $conf['internal_type']=='db') ||	($conf['type']=='select' && $conf['foreign_table']);
-	}
-
-	/**
 	 * Checking if a PID is in the webmounts of the user
 	 *
 	 * @param	integer		Page ID to check
@@ -3517,7 +3283,6 @@ class tx_impexp {
 
 		return $this->fileProcObj;
 	}
-
 
 
 

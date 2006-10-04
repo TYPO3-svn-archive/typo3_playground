@@ -41,57 +41,57 @@
  *  132: class tslib_pibase
  *
  *              SECTION: Init functions
- *  211:     function tslib_pibase()
- *  225:     function pi_setPiVarDefaults()
+ *  214:     function tslib_pibase()
+ *  240:     function pi_setPiVarDefaults()
  *
  *              SECTION: Link functions
- *  264:     function pi_getPageLink($id,$target='',$urlParameters=array())
- *  280:     function pi_linkToPage($str,$id,$target='',$urlParameters=array())
- *  295:     function pi_linkTP($str,$urlParameters=array(),$cache=0,$altPageId=0)
- *  318:     function pi_linkTP_keepPIvars($str,$overrulePIvars=array(),$cache=0,$clearAnyway=0,$altPageId=0)
- *  342:     function pi_linkTP_keepPIvars_url($overrulePIvars=array(),$cache=0,$clearAnyway=0,$altPageId=0)
- *  360:     function pi_list_linkSingle($str,$uid,$cache=FALSE,$mergeArr=array(),$urlOnly=FALSE,$altPageId=0)
- *  388:     function pi_openAtagHrefInJSwindow($str,$winName='',$winParams='width=670,height=500,status=0,menubar=0,scrollbars=1,resizable=1')
+ *  277:     function pi_getPageLink($id,$target='',$urlParameters=array())
+ *  293:     function pi_linkToPage($str,$id,$target='',$urlParameters=array())
+ *  308:     function pi_linkTP($str,$urlParameters=array(),$cache=0,$altPageId=0)
+ *  331:     function pi_linkTP_keepPIvars($str,$overrulePIvars=array(),$cache=0,$clearAnyway=0,$altPageId=0)
+ *  355:     function pi_linkTP_keepPIvars_url($overrulePIvars=array(),$cache=0,$clearAnyway=0,$altPageId=0)
+ *  373:     function pi_list_linkSingle($str,$uid,$cache=FALSE,$mergeArr=array(),$urlOnly=FALSE,$altPageId=0)
+ *  401:     function pi_openAtagHrefInJSwindow($str,$winName='',$winParams='width=670,height=500,status=0,menubar=0,scrollbars=1,resizable=1')
  *
  *              SECTION: Functions for listing, browsing, searching etc.
- *  428:     function pi_list_browseresults($showResultCount=1,$tableParams='')
- *  500:     function pi_list_searchBox($tableParams='')
- *  531:     function pi_list_modeSelector($items=array(),$tableParams='')
- *  569:     function pi_list_makelist($res,$tableParams='')
- *  604:     function pi_list_row($c)
- *  616:     function pi_list_header()
+ *  456:     function pi_list_browseresults($showResultCount=1,$tableParams='',$wrapArr=array(), $pointerName = 'pointer', $hscText = TRUE)
+ *  618:     function pi_list_searchBox($tableParams='')
+ *  649:     function pi_list_modeSelector($items=array(),$tableParams='')
+ *  687:     function pi_list_makelist($res,$tableParams='')
+ *  722:     function pi_list_row($c)
+ *  734:     function pi_list_header()
  *
  *              SECTION: Stylesheet, CSS
- *  647:     function pi_getClassName($class)
- *  659:     function pi_classParam($class)
- *  673:     function pi_setClassStyle($class,$data,$selector='')
- *  684:     function pi_wrapInBaseClass($str)
+ *  765:     function pi_getClassName($class)
+ *  777:     function pi_classParam($class)
+ *  791:     function pi_setClassStyle($class,$data,$selector='')
+ *  802:     function pi_wrapInBaseClass($str)
  *
  *              SECTION: Frontend editing: Edit panel, edit icons
- *  733:     function pi_getEditPanel($row='',$tablename='',$label='',$conf=Array())
- *  775:     function pi_getEditIcon($content,$fields,$title='',$row='',$tablename='',$oConf=array())
+ *  858:     function pi_getEditPanel($row='',$tablename='',$label='',$conf=Array())
+ *  900:     function pi_getEditIcon($content,$fields,$title='',$row='',$tablename='',$oConf=array())
  *
  *              SECTION: Localization, locallang functions
- *  822:     function pi_getLL($key,$alt='',$hsc=FALSE)
- *  843:     function pi_loadLL()
+ *  947:     function pi_getLL($key,$alt='',$hsc=FALSE)
+ *  970:     function pi_loadLL()
  *
  *              SECTION: Database, queries
- *  908:     function pi_list_query($table,$count=0,$addWhere='',$mm_cat='',$groupBy='',$orderBy='',$query='',$returnQueryArray=FALSE)
- * 1000:     function pi_exec_query($table,$count=0,$addWhere='',$mm_cat='',$groupBy='',$orderBy='',$query='')
- * 1015:     function pi_getRecord($table,$uid,$checkPage=0)
- * 1026:     function pi_getPidList($pid_list,$recursive=0)
- * 1051:     function pi_prependFieldsWithTable($table,$fieldList)
- * 1071:     function pi_getCategoryTableContents($table,$pid,$whereClause='',$groupBy='',$orderBy='',$limit='')
+ * 1048:     function pi_list_query($table,$count=0,$addWhere='',$mm_cat='',$groupBy='',$orderBy='',$query='',$returnQueryArray=FALSE)
+ * 1140:     function pi_exec_query($table,$count=0,$addWhere='',$mm_cat='',$groupBy='',$orderBy='',$query='')
+ * 1155:     function pi_getRecord($table,$uid,$checkPage=0)
+ * 1166:     function pi_getPidList($pid_list,$recursive=0)
+ * 1191:     function pi_prependFieldsWithTable($table,$fieldList)
+ * 1211:     function pi_getCategoryTableContents($table,$pid,$whereClause='',$groupBy='',$orderBy='',$limit='')
  *
  *              SECTION: Various
- * 1115:     function pi_isOnlyFields($fList,$lowerThan=-1)
- * 1135:     function pi_autoCache($inArray)
- * 1166:     function pi_RTEcssText($str)
+ * 1255:     function pi_isOnlyFields($fList,$lowerThan=-1)
+ * 1275:     function pi_autoCache($inArray)
+ * 1306:     function pi_RTEcssText($str)
  *
  *              SECTION: FlexForms related functions
- * 1187:     function pi_initPIflexForm()
- * 1205:     function pi_getFFvalue($T3FlexForm_array,$fieldName,$sheet='sDEF',$lang='lDEF',$value='vDEF')
- * 1222:     function pi_getFFvalueFromSheetArray($sheetArray,$fieldNameArr,$value)
+ * 1328:     function pi_initPIflexForm($field='pi_flexform')
+ * 1346:     function pi_getFFvalue($T3FlexForm_array,$fieldName,$sheet='sDEF',$lang='lDEF',$value='vDEF')
+ * 1363:     function pi_getFFvalueFromSheetArray($sheetArray,$fieldNameArr,$value)
  *
  * TOTAL FUNCTIONS: 35
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -444,13 +444,14 @@ class tslib_pibase {
 	 * If $wrapArr['showResultsNumbersWrap'] is set, the formatting string is expected to hold template markers (###FROM###, ###TO###, ###OUT_OF###, ###FROM_TO###, ###CURRENT_PAGE###, ###TOTAL_PAGES###)
 	 * otherwise the formatting sting is expected to hold sprintf-markers (%s) for from, to, outof (in that sequence)
 	 *
+	 * 										otherwise wrapping is totally controlled/modified by this array
+	 *
 	 * @param	integer		determines how the results of the pagerowser will be shown. See description below
 	 * @param	string		Attributes for the table tag which is wrapped around the table cells containing the browse links
 	 * @param	array		Array with elements to overwrite the default $wrapper-array.
 	 * @param	string		varname for the pointer.
 	 * @param	boolean		enable htmlspecialchars() for the pi_getLL function (set this to FALSE if you want f.e use images instead of text for links like 'previous' and 'next').
 	 * @return	string		Output HTML-Table, wrapped in <div>-tags with a class attribute (if $wrapArr is not passed,
-	 *										otherwise wrapping is totally controlled/modified by this array
 	 */
 	function pi_list_browseresults($showResultCount=1,$tableParams='',$wrapArr=array(), $pointerName = 'pointer', $hscText = TRUE)	{
 
@@ -769,12 +770,20 @@ class tslib_pibase {
 	 * Returns the class-attribute with the correctly prefixed classname
 	 * Using pi_getClassName()
 	 *
-	 * @param	string		The class name (suffix)
+	 * @param	string		The class name(s) (suffix) - separate multiple classes with commas
+	 * @param	string		Additional class names which should not be prefixed - separate multiple classes with commas
 	 * @return	string		A "class" attribute with value and a single space char before it.
 	 * @see pi_getClassName()
 	 */
-	function pi_classParam($class)	{
-		return ' class="'.$this->pi_getClassName($class).'"';
+	function pi_classParam($class, $addClasses='')	{
+		$output = '';
+		foreach (t3lib_div::trimExplode(',',$class) as $v)	{
+			$output.= ' '.$this->pi_getClassName($v);
+		}
+		foreach (t3lib_div::trimExplode(',',$addClasses) as $v)	{
+			$output.= ' '.$v;
+		}
+		return ' class="'.trim($output).'"';
 	}
 
 	/**
@@ -784,7 +793,7 @@ class tslib_pibase {
 	 * @param	string		$data: CSS data
 	 * @param	string		If $selector is set to any CSS selector, eg 'P' or 'H1' or 'TABLE' then the style $data will regard those HTML-elements only
 	 * @return	void
-	 * @depreciated		I think this function should not be used (and probably isn't used anywhere). It was a part of a concept which was left behind quite quickly.
+	 * @deprecated		I think this function should not be used (and probably isn't used anywhere). It was a part of a concept which was left behind quite quickly.
 	 * @private
 	 */
 	function pi_setClassStyle($class,$data,$selector='')	{
@@ -1042,7 +1051,7 @@ class tslib_pibase {
 	 * @param	boolean		If set, the function will return the query not as a string but array with the various parts.
 	 * @return	mixed		The query build.
 	 * @access private
-	 * @depreciated		Use pi_exec_query() instead!
+	 * @deprecated		Use pi_exec_query() instead!
 	 */
 	function pi_list_query($table,$count=0,$addWhere='',$mm_cat='',$groupBy='',$orderBy='',$query='',$returnQueryArray=FALSE)	{
 
@@ -1133,7 +1142,7 @@ class tslib_pibase {
 	 * @param	mixed		If an array, then it must contain the keys "table", "mmtable" and (optionally) "catUidList" defining a table to make a MM-relation to in the query (based on fields uid_local and uid_foreign). If not array, the query will be a plain query looking up data in only one table.
 	 * @param	string		If set, this is added as a " GROUP BY ...." part of the query.
 	 * @param	string		If set, this is added as a " ORDER BY ...." part of the query. The default is that an ORDER BY clause is made based on $this->internal['orderBy'] and $this->internal['descFlag'] where the orderBy field must be found in $this->internal['orderByList']
-	 * @param	string		If set, this is taken as the first part of the query instead of what is created internally. Basically this should be a query starting with "FROM [table] WHERE ... AND ...". The $addWhere clauses and all the other stuff is still added. Only the tables and PID selecting clauses are bypassed. May be depreciated in the future!
+	 * @param	string		If set, this is taken as the first part of the query instead of what is created internally. Basically this should be a query starting with "FROM [table] WHERE ... AND ...". The $addWhere clauses and all the other stuff is still added. Only the tables and PID selecting clauses are bypassed. May be deprecated in the future!
 	 * @return	pointer		SQL result pointer
 	 */
 	function pi_exec_query($table,$count=0,$addWhere='',$mm_cat='',$groupBy='',$orderBy='',$query='')	{
@@ -1321,13 +1330,14 @@ class tslib_pibase {
 	/**
 	 * Converts $this->cObj->data['pi_flexform'] from XML string to flexForm array.
 	 *
+	 * @param	string		Field name to convert
 	 * @return	void
 	 */
-	function pi_initPIflexForm()	{
+	function pi_initPIflexForm($field='pi_flexform')	{
 			// Converting flexform data into array:
-		if (!is_array($this->cObj->data['pi_flexform']) && $this->cObj->data['pi_flexform'])	{
-			$this->cObj->data['pi_flexform'] = t3lib_div::xml2array($this->cObj->data['pi_flexform']);
-			if (!is_array($this->cObj->data['pi_flexform']))	$this->cObj->data['pi_flexform']=array();
+		if (!is_array($this->cObj->data[$field]) && $this->cObj->data[$field])	{
+			$this->cObj->data[$field] = t3lib_div::xml2array($this->cObj->data[$field]);
+			if (!is_array($this->cObj->data[$field]))	$this->cObj->data[$field]=array();
 		}
 	}
 

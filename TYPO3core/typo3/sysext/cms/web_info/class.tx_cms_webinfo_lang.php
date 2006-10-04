@@ -36,15 +36,16 @@
  *
  *
  *
- *   65: class tx_cms_webinfo_lang extends t3lib_extobjbase
- *   72:     function modMenu()
- *   89:     function main()
- *  156:     function renderL10nTable(&$tree)
- *  320:     function getSystemLanguages()
- *  342:     function getLangStatus($pageId, $langId)
- *  369:     function getContentElementCount($pageId,$sysLang)
+ *   66: class tx_cms_webinfo_lang extends t3lib_extobjbase
+ *   73:     function modMenu()
+ *  102:     function main()
+ *  171:     function renderL10nTable(&$tree)
+ *  342:     function getSystemLanguages()
+ *  364:     function getLangStatus($pageId, $langId)
+ *  393:     function getLocalizedElementInfo($pageId,$sysLang)
+ *  471:     function getContentElementCount($pageId,$sysLang)
  *
- * TOTAL FUNCTIONS: 6
+ * TOTAL FUNCTIONS: 7
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -116,7 +117,7 @@ class tx_cms_webinfo_lang extends t3lib_extobjbase {
 				// Showing the tree:
 				// Initialize starting point of page tree:
 			$treeStartingPoint = intval($this->pObj->id);
-			$treeStartingRecord = t3lib_BEfunc::getRecord('pages', $treeStartingPoint);
+			$treeStartingRecord = t3lib_BEfunc::getRecordWSOL('pages', $treeStartingPoint);
 			$depth = $this->pObj->MOD_SETTINGS['depth'];
 
 				// Initialize tree object:
@@ -288,7 +289,7 @@ class tx_cms_webinfo_lang extends t3lib_extobjbase {
 		if (is_array($langRecUids[0]))	{
 			$params = '&edit[pages]['.implode(',',$langRecUids[0]).']=edit&columnsOnly=title,nav_title,l18n_cfg,hidden';
 			$editIco = '<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,$GLOBALS['BACK_PATH'])).'">
-				<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/edit2.gif','width="11" height="12"').' title="'.$LANG->getLL('lang_renderl10n_editPageHeaders','1').'" border="0" alt="" />
+				<img'.t3lib_iconWorks::skinImg($GLOBALS['BACK_PATH'],'gfx/edit2.gif','width="11" height="12"').' title="'.$LANG->getLL('lang_renderl10n_editPageProperties','1').'" border="0" alt="" />
 				</a>';
 		} else $editIco = '';
 		$tCells[] = '<td class="c-leftLine" colspan="2">'.
@@ -366,11 +367,13 @@ class tx_cms_webinfo_lang extends t3lib_extobjbase {
 			'pages_language_overlay',
 			'pid='.intval($pageId).
 				' AND sys_language_uid='.intval($langId).
-				t3lib_BEfunc::deleteClause('pages_language_overlay')
+				t3lib_BEfunc::deleteClause('pages_language_overlay').
+				t3lib_BEfunc::versioningPlaceholderClause('pages_language_overlay')
 		);
 
 		$row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
 		if (is_array($row))	{
+			t3lib_BEfunc::workspaceOL('pages_language_overlay',$row);
 			$row['_COUNT'] = $GLOBALS['TYPO3_DB']->sql_num_rows($res);
 			$row['_HIDDEN'] = $row['hidden'] ||
 							(intval($row['endtime']) > 0 && intval($row['endtime']) < time()) ||
@@ -404,7 +407,8 @@ class tx_cms_webinfo_lang extends t3lib_extobjbase {
 						$table,
 						'pid='.intval($pageId).
 							' AND '.$TCA[$table]['ctrl']['languageField'].'<=0'.
-							t3lib_BEfunc::deleteClause($table)
+							t3lib_BEfunc::deleteClause($table).
+							t3lib_BEfunc::versioningPlaceholderClause($table)
 					);
 					if (count($allRows))	{
 			$info.='<h3>'.$table.'</h3>';
@@ -423,7 +427,8 @@ $info.='[<b>'.$TCA[$table]['ctrl']['transOrigDiffSourceField'].'</b>]';
 								'pid='.intval($pageId).
 									' AND '.$TCA[$table]['ctrl']['languageField'].'='.intval($sysLang).
 									' AND '.$TCA[$table]['ctrl']['transOrigPointerField'].'='.intval($row['uid']).
-									t3lib_BEfunc::deleteClause($table)
+									t3lib_BEfunc::deleteClause($table).
+									t3lib_BEfunc::versioningPlaceholderClause($table)
 							);
 
 							foreach($translations as $c => $tr)	{
@@ -443,7 +448,8 @@ $info.='[<b>'.$TCA[$table]['ctrl']['transOrigDiffSourceField'].'</b>]';
 							'pid='.intval($pageId).
 								' AND '.$TCA[$table]['ctrl']['languageField'].'='.intval($sysLang).
 								' AND uid NOT IN ('.implode(',',$translationsUids).')'.
-								t3lib_BEfunc::deleteClause($table)
+								t3lib_BEfunc::deleteClause($table).
+								t3lib_BEfunc::versioningPlaceholderClause($table)
 						);
 						if (count($lostTranslations))	{
 							$info.=t3lib_div::view_array($lostTranslations);
@@ -468,7 +474,8 @@ $info.='[<b>'.$TCA[$table]['ctrl']['transOrigDiffSourceField'].'</b>]';
 			'tt_content',
 			'pid='.intval($pageId).
 				' AND sys_language_uid='.intval($sysLang).
-				t3lib_BEfunc::deleteClause('tt_content')
+				t3lib_BEfunc::deleteClause('tt_content').
+				t3lib_BEfunc::versioningPlaceholderClause('tt_content')
 		);
 
 		list($count) = $GLOBALS['TYPO3_DB']->sql_fetch_row($res);

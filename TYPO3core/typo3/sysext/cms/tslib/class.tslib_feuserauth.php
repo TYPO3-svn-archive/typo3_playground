@@ -39,16 +39,16 @@
  *
  *
  *
- *   77: class tslib_feUserAuth extends t3lib_userAuth
- *  141:     function fetchGroupData()
- *  194:     function getUserTSconf()
+ *   79: class tslib_feUserAuth extends t3lib_userAuth
+ *  143:     function fetchGroupData()
+ *  233:     function getUserTSconf()
  *
  *              SECTION: Session data management functions
- *  239:     function fetchSessionData()
- *  261:     function storeSessionData()
- *  287:     function getKey($type,$key)
- *  312:     function setKey($type,$key,$data)
- *  337:     function record_registration($recs)
+ *  278:     function fetchSessionData()
+ *  300:     function storeSessionData()
+ *  326:     function getKey($type,$key)
+ *  351:     function setKey($type,$key,$data)
+ *  377:     function record_registration($recs,$maxSizeOfSessionData=0)
  *
  * TOTAL FUNCTIONS: 7
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -97,13 +97,14 @@ class tslib_feUserAuth extends t3lib_userAuth {
 	var $formfield_uident = 'pass'; 			// formfield with password
 	var $formfield_chalvalue = 'challenge';		// formfield with a unique value which is used to encrypt the password and username
 	var $formfield_status = 'logintype'; 		// formfield with status: *'login', 'logout'
+	var $formfield_permanent = 'permalogin';	// formfield with 0 or 1 // 1 = permanent login enabled // 0 = session is valid for a browser session only
 	var $security_level = '';					// sets the level of security. *'normal' = clear-text. 'challenged' = hashed password/username from form in $formfield_uident. 'superchallenged' = hashed password hashed again with username.
 
 	var $auth_include = '';						// this is the name of the include-file containing the login form. If not set, login CAN be anonymous. If set login IS needed.
 
-	var $auth_timeout_field = 6000;				// if > 0 : session-timeout in seconds. if false/<0 : no timeout. if string: The string is fieldname from the usertable where the timeout can be found.
+	var $auth_timeout_field = 6000;				// Server session lifetime. If > 0: session-timeout in seconds. If false or <0: no timeout. If string: The string is a fieldname from the usertable where the timeout can be found.
 
-	var $lifetime = 0;                  		// 0 = Session-cookies. If session-cookies, the browser will stop session when the browser is closed. Else it keeps the session for $lifetime seconds.
+	var $lifetime = 0;				// Client session lifetime. 0 = Session-cookies. If session-cookies, the browser will stop the session when the browser is closed. Otherwise this specifies the lifetime of a cookie that keeps the session.
 	var $sendNoCacheHeaders = 0;
 	var $getFallBack = 1;						// If this is set, authentication is also accepted by the _GET. Notice that the identification is NOT 128bit MD5 hash but reduced. This is done in order to minimize the size for mobile-devices, such as WAP-phones
 	var $hash_length = 10;
@@ -133,6 +134,85 @@ class tslib_feUserAuth extends t3lib_userAuth {
 	var $sesData_change = 0;
 	var $userData_change = 0;
 
+
+	/**
+	 * Starts a user session
+	 *
+	 * @return	void
+	 * @see t3lib_userAuth::start()
+	 */
+	function start() {
+		if (intval($this->auth_timeout_field)>0 && intval($this->auth_timeout_field) < $this->lifetime)	{
+				// If server session timeout is non-zero but less than client session timeout: Copy this value instead.
+			$this->auth_timeout_field = $this->lifetime;
+		}
+
+		parent::start();
+	}
+ 
+	/**
+	 * Returns a new session record for the current user for insertion into the DB.
+	 *
+	 * @return	array		user session record
+	 */
+	function getNewSessionRecord($tempuser) {
+		$insertFields = parent::getNewSessionRecord($tempuser);
+		$insertFields['ses_permanent'] = $this->is_permanent;
+
+		return $insertFields;
+	}
+
+	/**
+	 * Determins whether a session cookie needs to be set (lifetime=0)
+	 *
+	 * @return	boolean
+	 * @internal
+	 */
+	function isSetSessionCookie() {
+		$retVal = ($this->newSessionID || $this->forceSetCookie) && ($this->lifetime==0 || !$this->user['ses_permanent']);
+		return $retVal;
+	}
+
+	/**
+	 * Determins whether a non-session cookie needs to be set (lifetime>0)
+	 *
+	 * @return	boolean
+	 * @internal
+	 */
+	function isRefreshTimeBasedCookie() {
+		return $this->lifetime > 0 && $this->user['ses_permanent'];
+	}
+
+	/**
+	 * Returns an info array with Login/Logout data submitted by a form or params
+	 *
+	 * @return	array
+	 * @see t3lib_userAuth::getLoginFormData()
+	 */
+	function getLoginFormData() {
+		$loginData = parent::getLoginFormData();
+		if($GLOBALS['TYPO3_CONF_VARS']['FE']['permalogin'] == 0 || $GLOBALS['TYPO3_CONF_VARS']['FE']['permalogin'] == 1) {
+			if ($this->getMethodEnabled)	{
+				$isPermanent = t3lib_div::_GP($this->formfield_permanent);
+			} else {
+				$isPermanent = t3lib_div::_POST($this->formfield_permanent);
+			}
+			if(strlen($isPermanent) != 1) {
+				$isPermanent = $GLOBALS['TYPO3_CONF_VARS']['FE']['permalogin'];
+			} elseif(!$isPermanent) {
+				$this->forceSetCookie = true; // To make sure the user gets a session cookie and doesn't keep a possibly existing time based cookie, we need to force seeting the session cookie here
+			}
+			$isPermanent = $isPermanent?1:0;
+		} elseif($GLOBALS['TYPO3_CONF_VARS']['FE']['permalogin'] == 2) {
+			$isPermanent = 1;
+		} else {
+			$isPermanent = 0;
+		}
+		$loginData['permanent'] = $isPermanent;
+		$this->is_permanent = $isPermanent;
+
+		return $loginData;
+	}
 
 	/**
 	 * Will select all fe_groups records that the current fe_user is member of - and which groups are also allowed in the current domain.
@@ -168,7 +248,7 @@ class tslib_feUserAuth extends t3lib_userAuth {
 			$serviceObj->initAuth($subType, array(), $authInfo, $this);
 
 			$groupData = $serviceObj->getGroups($this->user, $groupDataArr);
-			if(is_array($groupData) && count($groupData))	{
+			if (is_array($groupData) && count($groupData))	{
 				$groupDataArr = t3lib_div::array_merge($groupDataArr, $groupData);	// Keys in $groupData should be unique ids of the groups (like "uid") so this function will override groups.
 			}
 			unset($serviceObj);
@@ -179,7 +259,7 @@ class tslib_feUserAuth extends t3lib_userAuth {
 
 
 			// use 'auth' service to check the usergroups if they are really valid
-		foreach($groupDataArr as $groupData)	{
+		foreach ($groupDataArr as $groupData)	{
 				// by default a group is valid
 			$validGroup = TRUE;
 

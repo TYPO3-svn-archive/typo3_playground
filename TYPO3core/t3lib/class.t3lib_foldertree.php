@@ -112,7 +112,7 @@ class t3lib_folderTree extends t3lib_treeView  {
 		if (!$this->ext_IconMode)	{
 			$theFolderIcon = $GLOBALS['TBE_TEMPLATE']->wrapClickMenuOnIcon($theFolderIcon,$row['path'],'',0);
 		} elseif (!strcmp($this->ext_IconMode,'titlelink'))	{
-			$aOnClick = 'return jumpTo(\''.$this->getJumpToParam($row).'\',this,\''.$this->domIdPrefix.$this->getId($row).'_'.$this->bank.'\');';
+			$aOnClick = 'return jumpTo(\''.$this->getJumpToParam($row).'\',this,\''.$this->domIdPrefix.$this->getId($row).'\','.$this->bank.');';
 			$theFolderIcon='<a href="#" onclick="'.htmlspecialchars($aOnClick).'">'.$theFolderIcon.'</a>';
 		}
 		return $theFolderIcon;
@@ -128,7 +128,7 @@ class t3lib_folderTree extends t3lib_treeView  {
 	 * @access private
 	 */
 	function wrapTitle($title,$row,$bank=0)	{
-		$aOnClick = 'return jumpTo(\''.$this->getJumpToParam($row).'\',this,\''.$this->domIdPrefix.$this->getId($row).'_'.$bank.'\');';
+		$aOnClick = 'return jumpTo(\''.$this->getJumpToParam($row).'\',this,\''.$this->domIdPrefix.$this->getId($row).'\','.$bank.');';
 		$CSM = '';
 		if ($GLOBALS['TYPO3_CONF_VARS']['BE']['useOnContextMenuHandler'])	{
 			$CSM = ' oncontextmenu="'.htmlspecialchars($GLOBALS['TBE_TEMPLATE']->wrapClickMenuOnIcon('',$row['path'],'',0,'','',TRUE)).'"';
@@ -142,7 +142,7 @@ class t3lib_folderTree extends t3lib_treeView  {
 	 * @param	array		Record array
 	 * @return	integer		The "uid" field value.
 	 */
-	function getId($v) {
+	function getId($v)	{
 		return t3lib_div::md5Int($v['path']);
 	}
 
@@ -152,7 +152,7 @@ class t3lib_folderTree extends t3lib_treeView  {
 	 * @param	array		The record array.
 	 * @return	string		The jump-url parameter.
 	 */
-	function getJumpToParam($v) {
+	function getJumpToParam($v)	{
 		return rawurlencode($v['path']);
 	}
 
