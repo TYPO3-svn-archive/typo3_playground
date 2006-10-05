@@ -906,6 +906,9 @@ class t3lib_TCEforms	{
 			case 'group':
 				$item = $this->getSingleField_typeGroup($table,$field,$row,$PA);
 			break;
+			case 'inline':
+				$item = $this->getSingleField_typeInline($table,$field,$row,$PA);
+			break;
 			case 'none':
 				$item = $this->getSingleField_typeNone($table,$field,$row,$PA);
 			break;
@@ -1949,6 +1952,312 @@ class t3lib_TCEforms	{
 		return $item;
 	}
 
+	
+	/**
+	 * Generation of TCEform elements of the type "inline"
+	 * This will render inline-relational-record sets. Relations.
+	 * 
+	 * @param	string		The table name of the record
+	 * @param	string		The field name which this element is supposed to edit
+	 * @param	array		The record data array where the value(s) for the field can be found
+	 * @param	array		An array with additional configuration options.
+	 * @return	string		The HTML code for the TCEform field
+	 */
+	function getSingleField_typeInline($table,$field,$row,&$PA) {
+			// Init:
+		$config = $PA['fieldConf']['config'];
+		$internal_type = $config['internal_type'];
+		$foreign_table = $config['foreign_table'];
+		$recordList = array();
+		
+		$show_thumbs = $config['show_thumbs'];							// needed here?
+		$maxitems = t3lib_div::intInRange($config['maxitems'],0);
+		if (!$maxitems)	$maxitems=100000;
+		$minitems = t3lib_div::intInRange($config['minitems'],0);
+		$allowed = $config['allowed'];									// needed here?
+		$disallowed = $config['disallowed'];							// needed here?
+
+			// get the records related to this inline record
+			// FIXME: Handle MM-relations
+		if ($PA['itemFormElValue'])
+			$recordList = explode(',', $PA['itemFormElValue']);
+			
+			// add the "Create new record" link if there are less than maxitems
+		if (count($recordList) < $maxitems) {
+			$item .= '
+					<!--
+						Link for creating a new record:
+					-->
+					<div id="typo3-newRecordLink">
+						<a href="'.htmlspecialchars($BACK_PATH.'db_new.php?id='.$this->id.'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI'))).'">'.
+						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->getLL('l_new',1).'" />'.
+						$this->getLL('l_new',1).
+						'</a>
+					</div>';
+		}
+		
+			// FIXME: maybe something nicer than overwriting and setting back later
+			// (extend getMainFields with attribute 'prependFormFieldNames'?)
+		$prependFormFieldNames = $this->prependFormFieldNames;
+		$this->prependFormFieldNames .= '[inline]'.substr($PA['itemFormElName'], strlen($this->prependFormFieldNames));
+
+			// DEBUG: Simulate a NEW record
+		$recordList[] = 'NEW';
+		
+		if (count($recordList)) {
+			foreach ($recordList as $recordUid) {
+				$item .= $this->getSingleField_typeInline_renderForeignRecord($foreign_table,$recordUid,$PA);
+			}
+		}
+						
+		/*
+			* show "add new record" link
+			* render foreign records
+			  * render foreign record header
+			  * render main TCEforms of this record
+		*/
+
+		$this->prependFormFieldNames = $prependFormFieldNames;
+		
+			// include JavaScript file
+		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
+			$GLOBALS['SOBE']->doc->JScode .= '<script src="../t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>'."\n";
+			$GLOBALS['T3_VAR']['inlineRelational']['imported'] = true;
+		}
+		
+		return $item;
+	}
+	
+	
+	function getSingleField_typeInline_renderForeignRecord($foreign_table,$foreign_uid,&$PA) {
+			// record comes from storage (e.g. database)
+		if (t3lib_div::testInt($foreign_uid)) {
+			$row = t3lib_BEfunc::getRecordWSOL($foreign_table, $foreign_uid);
+			
+			// record is NEW, so we handle it virtually
+		} else {
+			$row = array(
+				'uid' => uniqid('NEW'),
+				'pid' => 0,
+			);
+		}
+		
+		$fields = $this->getMainFields($foreign_table,$row);
+		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $row);
+
+		$tableAttribs='';
+		$tableAttribs.= ' style="margin-right: 5px;' .
+			# ($this->borderStyle[0] ? ' '.htmlspecialchars($this->borderStyle[0]) : '') .
+			'"';
+		$tableAttribs.= $this->borderStyle[2] ? ' background="'.htmlspecialchars($this->backPath.$this->borderStyle[2]).'"':'';
+		# $tableAttribs.= $this->borderStyle[3] ? ' class="'.htmlspecialchars($this->borderStyle[3]).'"':'';
+		if ($tableAttribs) $tableAttribs='border="0" cellspacing="0" cellpadding="0" width="100%"'.$tableAttribs;
+		
+		$fields = '<table '.$tableAttribs.'>'.$fields.'</table>';
+
+		$out .= '<div id="'.$this->prependFormFieldNames.'_div">';
+		$out .= '<div id="'.$this->prependFormFieldNames.'_header">'.$header.'</div>';
+		$out .= '<div id="'.$this->prependFormFieldNames.'_fields">'.$fields.'</div>';
+		$out .= '</div>';
+				
+		return $out;
+	}
+	
+	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row) {
+		$recTitle = $this->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
+		$altText = t3lib_BEfunc::getRecordIconAltText($row, $foreign_table);
+		$iconImg = t3lib_iconWorks::getIconImage(
+			$foreign_table, $row, $this->backPath,
+			'title="'.htmlspecialchars($altText).'" class="absmiddle"'
+		);
+		
+		$onClick = "inline.toggleRecordVisibility('".htmlspecialchars($this->prependFormFieldNames)."')";
+		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
+		// $label .= '<img '.t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/plusbullet.gif').' align="absmiddle" /> ';
+		$label .= $recTitle;
+		$label .= '</a>';
+
+			// from class.db_list_extra.inc
+			// $theData[$fCol]=$this->makeControl($table,$row);
+			// $theData[$fCol]=$this->makeClip($table,$row);
+		
+		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table, $row);
+		
+			// FIXME: Use the correct css-classes to fit with future skins etc.
+		$header =
+			'<table cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-right: 5px;"'.
+			($this->borderStyle[2] ? ' background="'.htmlspecialchars($this->backPath.$this->borderStyle[2]).'"':'').
+			($this->borderStyle[3] ? ' class="'.htmlspecialchars($this->borderStyle[3]).'"':'').'>' .
+			'<tr class="class-main12"><td width="18">'.$iconImg.'</td><td align="left"><b>'.$label.'</b></td><td align="right">'.$ctrl.'</td></tr></table>';
+		
+		return $header;
+	}
+	
+	// copied and modified form from class.db_list_extra.inc
+	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row) {
+		global $TCA, $LANG, $SOBE;
+
+			// Initialize:
+		# t3lib_div::loadTCA($table);
+		$cells=array();
+		$isNewItem = substr($row['uid'], 0, 3) == 'NEW';
+		
+		$calcPerms = $GLOBALS['BE_USER']->calcPerms(
+			t3lib_BEfunc::readPageAccess(
+				$row['pid'],
+				$GLOBALS['BE_USER']->getPagePermsClause(1)
+			)
+		);
+		
+			// FIXME: Put these calls somewhere else... possibly they arn't needed here
+		$web_list_modTSconfig = t3lib_BEfunc::getModTSconfig($row['pid'],'mod.web_list');
+		$allowedNewTables = t3lib_div::trimExplode(',',$this->web_list_modTSconfig['properties']['allowedNewTables'],1);
+		$showNewRecLink = !count($allowedNewTables) || in_array($table, $allowedNewTables);
+		
+			// If the listed table is 'pages' we have to request the permission settings for each page:
+		if ($table=='pages')	{
+			$localCalcPerms = $GLOBALS['BE_USER']->calcPerms(t3lib_BEfunc::getRecord('pages',$row['uid']));
+		}
+
+			// This expresses the edit permissions for this particular element:
+		$permsEdit = ($table=='pages' && ($localCalcPerms&2)) || ($table!='pages' && ($calcPerms&16));
+
+			// "Show" link (only pages and tt_content elements)
+		if ($table=='pages' || $table=='tt_content')	{
+			$params='&edit['.$table.']['.$row['uid'].']=edit';
+			$cells[]='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::viewOnClick($table=='tt_content'?$this->id.'#'.$row['uid']:$row['uid'])).'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/zoom.gif','width="12" height="12"').' title="'.$LANG->sL('LLL:EXT:lang/locallang_core.php:labels.showPage',1).'" alt="" />'.
+					'</a>';
+		}
+
+			// "Move" wizard link for pages/tt_content elements:
+		if (($table=="tt_content" && $permsEdit) || ($table=='pages'))	{
+			$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpExt(\'move_el.php?table='.$table.'&uid='.$row['uid'].'\');').'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move_'.($table=='tt_content'?'record':'page').'.gif','width="11" height="12"').' title="'.$LANG->getLL('move_'.($table=='tt_content'?'record':'page'),1).'" alt="" />'.
+					'</a>';
+		}
+
+			// FIXME: Handling for this one
+			// If the extended control panel is enabled OR if we are seeing a single table:
+		if ($SOBE->MOD_SETTINGS['bigControlPanel'] || true)	{
+
+				// "Info": (All records)
+			if (!$isNewItem)
+				$cells[]='<a href="#" onclick="'.htmlspecialchars('top.launchView(\''.$table.'\', \''.$row['uid'].'\'); return false;').'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/zoom2.gif','width="12" height="12"').' title="'.$LANG->getLL('showInfo',1).'" alt="" />'.
+					'</a>';
+
+				// If the table is NOT a read-only table, then show these links:
+			if (!$TCA[$table]['ctrl']['readOnly'])	{
+
+					// "Revert" link (history/undo)
+				if (!$isNewItem)
+					$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpExt(\'show_rechis.php?element='.rawurlencode($table.':'.$row['uid']).'\',\'#latest\');').'">'.
+						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/history2.gif','width="13" height="12"').' title="'.$LANG->getLL('history',1).'" alt="" />'.
+						'</a>';
+
+					// Versioning:
+				if (t3lib_extMgm::isLoaded('version'))	{
+					$vers = t3lib_BEfunc::selectVersionsOfRecord($table, $row['uid'], 'uid', $GLOBALS['BE_USER']->workspace);
+					if (is_array($vers))	{	// If table can be versionized.
+						if (count($vers)>1)	{
+							$st = 'background-color: #FFFF00; font-weight: bold;';
+							$lab = count($vers)-1;
+						} else {
+							$st = 'background-color: #9999cc; font-weight: bold;';
+							$lab = 'V';
+						}
+
+						$cells[]='<a href="'.htmlspecialchars(t3lib_extMgm::extRelPath('version')).'cm1/index.php?table='.rawurlencode($table).'&uid='.rawurlencode($row['uid']).'" style="'.htmlspecialchars($st).'">'.
+								$lab.
+								'</a>';
+					}
+				}
+
+					// "Edit Perms" link:
+				if ($table=='pages' && $GLOBALS['BE_USER']->check('modules','web_perm'))	{
+					$cells[]='<a href="'.htmlspecialchars('mod/web/perm/index.php?id='.$row['uid'].'&return_id='.$row['uid'].'&edit=1').'">'.
+							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/perm.gif','width="7" height="12"').' title="'.$LANG->getLL('permissions',1).'" alt="" />'.
+							'</a>';
+				}
+
+					// "New record after" link (ONLY if the records in the table are sorted by a "sortby"-row or if default values can depend on previous record):
+				if ($TCA[$table]['ctrl']['sortby'] || $TCA[$table]['ctrl']['useColumnsForDefaultValues'])	{
+					if (
+						($table!='pages' && ($calcPerms&16)) || 	// For NON-pages, must have permission to edit content on this parent page
+						($table=='pages' && ($calcPerms&8))		// For pages, must have permission to create new pages here.
+						)	{
+						if ($showNewRecLink)	{
+							$params='&edit['.$table.']['.(-$row['uid']).']=new';
+							$cells[]='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,'',-1)).'">'.
+									'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($table=='pages'?'page':'el').'.gif','width="'.($table=='pages'?13:11).'" height="12"').' title="'.$LANG->getLL('new'.($table=='pages'?'Page':'Record'),1).'" alt="" />'.
+									'</a>';
+						}
+					}
+				}
+
+					// "Up/Down" links
+				if ($permsEdit && $TCA[$table]['ctrl']['sortby']  && !$this->sortField && !$this->searchLevels)	{
+					if (isset($this->currentTable['prev'][$row['uid']]))	{	// Up
+						$params='&cmd['.$table.']['.$row['uid'].'][move]='.$this->currentTable['prev'][$row['uid']];
+						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_up.gif','width="11" height="10"').' title="'.$LANG->getLL('moveUp',1).'" alt="" />'.
+								'</a>';
+					} else {
+						$cells[]='<img src="clear.gif" '.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_up.gif','width="11" height="10"',2).' alt="" />';
+					}
+					if ($this->currentTable['next'][$row['uid']])	{	// Down
+						$params='&cmd['.$table.']['.$row['uid'].'][move]='.$this->currentTable['next'][$row['uid']];
+						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"').' title="'.$LANG->getLL('moveDown',1).'" alt="" />'.
+								'</a>';
+					} else {
+						$cells[]='<img src="clear.gif" '.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"',2).' alt="" />';
+					}
+				}
+
+					// "Hide/Unhide" links:
+				$hiddenField = $TCA[$table]['ctrl']['enablecolumns']['disabled'];
+				if ($permsEdit && $hiddenField && $TCA[$table]['columns'][$hiddenField] && (!$TCA[$table]['columns'][$hiddenField]['exclude'] || $GLOBALS['BE_USER']->check('non_exclude_fields',$table.':'.$hiddenField)))	{
+					if ($row[$hiddenField])	{
+						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=0';
+						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" />'.
+								'</a>';
+					} else {
+						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=1';
+						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" />'.
+								'</a>';
+					}
+				}
+
+					// "Delete" link:
+				if (
+					($table=='pages' && ($localCalcPerms&4)) || ($table!='pages' && ($calcPerms&16))
+					)	{
+					$params='&cmd['.$table.']['.$row['uid'].'][delete]=1';
+					$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$LANG->JScharCode($LANG->getLL('deleteWarning').t3lib_BEfunc::referenceCount($table,$row['uid'],' (There are %s reference(s) to this record!)')).')) {jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');} return false;').'">'.
+							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/garbage.gif','width="11" height="12"').' title="'.$LANG->getLL('delete',1).'" alt="" />'.
+							'</a>';
+				}
+			}
+		}
+
+			// If the record is edit-locked	by another user, we will show a little warning sign:
+		if ($lockInfo=t3lib_BEfunc::isRecordLocked($table,$row['uid']))	{
+			$cells[]='<a href="#" onclick="'.htmlspecialchars('alert('.$LANG->JScharCode($lockInfo['msg']).');return false;').'">'.
+					'<img'.t3lib_iconWorks::skinImg('','gfx/recordlock_warning3.gif','width="17" height="12"').' title="'.htmlspecialchars($lockInfo['msg']).'" alt="" />'.
+					'</a>';
+		}
+
+
+			// Compile items into a DIV-element:
+		return '
+											<!-- CONTROL PANEL: '.$table.':'.$row['uid'].' -->
+											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
+	}
+	
 	/**
 	 * Generation of TCEform elements of the type "none"
 	 * This will render a non-editable display of the content of the field.
@@ -4168,23 +4477,24 @@ class t3lib_TCEforms	{
 	 */
 	function replaceTableWrap($arr,$rec,$table)	{
 		global $TCA;
+
+			// Make "new"-label
+		if (strstr($rec['uid'],'NEW'))	{
+			$newLabel = ' <span class="typo3-TCEforms-newToken">'.
+						$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.new',1).
+						'</span>';
+
+				#t3lib_BEfunc::fixVersioningPid($table,$rec);	// Kasper: Should not be used here because NEW records are not offline workspace versions...
+			$truePid = t3lib_BEfunc::getTSconfig_pidValue($table,$rec['uid'],$rec['pid']);
+			$prec = t3lib_BEfunc::getRecordWSOL('pages',$truePid,'title');
+			$rLabel = '<em>[PID: '.$truePid.'] '.htmlspecialchars(trim(t3lib_div::fixed_lgd_cs(t3lib_BEfunc::getRecordTitle('pages',$prec),40))).'</em>';
+		} else {
+			$newLabel = ' <span class="typo3-TCEforms-recUid">['.$rec['uid'].']</span>';
+			$rLabel  = htmlspecialchars(trim(t3lib_div::fixed_lgd_cs(t3lib_BEfunc::getRecordTitle($table,$rec),40)));
+		}
+		
 		reset($arr);
 		while(list($k,$v)=each($arr))	{
-
-				// Make "new"-label
-			if (strstr($rec['uid'],'NEW'))	{
-				$newLabel = ' <span class="typo3-TCEforms-newToken">'.
-							$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.new',1).
-							'</span>';
-
- 				#t3lib_BEfunc::fixVersioningPid($table,$rec);	// Kasper: Should not be used here because NEW records are not offline workspace versions...
-				$truePid = t3lib_BEfunc::getTSconfig_pidValue($table,$rec['uid'],$rec['pid']);
-				$prec = t3lib_BEfunc::getRecordWSOL('pages',$truePid,'title');
-				$rLabel = '<em>[PID: '.$truePid.'] '.htmlspecialchars(trim(t3lib_div::fixed_lgd_cs(t3lib_BEfunc::getRecordTitle('pages',$prec),40))).'</em>';
-			} else {
-				$newLabel = ' <span class="typo3-TCEforms-recUid">['.$rec['uid'].']</span>';
-				$rLabel  = htmlspecialchars(trim(t3lib_div::fixed_lgd_cs(t3lib_BEfunc::getRecordTitle($table,$rec),40)));
-			}
 
 				// Make substitutions:
 			$arr[$k] = str_replace('###ID_NEW_INDICATOR###', $newLabel, $arr[$k]);
