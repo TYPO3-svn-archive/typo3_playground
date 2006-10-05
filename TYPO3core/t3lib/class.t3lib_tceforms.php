@@ -1981,26 +1981,27 @@ class t3lib_TCEforms	{
 			// FIXME: Handle MM-relations
 		if ($PA['itemFormElValue'])
 			$recordList = explode(',', $PA['itemFormElValue']);
+
+			// FIXME: maybe something nicer than overwriting and setting back later
+			// (extend getMainFields with attribute 'prependFormFieldNames'?)
+		$prependFormFieldNames = $this->prependFormFieldNames;
+		$this->prependFormFieldNames .= '[inline]'.substr($PA['itemFormElName'], strlen($this->prependFormFieldNames));
 			
 			// add the "Create new record" link if there are less than maxitems
 		if (count($recordList) < $maxitems) {
+			$onClick = "return inline.createNewRecord('".$this->prependFormFieldNames."')";
 			$item .= '
 					<!--
 						Link for creating a new record:
 					-->
 					<div id="typo3-newRecordLink">
-						<a href="'.htmlspecialchars($BACK_PATH.'db_new.php?id='.$this->id.'&returnUrl='.rawurlencode(t3lib_div::getIndpEnv('REQUEST_URI'))).'">'.
+						<a href="#" onClick="'.$onClick.'">'.
 						'<img'.t3lib_iconWorks::skinImg($BACK_PATH,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->getLL('l_new',1).'" />'.
 						$this->getLL('l_new',1).
 						'</a>
 					</div>';
 		}
 		
-			// FIXME: maybe something nicer than overwriting and setting back later
-			// (extend getMainFields with attribute 'prependFormFieldNames'?)
-		$prependFormFieldNames = $this->prependFormFieldNames;
-		$this->prependFormFieldNames .= '[inline]'.substr($PA['itemFormElName'], strlen($this->prependFormFieldNames));
-
 			// DEBUG: Simulate a NEW record
 		$recordList[] = 'NEW';
 		
@@ -2042,8 +2043,10 @@ class t3lib_TCEforms	{
 			);
 		}
 		
+		$appendFormFieldNames = '['.$foreign_table.']['.$row['uid'].']';
+		
 		$fields = $this->getMainFields($foreign_table,$row);
-		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $row);
+		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $row, $appendFormFieldNames);
 
 		$tableAttribs='';
 		$tableAttribs.= ' style="margin-right: 5px;' .
@@ -2055,15 +2058,15 @@ class t3lib_TCEforms	{
 		
 		$fields = '<table '.$tableAttribs.'>'.$fields.'</table>';
 
-		$out .= '<div id="'.$this->prependFormFieldNames.'_div">';
-		$out .= '<div id="'.$this->prependFormFieldNames.'_header">'.$header.'</div>';
-		$out .= '<div id="'.$this->prependFormFieldNames.'_fields">'.$fields.'</div>';
+		$out .= '<div id="'.$this->prependFormFieldNames.$appendFormFieldNames.'_div">';
+		$out .= '<div id="'.$this->prependFormFieldNames.$appendFormFieldNames.'_header">'.$header.'</div>';
+		$out .= '<div id="'.$this->prependFormFieldNames.$appendFormFieldNames.'_fields">'.$fields.'</div>';
 		$out .= '</div>';
 				
 		return $out;
 	}
 	
-	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row) {
+	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$appendFormFieldNames) {
 		$recTitle = $this->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
 		$altText = t3lib_BEfunc::getRecordIconAltText($row, $foreign_table);
 		$iconImg = t3lib_iconWorks::getIconImage(
@@ -2071,7 +2074,7 @@ class t3lib_TCEforms	{
 			'title="'.htmlspecialchars($altText).'" class="absmiddle"'
 		);
 		
-		$onClick = "inline.toggleRecordVisibility('".htmlspecialchars($this->prependFormFieldNames)."')";
+		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($this->prependFormFieldNames.$appendFormFieldNames)."')";
 		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
 		// $label .= '<img '.t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/plusbullet.gif').' align="absmiddle" /> ';
 		$label .= $recTitle;
@@ -2081,7 +2084,7 @@ class t3lib_TCEforms	{
 			// $theData[$fCol]=$this->makeControl($table,$row);
 			// $theData[$fCol]=$this->makeClip($table,$row);
 		
-		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table, $row);
+		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$appendFormFieldNames);
 		
 			// FIXME: Use the correct css-classes to fit with future skins etc.
 		$header =
@@ -2094,7 +2097,7 @@ class t3lib_TCEforms	{
 	}
 	
 	// copied and modified form from class.db_list_extra.inc
-	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row) {
+	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$appendFormFieldNames) {
 		global $TCA, $LANG, $SOBE;
 
 			// Initialize:
@@ -2188,8 +2191,9 @@ class t3lib_TCEforms	{
 						($table=='pages' && ($calcPerms&8))		// For pages, must have permission to create new pages here.
 						)	{
 						if ($showNewRecLink)	{
+							$onClick = "return inline.createNewRecord('".$this->prependFormFieldNames.$appendFormFieldNames."')";
 							$params='&edit['.$table.']['.(-$row['uid']).']=new';
-							$cells[]='<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick($params,'',-1)).'">'.
+							$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
 									'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($table=='pages'?'page':'el').'.gif','width="'.($table=='pages'?13:11).'" height="12"').' title="'.$LANG->getLL('new'.($table=='pages'?'Page':'Record'),1).'" alt="" />'.
 									'</a>';
 						}
@@ -2219,15 +2223,16 @@ class t3lib_TCEforms	{
 					// "Hide/Unhide" links:
 				$hiddenField = $TCA[$table]['ctrl']['enablecolumns']['disabled'];
 				if ($permsEdit && $hiddenField && $TCA[$table]['columns'][$hiddenField] && (!$TCA[$table]['columns'][$hiddenField]['exclude'] || $GLOBALS['BE_USER']->check('non_exclude_fields',$table.':'.$hiddenField)))	{
+					$onClick = "return inline.enableDisableRecord('".$this->prependFormFieldNames.$appendFormFieldNames."')";
 					if ($row[$hiddenField])	{
 						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=0';
-						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" />'.
+						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$this->prependFormFieldNames.$appendFormFieldNames.'_disabled" />'.
 								'</a>';
 					} else {
 						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=1';
-						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" />'.
+						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$this->prependFormFieldNames.$appendFormFieldNames.'_disabled" />'.
 								'</a>';
 					}
 				}

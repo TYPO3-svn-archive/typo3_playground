@@ -29,32 +29,63 @@
  function inlineRelational() {
 	var inlineRelational = this;
 	
-	this.toggleRecordVisibility = function(objectId) {
+	this.expandCollapseRecord = function(objectId) {
 		var fieldsObj = document.getElementById(objectId+'_fields');
 		
 		if (fieldsObj) {
 			fieldsObj.style.display = fieldsObj.style.display == 'none' ? '' : 'none';
 		}
+		
+		return false;
 	}
 	
 	this.collapseAllRecords = function(objectId) {
 		
+		return false;
 	}
 	
 	this.createNewRecord = function(objectId) {
 		
+		return false;
 	}
 	
-	this.disableRecord = function(objectId) {
+	this.enableDisableRecord = function(objectId) {
+		var imageObj = document.getElementById(objectId+'_disabled');
+		var valueObj = document.getElementsByName(objectId+'[hidden]');
+		var formObj = document.getElementsByName(objectId+'[hidden]_0');
+		var imagePath = '';
 		
+		if (valueObj && formObj) {
+			formObj[0].click();
+			imagePath = this.parsePath(imageObj.src);
+			imageObj.src = imagePath+(valueObj[0].value > 0 ? 'button_unhide.gif' : 'button_hide.gif');
+		}
+		
+		return false;
 	}
 	
 	this.deleteRecord = function(objectId) {
 		
+		return false;
 	}
 	
 	this.parseObjectId = function(objectId) {
 		
+		return false;
+	}
+	
+	this.parsePath = function(path) {
+		var backSlash = path.lastIndexOf('\\');
+		var normalSlash = path.lastIndexOf('/');
+		
+		if (backSlash > 0)
+			path = path.substring(0,backSlash+1);
+		else if (normalSlash > 0)
+			path = path.substring(0,normalSlash+1);
+		else
+			path = '';
+			
+		return path;
 	}
 }
 
