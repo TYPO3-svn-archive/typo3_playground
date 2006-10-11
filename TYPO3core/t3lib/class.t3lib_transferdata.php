@@ -329,6 +329,7 @@ class t3lib_transferData {
 			case 'group':
 				$data = $this->renderRecord_groupProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
 			break;
+			case 'inline':
 			case 'select':
 				$data = $this->renderRecord_selectProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
 			break;

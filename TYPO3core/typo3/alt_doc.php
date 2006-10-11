@@ -479,7 +479,7 @@ class SC_alt_doc {
 
 			// Begin edit:
 		if (is_array($this->editconf))	{
-
+			
 				// Initialize TCEforms (rendering the forms)
 			$this->tceforms = t3lib_div::makeInstance('t3lib_TCEforms');
 			$this->tceforms->initDefaultBEMode();

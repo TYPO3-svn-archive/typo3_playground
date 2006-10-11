@@ -30,12 +30,7 @@
 	var inlineRelational = this;
 	
 	this.expandCollapseRecord = function(objectId) {
-		var fieldsObj = document.getElementById(objectId+'_fields');
-		
-		if (fieldsObj) {
-			fieldsObj.style.display = fieldsObj.style.display == 'none' ? '' : 'none';
-		}
-		
+		Element.toggle(objectId+'_fields');
 		return false;
 	}
 	
@@ -45,7 +40,7 @@
 	}
 	
 	this.createNewRecord = function(objectId) {
-		
+		inline_createNewRecord(objectId);
 		return false;
 	}
 	
