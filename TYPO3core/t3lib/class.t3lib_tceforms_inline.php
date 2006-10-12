@@ -71,7 +71,8 @@ class t3lib_TCEforms_inline {
 	var $backPath;							// Reference to $fObj->backPath
 
 	var $prependObjectId = '';				// id for DOM objects, set by function dynamically
-
+	var $prependNaming = 'data';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
+	
 	var $xajax;								// Instance of the tx_xajax extension
 	var $xajaxPrefix = 'inline_';			// prefix for xajax functions in JavaScript
 
@@ -144,7 +145,7 @@ class t3lib_TCEforms_inline {
 		$this->prependObjectId .= substr($PA['itemFormElName'], strlen($this->fObj->prependFormFieldNames));
 
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
-		$this->fObj->prependFormFieldNames = 'inline';
+		$this->fObj->prependFormFieldNames = $this->prependNaming;
 
 			// add the "Create new record" link if there are less than maxitems
 		if (count($recordList) < $maxitems) {
@@ -171,16 +172,18 @@ class t3lib_TCEforms_inline {
 		}
 		$item .= '</div>';
 
-			// set this value back to that one it had - before we changed it
-		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
-		if ($firstInlineCall) $this->prependObjectId = '';
-
 			// include JavaScript files
 		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
 			$GLOBALS['SOBE']->doc->JScode .= $this->getSingleField_typeInline_addJavaScript();
 			$GLOBALS['T3_VAR']['inlineRelational']['imported'] = true;
+			$this->fObj->additionalJS_post[] =
+				"\t\t\t\twindow.setTimeout(function() { inline.setPrependFormFieldNames('".$this->fObj->prependFormFieldNames."'); }, 10);";
 		}
 
+			// set this value back to that one it had - before we changed it
+		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
+		if ($firstInlineCall) $this->prependObjectId = '';
+		
 		return $item;
 	}
 
@@ -194,7 +197,7 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec) {
 			// record comes from storage (e.g. database)
-		$isNewRecord = t3lib_div::testInt($foreign_uid) ? false : true;
+		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
 
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 
@@ -210,9 +213,13 @@ class t3lib_TCEforms_inline {
 		if ($tableAttribs) $tableAttribs='border="0" cellspacing="0" cellpadding="0" width="100%"'.$tableAttribs;
 
 		$fields = '<table '.$tableAttribs.'>'.$fields.'</table>';
-		if ($isNewRecord) $fields .= '<input type="hidden" name="'.$this->prependObjectId.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
+		if ($isNewRecord) {
+			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
+		} else {
+			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[deleted]" value="0" />';
+		}
 
-		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_div">';
+		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_div" isnewrecord="'.$isNewRecord.'">';
 		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_header">'.$header.'</div>';
 		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_fields">'.$fields.'</div>';
 		$out .= '</div>';
@@ -413,8 +420,8 @@ class t3lib_TCEforms_inline {
 				if (
 					($table=='pages' && ($localCalcPerms&4)) || ($table!='pages' && ($calcPerms&16))
 					)	{
-					$params='&cmd['.$table.']['.$row['uid'].'][delete]=1';
-					$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$LANG->JScharCode($LANG->getLL('deleteWarning').t3lib_BEfunc::referenceCount($table,$row['uid'],' (There are %s reference(s) to this record!)')).')) {	} return false;').'">'.
+					$onClick = "inline.deleteRecord('".$this->prependObjectId.$appendFormFieldNames."');";
+					$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$LANG->JScharCode($LANG->getLL('deleteWarning').t3lib_BEfunc::referenceCount($table,$row['uid'],' (There are %s reference(s) to this record!)')).')) {	'.$onClick.' } return false;').'">'.
 							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/garbage.gif','width="11" height="12"').' title="'.$LANG->getLL('delete',1).'" alt="" />'.
 							'</a>';
 				}

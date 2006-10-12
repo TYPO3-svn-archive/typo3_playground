@@ -28,6 +28,11 @@
 
  function inlineRelational() {
 	var inlineRelational = this;
+	var prependFormFieldNames = 'inline';
+	
+	this.setPrependFormFieldNames = function(value) {
+		prependFormFieldNames = value;
+	}
 	
 	this.expandCollapseRecord = function(objectId) {
 		Element.toggle(objectId+'_fields');
@@ -49,9 +54,10 @@
 	}
 	
 	this.enableDisableRecord = function(objectId) {
-		var imageObj = document.getElementById(objectId+'_disabled');
-		var valueObj = document.getElementsByName(objectId+'[hidden]');
-		var formObj = document.getElementsByName(objectId+'[hidden]_0');
+		var elName = this.parseFormElementName(objectId, 2);
+		var imageObj = $(objectId+'_disabled');
+		var valueObj = document.getElementsByName(elName+'[hidden]');
+		var formObj = document.getElementsByName(elName+'[hidden]_0');
 		var imagePath = '';
 		
 		if (valueObj && formObj) {
@@ -64,7 +70,14 @@
 	}
 	
 	this.deleteRecord = function(objectId) {
-		
+		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == '1') {
+			Element.remove(objectId+'_div');
+		} else {
+			var elName = this.parseFormElementName(objectId, 2);
+			document.getElementsByName(elName)[0].value = '1';
+			Element.hide(objectId+'_div');
+		}
+
 		return false;
 	}
 	
@@ -85,6 +98,17 @@
 			path = '';
 			
 		return path;
+	}
+	
+	this.parseFormElementName = function(objectId, rightCount) {
+			// remove left and right side "inline[...|...]" -> '...|...'
+		objectId = objectId.substr(0, objectId.lastIndexOf(']')).substr(objectId.indexOf('['+1));
+
+		var elParts = new Array();
+		var idParts = objectId.split('][');
+		for (var i = 0; i < rightCount; i++) elParts.unshift(idParts.pop());
+		var elName = prependFormFieldNames+'['+elParts.join('][')+']';
+		return elName;
 	}
 }
 
