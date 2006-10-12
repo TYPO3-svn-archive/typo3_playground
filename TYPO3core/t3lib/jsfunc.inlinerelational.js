@@ -44,6 +44,10 @@
 		return false;
 	}
 	
+	this.insertRecordAfter = function(objectId, htmlData) {
+		new Insertion.After(objectId, htmlData);
+	}
+	
 	this.enableDisableRecord = function(objectId) {
 		var imageObj = document.getElementById(objectId+'_disabled');
 		var valueObj = document.getElementsByName(objectId+'[hidden]');
