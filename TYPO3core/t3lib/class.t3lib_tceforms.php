@@ -326,7 +326,7 @@ class t3lib_TCEforms	{
 		$this->defColorScheme = $this->colorScheme;
 		$this->defClassScheme = $this->classScheme;
 		
-		$this->inline = t3lib_div::makeInstance('t3lib_tceforms_inline');
+		$this->inline = t3lib_div::makeInstance('t3lib_TCEforms_inline');
 		$this->inline->init($this);
 	}
 

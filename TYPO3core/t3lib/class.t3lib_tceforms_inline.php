@@ -1,17 +1,51 @@
 <?php
+/***************************************************************
+*  Copyright notice
+*
+*  (c) 2006 Oliver Hader <oh@inpublica.de>
+*  All rights reserved
+*
+*  This script is part of the TYPO3 project. The TYPO3 project is
+*  free software; you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation; either version 2 of the License, or
+*  (at your option) any later version.
+*
+*  The GNU General Public License can be found at
+*  http://www.gnu.org/copyleft/gpl.html.
+*  A copy is found in the textfile GPL.txt and important notices to the license
+*  from the author is found in LICENSE.txt distributed with these scripts.
+*
+*
+*  This script is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  This copyright notice MUST APPEAR in all copies of the script!
+***************************************************************/
+/**
+ * The Inline-Relational-Record-Editing functions as part of the TCEforms.
+ */
 
 
 require_once(t3lib_extMgm::extPath('xajax').'class.tx_xajax.php');
 require_once(t3lib_extMgm::extPath('scriptaculous').'class.tx_scriptaculous.php');
 
 
-class t3lib_tceforms_inline {
+class t3lib_TCEforms_inline {
 	var $fObj;		// Reference to the calling TCEforms instance
 	var $backPath;	// Reference to $fObj->backPath
 
 	var $xajax;		// Instance of the tx_xajax extension
 	
 
+	/**
+	 * Intialize an instance of t3lib_TCEforms_inline
+	 *
+	 * @param	object		$tceForms: Reference to an TCEforms instance
+	 * @return	void
+	 */
 	function init(&$tceForms) {
 		$this->fObj = $tceForms;
 		$this->backPath =& $tceForms->backPath;
@@ -107,13 +141,7 @@ class t3lib_tceforms_inline {
 		}
 		$item .= '</div>';
 		
-		/*
-			* show "add new record" link
-			* render foreign records
-			  * render foreign record header
-			  * render main TCEforms of this record
-		*/
-
+			// set this value back to that one it had - before we changed it
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
 		
 			// include JavaScript files
@@ -125,6 +153,16 @@ class t3lib_tceforms_inline {
 		return $item;
 	}
 
+	/**
+	 * Get the related records of the embedding item, this could be 1:n, m:n.
+	 *
+	 * @param	string		$table: The table name of the record
+	 * @param	string		$field: The field name which this element is supposed to edit
+	 * @param	array		$row: The record data array where the value(s) for the field can be found
+	 * @param	array		$PA: An array with additional configuration options.
+	 * @param	array		$config: (Redundant) content of $PA['fieldConf']['config'] (for convenience)
+	 * @return	array		The records related to the parent item
+	 */
 	function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config) {
 		$records = array();
 		
@@ -166,7 +204,16 @@ class t3lib_tceforms_inline {
 		return $records;		
 	}
 	
-	
+	 /**
+	  * Get a single record row for an TCA table from the database.
+	  * t3lib_transferData is used for "upgrading" the values, especially the relations.
+	  *
+	  * @param	integer		$pid: The pid of the page the record should be stored (only relevant for NEW records)
+	  * @param	string		$table: The table to fetch data from (= foreign_table)
+	  * @param	string		$uid: The uid of the record to fetch, or empty if a new one should be created
+	  * @param	string		$cmd: The command to perform, empty or 'new'
+	  * @return	array		The records row from the database post-processed by t3lib_transferData
+	  */
 	function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='') {
 		# $prevPageID = is_object($trData) ? $trData->prevPageID : '';
 		$trData = t3lib_div::makeInstance('t3lib_transferData');
@@ -186,6 +233,15 @@ class t3lib_tceforms_inline {
 		return $rec;
 	}
 	
+	/**
+	 * Render the form-fields of a related (foreign) record.
+	 *
+	 * @param	array	$parentRow: The table record of the parent/embedding table
+	 * @param	string	$foreign_table: The name of the foreing table (this is the table to be embedded here as child)
+	 * @param	array	$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
+	 * @param	array	$PA: An array with additional configuration options.
+	 * @return	string	The HTML code for this "foreign record"
+	 */
 	function getSingleField_typeInline_renderForeignRecord($parentRow,$foreign_table,$rec,&$PA) {
 			// record comes from storage (e.g. database)
 		$isNewRecord = t3lib_div::testInt($foreign_uid) ? false : true;
@@ -214,6 +270,15 @@ class t3lib_tceforms_inline {
 		return $out;
 	}
 	
+	/**
+	 * Renders the HTML header for a foreign record, such as the title, toggle-function, drag'n'drop, etc.
+	 * Later on the command-icons are inserted here.
+	 *
+	 * @param	string		$foreign_table
+	 * @param	array		$row
+	 * @param	string		$appendFormFieldNames: Append to prependFormFieldName to get a "namespace" for each form-field
+	 * @return	string		The HTML code of the header
+	 */
 	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$appendFormFieldNames) {
 		$recTitle = $this->fObj->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
 		$altText = t3lib_BEfunc::getRecordIconAltText($row, $foreign_table);
@@ -244,7 +309,15 @@ class t3lib_tceforms_inline {
 		return $header;
 	}
 	
-	// copied and modified form from class.db_list_extra.inc
+	/**
+	 * Render the control-icons for a record header (create new, sorting, delete, disable/enable).
+	 * Most of the parts are copy&paste from class.db_list_extra.inc and modified for the JavaScript calls here
+	 * 
+	 * @param	string		$table
+	 * @param	array		$row
+	 * @param	string		$appendFormFieldNames
+	 * @return	string		The HTML code with the control-icons
+	 */
 	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$appendFormFieldNames) {
 		global $TCA, $LANG, $SOBE;
 
@@ -411,14 +484,21 @@ class t3lib_tceforms_inline {
 											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
 	}
 	
+	/**
+	 * Get the <script type="text/javascript" src="..."> tags of:
+	 * - prototype.js
+	 * - script.acolo.us
+	 * - xajax.js
+	 *
+	 * @return	string		The HTML code of the <script type="text/javascript" src="..."> tags
+	 */
 	function getSingleField_typeInline_addJavaScript() {
 		$jsCode = array(
 			'<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'lib/prototype.js" type="text/javascript"></script>',
-			'<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'lib/prototype.js" type="text/javascript"></script>',
+			# '<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'lib/prototype.js" type="text/javascript"></script>',
 			'<script src="/t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
 			$this->xajax->getJavascript('/'.t3lib_extMgm::siteRelPath('xajax'), 'xajax_js/xajax_uncompressed.js'),
 		);
-
 		
 		return implode("\n", $jsCode);
 	}
@@ -484,6 +564,11 @@ class t3lib_tceforms_inline {
 		return $strucutreTree;
 	}
 	
+	/**
+	 * Process the xaJax request. This method is normally called directly by alt_doc_ajax.php
+	 * 
+	 * @return	void
+	 */
 	function getSingleField_typeInline_processRequest() {
 		$this->xajax->processRequests();
 	}
