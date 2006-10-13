@@ -35,26 +35,26 @@
  *
  *
  *   69: class t3lib_TCEforms_inline
- *   85:     function init(&$tceForms)
+ *   86:     function init(&$tceForms)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  119:     function getSingleField_typeInline($table,$field,$row,&$PA)
- *  195:     function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec)
- *  232:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$appendFormFieldNames)
- *  272:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$appendFormFieldNames)
- *  447:     function getSingleField_typeInline_addJavaScript()
+ *  120:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *  205:     function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec)
+ *  248:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames)
+ *  288:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames)
+ *  463:     function getSingleField_typeInline_addJavaScript()
  *
  *              SECTION: Handling for AJAX calls
- *  473:     function getSingleField_typeInline_createNewRecord($domObjectId)
+ *  489:     function getSingleField_typeInline_createNewRecord($domObjectId)
  *
  *              SECTION: Get data from database and handle relations
- *  519:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  571:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  554:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  606:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
  *
  *              SECTION: Helper functions
- *  605:     function getSingleField_typeInline_getNewRecord($pid, $table)
- *  640:     function getSingleField_typeInline_getStructureTree($domObjectId)
- *  692:     function getSingleField_typeInline_processRequest()
+ *  718:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  753:     function getSingleField_typeInline_getStructureTree($domObjectId)
+ *  805:     function getSingleField_typeInline_processRequest()
  *
  * TOTAL FUNCTIONS: 12
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -72,7 +72,7 @@ class t3lib_TCEforms_inline {
 
 	var $prependObjectId = '';				// id for DOM objects, set by function dynamically
 	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
-	
+
 	var $xajax;								// Instance of the tx_xajax extension
 	var $xajaxPrefix = 'inline_';			// prefix for xajax functions in JavaScript
 
@@ -147,7 +147,7 @@ class t3lib_TCEforms_inline {
 		}
 		$itemFormElName = substr($PA['itemFormElName'], strlen($this->fObj->prependFormFieldNames));
 		$this->prependObjectId .= $itemFormElName;
-		
+
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
 		$this->fObj->prependFormFieldNames = $this->prependNaming;
 
@@ -190,7 +190,7 @@ class t3lib_TCEforms_inline {
 			// set this value back to that one it had - before we changed it
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
 		if ($firstInlineCall) $this->prependObjectId = '';
-		
+
 		return $item;
 	}
 
@@ -490,7 +490,7 @@ class t3lib_TCEforms_inline {
 			// set the TCEforms prependFormFieldNames
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
 		$this->fObj->prependFormFieldNames = $this->prependNaming;
-		
+
 		$structureTree = $this->getSingleField_typeInline_getStructureTree($domObjectId);
 		$paBr = $structureTree['parentBranch'];
 
@@ -507,7 +507,7 @@ class t3lib_TCEforms_inline {
 
 			// the name of the form field to store the dynamically created records
 		$ctrlRecordsName = $this->prependNaming.'[__ctrl][records]['.$paBr['table'].']['.$paBr['uid'].']['.$paBr['field'].']';
-		
+
 			// prepend the HTML data at the beginning of the container
 		if (!$structureTree['childBranch']['uid']) {
 			$objResponse->addScriptCall('inline.memorizeAddRecord', $ctrlRecordsName, $record['uid'], null);
@@ -529,7 +529,7 @@ class t3lib_TCEforms_inline {
 
 			// set the TCEforms prependFormFieldNames value back to its initial value
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
-		
+
 		return $objResponse->getXML();
 	}
 
@@ -593,7 +593,7 @@ class t3lib_TCEforms_inline {
 	}
 
 
-	 /**
+	/**
 	 * Get a single record row for an TCA table from the database.
 	 * t3lib_transferData is used for "upgrading" the values, especially the relations.
 	 *
@@ -622,14 +622,14 @@ class t3lib_TCEforms_inline {
 		return $rec;
 	}
 
-	
+
 	/*******************************************************
 	 *
 	 * Handle relations to store data back to database - STATIC
 	 *
 	 *******************************************************/
 
-	
+
 	/**
 	 * Handle relations and replace NEW... uids by their proper database uids.
 	 * Finally the records a pushed to TCEmain and saved, deleted, moved, etc.
@@ -645,7 +645,7 @@ class t3lib_TCEforms_inline {
 
 		$data = array();
 		$cmd = array();
-		
+
 			// find records that should be deleted
 		foreach ($inline as $table => $uidData) {
 			foreach ($uidData as $uid => $fieldData) {
@@ -659,11 +659,11 @@ class t3lib_TCEforms_inline {
 				}
 			}
 		}
-		
+
 			// save the inline data without the relations
 		$tce->start($inline, array());
 		$tce->process_datamap();
-		
+
 			// now process values like '13,NEWabc384823,45' and replace NEW... by proper uids from TCEmain
 		foreach ($ctrl['records'] as $table => $uidData) {
 			foreach ($uidData as $uid => $fieldData) {
@@ -671,7 +671,7 @@ class t3lib_TCEforms_inline {
 					// if this is an annotation to a recently processed record, substitute to proper uid
 				if (preg_match('/NEW/i', $uid) && isset($tce->substNEWwithIDs[$uid]))
 					$uid = $tce->substNEWwithIDs[$uid];
-					
+
 					// iterate through fields and substitute NEW... uids by proper uids
 				foreach ($fieldData as $field => $value) {
 					if (strlen($value) && preg_match('/NEW/i', $value)) {
@@ -688,7 +688,7 @@ class t3lib_TCEforms_inline {
 				}
 			}
 		}
-		
+
 			// finally save the relations, and perform deletion of records
 		$tce->start($data, array());
 		$tce->process_datamap();
@@ -699,7 +699,7 @@ class t3lib_TCEforms_inline {
 		// - delete: if it's m:n --> I dont know... yet ;-)
 		// - move: possibly adjust the pid of the child records (recurisvely!!!)
 	}
-	
+
 
 	/*******************************************************
 	 *
