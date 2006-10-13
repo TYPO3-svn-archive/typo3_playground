@@ -71,7 +71,7 @@ class t3lib_TCEforms_inline {
 	var $backPath;							// Reference to $fObj->backPath
 
 	var $prependObjectId = '';				// id for DOM objects, set by function dynamically
-	var $prependNaming = 'data';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
+	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 	
 	var $xajax;								// Instance of the tx_xajax extension
 	var $xajaxPrefix = 'inline_';			// prefix for xajax functions in JavaScript
@@ -127,6 +127,7 @@ class t3lib_TCEforms_inline {
 
 		$itemArray = array();
 		$recordList = array();
+		$relationList = array();
 
 		$minitems = t3lib_div::intInRange($config['minitems'],0);
 		$maxitems = t3lib_div::intInRange($config['maxitems'],0);
@@ -134,7 +135,9 @@ class t3lib_TCEforms_inline {
 
 			// get the records related to this inline record
 		$recordList = $this->getSingleField_typeInline_getRelatedRecords($table,$field,$row,$PA,$config);
-		$recordList[] = $this->getSingleField_typeInline_getRecord($row['pid'], $foreign_table, '', 'new');
+
+			// DEBUG: For testing, add a new record to the output
+		// $recordList[] = $this->getSingleField_typeInline_getRecord($row['pid'], $foreign_table, '', 'new');
 
 			// FIXME: maybe something nicer than overwriting and setting back later
 			// (extend getMainFields with attribute 'prependFormFieldNames'?)
@@ -142,8 +145,9 @@ class t3lib_TCEforms_inline {
 			$this->prependObjectId = 'inline['.$row['pid'].']';
 			$firstInlineCall = true;
 		}
-		$this->prependObjectId .= substr($PA['itemFormElName'], strlen($this->fObj->prependFormFieldNames));
-
+		$itemFormElName = substr($PA['itemFormElName'], strlen($this->fObj->prependFormFieldNames));
+		$this->prependObjectId .= $itemFormElName;
+		
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
 		$this->fObj->prependFormFieldNames = $this->prependNaming;
 
@@ -168,9 +172,12 @@ class t3lib_TCEforms_inline {
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
 				$item .= $this->getSingleField_typeInline_renderForeignRecord($foreign_table,$rec);
+				$relationList[] = $rec['uid'];
 			}
 		}
+		// $item .= '<input type="text" name="'.$this->prependNaming.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
 		$item .= '</div>';
+		$item .= '<input size="60" type="text" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
 
 			// include JavaScript files
 		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
@@ -199,10 +206,12 @@ class t3lib_TCEforms_inline {
 			// record comes from storage (e.g. database)
 		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
 
+			// get the current prepentObjectId
+		$prependObjectId = $this->prependObjectId;
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 
+		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $prependObjectId.$appendFormFieldNames);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
-		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $appendFormFieldNames);
 
 		$tableAttribs='';
 		$tableAttribs.= ' style="margin-right: 5px;' .
@@ -216,12 +225,12 @@ class t3lib_TCEforms_inline {
 		if ($isNewRecord) {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
 		} else {
-			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[deleted]" value="0" />';
+			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
 		}
 
-		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_div" isnewrecord="'.$isNewRecord.'">';
-		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_header">'.$header.'</div>';
-		$out .= '<div id="'.$this->prependObjectId.$appendFormFieldNames.'_fields">'.$fields.'</div>';
+		$out .= '<div id="'.$prependObjectId.$appendFormFieldNames.'_div" isnewrecord="'.$isNewRecord.'">';
+		$out .= '<div id="'.$prependObjectId.$appendFormFieldNames.'_header">'.$header.'</div>';
+		$out .= '<div id="'.$prependObjectId.$appendFormFieldNames.'_fields">'.$fields.'</div>';
 		$out .= '</div>';
 
 		return $out;
@@ -236,7 +245,7 @@ class t3lib_TCEforms_inline {
 	 * @param	string		$appendFormFieldNames: Append to prependFormFieldName to get a "namespace" for each form-field
 	 * @return	string		The HTML code of the header
 	 */
-	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$appendFormFieldNames) {
+	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames) {
 		$recTitle = $this->fObj->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
 		$altText = t3lib_BEfunc::getRecordIconAltText($row, $foreign_table);
 		$iconImg = t3lib_iconWorks::getIconImage(
@@ -244,7 +253,7 @@ class t3lib_TCEforms_inline {
 			'title="'.htmlspecialchars($altText).'" class="absmiddle"'
 		);
 
-		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($this->prependObjectId.$appendFormFieldNames)."')";
+		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."')";
 		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
 		// $label .= '<img '.t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/plusbullet.gif').' align="absmiddle" /> ';
 		$label .= $recTitle;
@@ -254,7 +263,7 @@ class t3lib_TCEforms_inline {
 			// $theData[$fCol]=$this->makeControl($table,$row);
 			// $theData[$fCol]=$this->makeClip($table,$row);
 
-		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$appendFormFieldNames);
+		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$formFieldNames);
 
 			// FIXME: Use the correct css-classes to fit with future skins etc.
 		$header =
@@ -273,10 +282,10 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$table
 	 * @param	array		$row
-	 * @param	string		$appendFormFieldNames
+	 * @param	string		$formFieldNames
 	 * @return	string		The HTML code with the control-icons
 	 */
-	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$appendFormFieldNames) {
+	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames) {
 		global $TCA, $LANG, $SOBE;
 
 			// Initialize:
@@ -370,7 +379,7 @@ class t3lib_TCEforms_inline {
 						($table=='pages' && ($calcPerms&8))		// For pages, must have permission to create new pages here.
 						)	{
 						if ($showNewRecLink)	{
-							$onClick = "return inline.createNewRecord('".$this->prependObjectId.$appendFormFieldNames."')";
+							$onClick = "return inline.createNewRecord('".$formFieldNames."')";
 							$params='&edit['.$table.']['.(-$row['uid']).']=new';
 							$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
 									'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($table=='pages'?'page':'el').'.gif','width="'.($table=='pages'?13:11).'" height="12"').' title="'.$LANG->getLL('new'.($table=='pages'?'Page':'Record'),1).'" alt="" />'.
@@ -402,16 +411,16 @@ class t3lib_TCEforms_inline {
 					// "Hide/Unhide" links:
 				$hiddenField = $TCA[$table]['ctrl']['enablecolumns']['disabled'];
 				if ($permsEdit && $hiddenField && $TCA[$table]['columns'][$hiddenField] && (!$TCA[$table]['columns'][$hiddenField]['exclude'] || $GLOBALS['BE_USER']->check('non_exclude_fields',$table.':'.$hiddenField)))	{
-					$onClick = "return inline.enableDisableRecord('".$this->prependObjectId.$appendFormFieldNames."')";
+					$onClick = "return inline.enableDisableRecord('".$formFieldNames."')";
 					if ($row[$hiddenField])	{
 						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=0';
 						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$this->prependObjectId.$appendFormFieldNames.'_disabled" />'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$formFieldNames.'_disabled" />'.
 								'</a>';
 					} else {
 						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=1';
 						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$this->prependObjectId.$appendFormFieldNames.'_disabled" />'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$formFieldNames.'_disabled" />'.
 								'</a>';
 					}
 				}
@@ -420,7 +429,7 @@ class t3lib_TCEforms_inline {
 				if (
 					($table=='pages' && ($localCalcPerms&4)) || ($table!='pages' && ($calcPerms&16))
 					)	{
-					$onClick = "inline.deleteRecord('".$this->prependObjectId.$appendFormFieldNames."');";
+					$onClick = "inline.deleteRecord('".$formFieldNames."');";
 					$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$LANG->JScharCode($LANG->getLL('deleteWarning').t3lib_BEfunc::referenceCount($table,$row['uid'],' (There are %s reference(s) to this record!)')).')) {	'.$onClick.' } return false;').'">'.
 							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/garbage.gif','width="11" height="12"').' title="'.$LANG->getLL('delete',1).'" alt="" />'.
 							'</a>';
@@ -478,7 +487,12 @@ class t3lib_TCEforms_inline {
 	 * @return	string		An xaJax XML object
 	 */
 	function getSingleField_typeInline_createNewRecord($domObjectId) {
+			// set the TCEforms prependFormFieldNames
+		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
+		$this->fObj->prependFormFieldNames = $this->prependNaming;
+		
 		$structureTree = $this->getSingleField_typeInline_getStructureTree($domObjectId);
+		$paBr = $structureTree['parentBranch'];
 
 		$foreign_table = $structureTree['childBranch']['table'];
 		$record = $this->getSingleField_typeInline_getNewRecord($structureTree['pid'], $foreign_table);
@@ -488,20 +502,34 @@ class t3lib_TCEforms_inline {
 
 			// render the foreign record that should passed back to browser
 		$item = $this->getSingleField_typeInline_renderForeignRecord($foreign_table, $record);
-		# echo $structureTree['prependObjectId'];
 
 		$objResponse = new tx_xajax_response('iso-8859-1', true);
 
+			// the name of the form field to store the dynamically created records
+		$ctrlRecordsName = $this->prependNaming.'[__ctrl][records]['.$paBr['table'].']['.$paBr['uid'].']['.$paBr['field'].']';
+		
 			// prepend the HTML data at the beginning of the container
-		if (!$structureTree['childBranch']['uid'])
-			$objResponse->addAppend($structureTree['prependObjectId'], 'innerHTML', $item);
+		if (!$structureTree['childBranch']['uid']) {
+			$objResponse->addScriptCall('inline.memorizeAddRecord', $ctrlRecordsName, $record['uid'], null);
+			$objResponse->addScriptCall('inline.domAddNewRecord', 'bottom', $structureTree['prependObjectId'], $item);
+
+			// ERROR: xajax adds the html data by touching the innerHTML attribute
+			// -> entered data of other records in that section gets lost on doing this
+			// $objResponse->addAppend($structureTree['prependObjectId'], 'innerHTML', $item);
+
 			// append the HTML data after an existing record in the container
-		else
-			$objResponse->addScriptCall('inline.insertRecordAfter', $domObjectId.'_div', $item);
+		} else {
+			$objResponse->addScriptCall('inline.memorizeAddRecord', $ctrlRecordsName, $record['uid'], $structureTree['childBranch']['uid']);
+			$objResponse->addScriptCall('inline.domAddNewRecord', 'after', $domObjectId.'_div', $item);
+			// $objResponse->addScriptCall('inline.insertRecordAfter', $domObjectId.'_div', $item);
+		}
 
 			// tell the browser to scroll to the newly created record
 		$objResponse->addScriptCall('Element.scrollTo', $structureTree['prependObjectId'].'['.$foreign_table.']['.$record['uid'].']_div');
 
+			// set the TCEforms prependFormFieldNames value back to its initial value
+		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
+		
 		return $objResponse->getXML();
 	}
 
@@ -566,15 +594,15 @@ class t3lib_TCEforms_inline {
 
 
 	 /**
- * Get a single record row for an TCA table from the database.
- * t3lib_transferData is used for "upgrading" the values, especially the relations.
- *
- * @param	integer		$pid: The pid of the page the record should be stored (only relevant for NEW records)
- * @param	string		$table: The table to fetch data from (= foreign_table)
- * @param	string		$uid: The uid of the record to fetch, or empty if a new one should be created
- * @param	string		$cmd: The command to perform, empty or 'new'
- * @return	array		A record row from the database post-processed by t3lib_transferData
- */
+	 * Get a single record row for an TCA table from the database.
+	 * t3lib_transferData is used for "upgrading" the values, especially the relations.
+	 *
+	 * @param	integer		$pid: The pid of the page the record should be stored (only relevant for NEW records)
+	 * @param	string		$table: The table to fetch data from (= foreign_table)
+	 * @param	string		$uid: The uid of the record to fetch, or empty if a new one should be created
+	 * @param	string		$cmd: The command to perform, empty or 'new'
+	 * @return	array		A record row from the database post-processed by t3lib_transferData
+	 */
 	function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='') {
 		# $prevPageID = is_object($trData) ? $trData->prevPageID : '';
 		$trData = t3lib_div::makeInstance('t3lib_transferData');
@@ -594,6 +622,84 @@ class t3lib_TCEforms_inline {
 		return $rec;
 	}
 
+	
+	/*******************************************************
+	 *
+	 * Handle relations to store data back to database - STATIC
+	 *
+	 *******************************************************/
+
+	
+	/**
+	 * Handle relations and replace NEW... uids by their proper database uids.
+	 * Finally the records a pushed to TCEmain and saved, deleted, moved, etc.
+	 * This function is normally called from alt_doc.php.
+	 *
+	 * @param	array	$inline: Reference to the incomming data array of inline records
+	 * @param	object	$tec: Reference to a copy of the TCEmain object instance
+	 */
+	static function getSingleField_typeInline_processData(&$inline, &$tce) {
+			// get the fields that hold inline affected data
+		$ctrl = $inline['__ctrl'];
+		unset($inline['__ctrl']);
+
+		$data = array();
+		$cmd = array();
+		
+			// find records that should be deleted
+		foreach ($inline as $table => $uidData) {
+			foreach ($uidData as $uid => $fieldData) {
+				if ($fieldData['__deleted'] == 'deleted') {
+						// put the item to the cmd array if it's marked to be deleted
+					$cmd[$table][$uid]['delete'] = 1;
+						// remove the whole record from the data to be saved again by TCEmain
+					unset($inline[$table][$uid]);
+				} elseif (isset($fieldData['__deleted'])) {
+					unset($inline[$table][$uid]['__deleted']);
+				}
+			}
+		}
+		
+			// save the inline data without the relations
+		$tce->start($inline, array());
+		$tce->process_datamap();
+		
+			// now process values like '13,NEWabc384823,45' and replace NEW... by proper uids from TCEmain
+		foreach ($ctrl['records'] as $table => $uidData) {
+			foreach ($uidData as $uid => $fieldData) {
+					// FIXME: perhaps this could be removed depending on bug-tracker item 4384
+					// if this is an annotation to a recently processed record, substitute to proper uid
+				if (preg_match('/NEW/i', $uid) && isset($tce->substNEWwithIDs[$uid]))
+					$uid = $tce->substNEWwithIDs[$uid];
+					
+					// iterate through fields and substitute NEW... uids by proper uids
+				foreach ($fieldData as $field => $value) {
+					if (strlen($value) && preg_match('/NEW/i', $value)) {
+						$parts = explode(',', $value);
+						$partsCnt = count($parts);
+						for ($i = 0; $i < $partsCnt; $i++) {
+							if (!t3lib_div::testInt($parts[$i])) {
+								$parts[$i] = $tce->substNEWwithIDs[$parts[$i]];
+							}
+						}
+						$value = implode(',', $parts);
+					}
+					$data[$table][$uid][$field] = $value;
+				}
+			}
+		}
+		
+			// finally save the relations, and perform deletion of records
+		$tce->start($data, array());
+		$tce->process_datamap();
+		$tce->process_cmdmap();
+
+		// FIXME: What should happen if record, that embeds inline child records is deleted or moved to another page
+		// - delete: if it's 1:n --> remove the child records (recurisvely!!!)
+		// - delete: if it's m:n --> I dont know... yet ;-)
+		// - move: possibly adjust the pid of the child records (recurisvely!!!)
+	}
+	
 
 	/*******************************************************
 	 *

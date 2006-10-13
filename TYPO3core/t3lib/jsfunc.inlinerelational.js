@@ -49,12 +49,50 @@
 		return false;
 	}
 	
-	this.insertRecordAfter = function(objectId, htmlData) {
-		new Insertion.After(objectId, htmlData);
+	this.domAddNewRecord = function(method, objectId, htmlData) {
+		if (method == 'bottom')
+			new Insertion.Bottom(objectId, htmlData);
+		else if (method == 'after')
+			new Insertion.After(objectId, htmlData);
+	}
+	
+	this.memorizeAddRecord = function(objectName, newUid, afterUid) {
+		var formObj = document.getElementsByName(objectName);
+		if (formObj) {
+			var parts = new Array();
+			if (formObj[0].value.length) parts = formObj[0].value.split(',');
+			
+			if (afterUid) {
+				var newParts = new Array();
+				for (var i = 0; i < parts.length; i++) {
+					if (parts[i].length) newParts.push(parts[i]);
+					if (afterUid == parts[i]) newParts.push(newUid);
+				}
+				parts = newParts;
+			} else {
+				parts.push(newUid);
+			}
+			formObj[0].value = parts.join(',');
+		}
+	}
+	
+	this.memorizeRemoveRecord = function(objectName, removeUid) {
+		var formObj = document.getElementsByName(objectName);
+		if (formObj) {
+			var parts = new Array();
+			var newParts = new Array();
+			if (formObj[0].value.length) parts = formObj[0].value.split(',');
+			
+			for (var i = 0; i < parts.length; i++) {
+				if (parts[i] != removeUid) newParts.push(parts[i]);
+			}
+			
+			formObj[0].value = newParts.join(',');
+		}
 	}
 	
 	this.enableDisableRecord = function(objectId) {
-		var elName = this.parseFormElementName(objectId, 2);
+		var elName = this.parseFormElementName('full', objectId, 2);
 		var imageObj = $(objectId+'_disabled');
 		var valueObj = document.getElementsByName(elName+'[hidden]');
 		var formObj = document.getElementsByName(elName+'[hidden]_0');
@@ -73,11 +111,16 @@
 		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == '1') {
 			Element.remove(objectId+'_div');
 		} else {
-			var elName = this.parseFormElementName(objectId, 2);
-			document.getElementsByName(elName)[0].value = '1';
+			var elName = this.parseFormElementName('full', objectId, 2);
+			document.getElementsByName(elName+'[__deleted]')[0].value = 'deleted';
 			Element.hide(objectId+'_div');
 		}
 
+		this.memorizeRemoveRecord(
+			prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2),
+			this.parseFormElementName('none', objectId, 1)
+		);
+		
 		return false;
 	}
 	
@@ -100,15 +143,27 @@
 		return path;
 	}
 	
-	this.parseFormElementName = function(objectId, rightCount) {
+	this.parseFormElementName = function(wrap, objectId, rightCount, skipRight) {
 			// remove left and right side "inline[...|...]" -> '...|...'
 		objectId = objectId.substr(0, objectId.lastIndexOf(']')).substr(objectId.indexOf('['+1));
-
+		if (!wrap) wrap = 'full';
+		if (!skipRight) skipRight = 0;
+		
+		var elReturn;
 		var elParts = new Array();
 		var idParts = objectId.split('][');
+		for (var i = 0; i < skipRight; i++) idParts.pop();
 		for (var i = 0; i < rightCount; i++) elParts.unshift(idParts.pop());
-		var elName = prependFormFieldNames+'['+elParts.join('][')+']';
-		return elName;
+		
+		if (wrap == 'full') {
+			elReturn = prependFormFieldNames+'['+elParts.join('][')+']';
+		} else if (wrap == 'parts') {
+			elReturn = '['+elParts.join('][')+']';
+		} else if (wrap == 'none') {
+			elReturn = elParts.length > 1 ? elParts : elParts.join('');
+		}
+
+		return elReturn;
 	}
 }
 

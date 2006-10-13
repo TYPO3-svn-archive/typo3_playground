@@ -574,6 +574,12 @@ class t3lib_TCEmain	{
 						$old_pid_value = '';
 						$resetRejected = FALSE;
 						$this->autoVersioningUpdate = FALSE;
+						
+						if (!t3lib_div::testInt($id)) {
+								// check if it's really a new record or just an annotation to an existing
+								// record that was created withing this session - if so, correct uid
+							if (isset($this->substNEWwithIDs[$id])) $id = $this->substNEWwithIDs[$id];
+						}
 
 						if (!t3lib_div::testInt($id)) {               // Is it a new record? (Then Id is a string)
 							$fieldArray = $this->newFieldArray($table);	// Get a fieldArray with default values
@@ -583,7 +589,7 @@ class t3lib_TCEmain	{
 
 									// Checking and finding numerical pid, it may be a string-reference to another value
 								$OK = 1;
-								if (strstr($pid_value,'NEW'))	{	// If a NEW... id
+								if (preg_match('/^-?NEW/', $pid_value))	{	// If a NEW... id
 									if (substr($pid_value,0,1)=='-') {$negFlag=-1;$pid_value=substr($pid_value,1);} else {$negFlag=1;}
 									if (isset($this->substNEWwithIDs[$pid_value]))	{	// Trying to find the correct numerical value as it should be mapped by earlier processing of another new record.
 										$old_pid_value = $pid_value;
@@ -858,7 +864,7 @@ class t3lib_TCEmain	{
 		$diffStorageFlag = FALSE;
 
 			// Setting 'currentRecord' and 'checkValueRecord':
-		if (strstr($id,'NEW'))	{
+		if (preg_match('/NEW/', $id))	{
 			$currentRecord = $checkValueRecord = $fieldArray;	// must have the 'current' array - not the values after processing below...
 
 				// IF $incomingFieldArray is an array, overlay it.
@@ -1020,7 +1026,7 @@ class t3lib_TCEmain	{
 					t3lib_div::writeFile($eFile['editFile'],$SW_fileNewContent);
 
 						// Write status:
-					if (!strstr($id,'NEW') && $eFile['statusField'])	{
+					if (!preg_match('/NEW/', $id) && $eFile['statusField'])	{
 						$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
 							$table,
 							'uid='.intval($id),
@@ -1137,6 +1143,7 @@ class t3lib_TCEmain	{
 			case 'text':
 			case 'passthrough':
 			case 'user':
+			case 'inline':
 				$res['value'] = $value;
 			break;
 			case 'input':
@@ -1786,11 +1793,11 @@ class t3lib_TCEmain	{
 				break;
 				case 'upper':
 					$value = strtoupper($value);
-#					$value = strtr($value, 'áéúíâêûôîæøåäöü', 'ÁÉÚÍÂÊÛÔÎÆØÅÄÖÜ');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
+#					$value = strtr($value, 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½', 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
 				break;
 				case 'lower':
 					$value = strtolower($value);
-#					$value = strtr($value, 'ÁÉÚÍÂÊÛÔÎÆØÅÄÖÜ', 'áéúíâêûôîæøåäöü');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
+#					$value = strtr($value, 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½', 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
 				break;
 				case 'required':
 					if (!$value)	{$set=0;}

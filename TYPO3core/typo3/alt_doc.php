@@ -114,6 +114,7 @@ class SC_alt_doc {
 	var $doSave;			// Quite simply, if this variable is set, then the processing of incoming data will be performed - as if a save-button is pressed. Used in the forms as a hidden field which can be set through JavaScript if the form is somehow submitted by JavaScript).
 
 	var $data;				// GPvar (for processing only) : The data array from which the data comes...
+	var $inline;			// GPvar (for processing only) : The data array from which the data comes... (Inline-Relational-Record-Editing)
 	var $mirror;			// GPvar (for processing only) : ?
 	var $cacheCmd;			// GPvar (for processing only) : Clear-cache cmd.
 	var $redirect;			// GPvar (for processing only) : Redirect (not used???)
@@ -253,6 +254,7 @@ class SC_alt_doc {
 
 			// GPvars specifically for processing:
 		$this->data = t3lib_div::_GP('data');
+		$this->inline = t3lib_div::_GP('inline');
 		$this->mirror = t3lib_div::_GP('mirror');
 		$this->cacheCmd = t3lib_div::_GP('cacheCmd');
 		$this->redirect = t3lib_div::_GP('redirect');
@@ -297,7 +299,7 @@ class SC_alt_doc {
 				// Perform the saving operation with TCEmain:
 			$tce->process_uploads($_FILES);
 			$tce->process_datamap();
-
+			
 				// If there was saved any new items, load them:
 			if (count($tce->substNEWwithIDs_table))	{
 
@@ -328,6 +330,11 @@ class SC_alt_doc {
 				$this->compileStoreDat();
 			}
 
+				// Process the data from Inline-Relational-Record-Editing
+				// Do it here, because we want not to be redirect to some of the new records
+			if (count($this->inline) && $this->inline['__ctrl'])
+				t3lib_TCEforms_inline::getSingleField_typeInline_processData($this->inline, $tce);
+			
 				// See if any records was auto-created as new versions?
 			if (count($tce->autoVersionIdMap))	{
 				$this->fixWSversioningInEditConf($tce->autoVersionIdMap);
