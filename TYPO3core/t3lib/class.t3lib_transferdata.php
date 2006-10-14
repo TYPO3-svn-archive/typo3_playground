@@ -329,12 +329,14 @@ class t3lib_transferData {
 			case 'group':
 				$data = $this->renderRecord_groupProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
 			break;
-			case 'inline':
 			case 'select':
 				$data = $this->renderRecord_selectProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
 			break;
 			case 'flex':
 				$data = $this->renderRecord_flexProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
+			break;
+			case 'inline':
+				$data = $this->renderRecord_inlineProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
 			break;
 		}
 
@@ -526,7 +528,79 @@ class t3lib_transferData {
 		return $totalRecordContent;
 	}
 
+	/**
+	 * Processing of the data value in case the field type is "inline"
+	 * In some parts nearly the same as type "select"
+	 *
+	 * @param	string		The field value
+	 * @param	array		TCA field config
+	 * @param	array		TCEform TSconfig for the record
+	 * @param	string		Table name
+	 * @param	array		The row
+	 * @param	string		Field name
+	 * @return	string		The processed input field value ($data)
+	 * @access private
+	 * @see renderRecord()
+	 */
+	function renderRecord_inlineProc($data,$fieldConfig,$TSconfig,$table,$row,$field)	{
+		global $TCA;
 
+			// Initialize:
+		$elements = t3lib_div::trimExplode(',',$data,1);	// Current data set.
+		$dataAcc=array();	// New data set, ready for interface (list of values, rawurlencoded)
+		$foreign_table = $fieldConfig['config']['foreign_table'];
+
+			// For list selectors (multi-value):
+		if (intval($fieldConfig['config']['maxitems'])>1)	{
+
+				// Add "special"
+				// FIXME: Do we need it for inline?
+			if ($fieldConfig['config']['special'])	{
+				$dataAcc = $this->selectAddSpecial($dataAcc, $elements, $fieldConfig['config']['special']);
+			}
+
+				// Add "foreign table" stuff:
+			if ($TCA[$foreign_table])	{
+					// if there are elements and a default ordering is defined,
+					// show the current elements with this defined default order
+				if ($TCA[$foreign_table]['ctrl']['default_sortby'] && count($elements)) {
+					$wgolPartsFC = $GLOBALS['TYPO3_DB']->splitGroupOrderLimit($fieldConfig['config']['foreign_table_where']);
+					$wgolPartsCTRL = $GLOBALS['TYPO3_DB']->splitGroupOrderLimit($TCA[$foreign_table]['ctrl']['default_sortby']);
+					
+					$selfFieldConfig = $fieldConfig;
+					$selfFieldConfig['config']['foreign_table_where'] =
+						($wgolPartsFC['WHERE'] ? $wgolPartsFC['WHERE'] : '') .
+							' AND '.$foreign_table.'.uid IN ('.implode(',', $elements).')' .
+						($wgolPartsFC['GROUPBY'] ? ' GROUP BY '.$wgolPartsFC['GROUPBY'] : '') .
+						($wgolPartsCTRL['ORDERBY'] ? ' ORDER BY '.$foreign_table.'.'.$wgolPartsCTRL['ORDERBY'] : '') .
+						($wgolPartsFC['LIMIT'] ? ' LIMIT '.$wgolPartsFC['LIMIT'] : '');
+						
+					$res = t3lib_BEfunc::exec_foreign_table_where_query($selfFieldConfig, $field, $TSconfig);
+					if ($GLOBALS['TYPO3_DB']->sql_num_rows($res)) {
+						$elements = array();
+						while ($elRow = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) $elements[] = $elRow['uid'];
+					}
+				}
+				
+				$dataAcc = $this->selectAddForeign($dataAcc, $elements, $fieldConfig, $field, $TSconfig, $row, $table);
+			}
+
+				// Always keep the native order for display in interface:
+			ksort($dataAcc);
+		} else {	// Normal, <= 1 -> value without title on it
+			if ($TCA[$foreign_table])	{
+				// Getting the data
+				$dataIds = $this->getDataIdList($elements, $fieldConfig, $row, $table);
+
+				if (!count($dataIds))	$dataIds = array(0);
+				$dataAcc[]=$dataIds[0];
+			} else {
+				$dataAcc[]=$elements[0];
+			}
+		}
+
+		return implode(',',$dataAcc);
+	}
 
 
 

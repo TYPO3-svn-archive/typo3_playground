@@ -1143,7 +1143,6 @@ class t3lib_TCEmain	{
 			case 'text':
 			case 'passthrough':
 			case 'user':
-			case 'inline':
 				$res['value'] = $value;
 			break;
 			case 'input':
@@ -1157,6 +1156,7 @@ class t3lib_TCEmain	{
 			break;
 			case 'group':
 			case 'select':
+			case 'inline':
 				$res = $this->checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);
 			break;
 			case 'flex':
@@ -1305,7 +1305,7 @@ class t3lib_TCEmain	{
 		// NOTE!!! Must check max-items of files before the later check because that check would just leave out filenames if there are too many!!
 
 			// Checking for select / authMode, removing elements from $valueArray if any of them is not allowed!
-		if ($tcaFieldConf['type']=='select' && $tcaFieldConf['authMode'])	{
+		if (($tcaFieldConf['type']=='select' || $tcaFieldConf['type']=='inline') && $tcaFieldConf['authMode'])	{
 			$preCount = count($valueArray);
 			foreach($valueArray as $kk => $vv)	{
 				if (!$this->BE_USER->checkAuthMode($table,$field,$vv,$tcaFieldConf['authMode']))	{
@@ -1340,7 +1340,7 @@ class t3lib_TCEmain	{
 			}
 		}
 			// For select types which has a foreign table attached:
-		if ($tcaFieldConf['type']=='select' && $tcaFieldConf['foreign_table'])	{
+		if (($tcaFieldConf['type']=='select' || $tcaFieldConf['type']=='inline') && $tcaFieldConf['foreign_table'])	{
 			$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'select', $table);
 		}
 

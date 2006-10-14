@@ -136,9 +136,6 @@ class t3lib_TCEforms_inline {
 			// get the records related to this inline record
 		$recordList = $this->getSingleField_typeInline_getRelatedRecords($table,$field,$row,$PA,$config);
 
-			// DEBUG: For testing, add a new record to the output
-		// $recordList[] = $this->getSingleField_typeInline_getRecord($row['pid'], $foreign_table, '', 'new');
-
 			// FIXME: maybe something nicer than overwriting and setting back later
 			// (extend getMainFields with attribute 'prependFormFieldNames'?)
 		if (!$this->prependObjectId) {
@@ -146,6 +143,9 @@ class t3lib_TCEforms_inline {
 			$firstInlineCall = true;
 		}
 		$itemFormElName = substr($PA['itemFormElName'], strlen($this->fObj->prependFormFieldNames));
+
+			// FIXME: Perhaps use an array stack?
+		$prependObjectId = $this->prependObjectId;
 		$this->prependObjectId .= $itemFormElName;
 
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
@@ -168,16 +168,14 @@ class t3lib_TCEforms_inline {
 
 			// wrap the all inline fields of a record with a <div> (like a container)
 		$item .= '<div id="'.$this->prependObjectId.'">';
-		// $item .= '<div id="'.$this->prependObjectId.'_begin"></div>';
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
-				$item .= $this->getSingleField_typeInline_renderForeignRecord($foreign_table,$rec);
+				$item .= $this->getSingleField_typeInline_renderForeignRecord($foreign_table,$rec,$config);
 				$relationList[] = $rec['uid'];
 			}
 		}
-		// $item .= '<input type="text" name="'.$this->prependNaming.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
 		$item .= '</div>';
-		$item .= '<input size="60" type="text" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
+		$item .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
 
 			// include JavaScript files
 		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
@@ -189,7 +187,7 @@ class t3lib_TCEforms_inline {
 
 			// set this value back to that one it had - before we changed it
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
-		if ($firstInlineCall) $this->prependObjectId = '';
+		$this->prependObjectId = $firstInlineCall ? '' : $prependObjectId;
 
 		return $item;
 	}
@@ -200,17 +198,19 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$foreign_table: The name of the foreing table (this is the table to be embedded here as child)
 	 * @param	array		$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
+	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		The HTML code for this "foreign record"
 	 */
-	function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec) {
+	function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec, $config = array()) {
 			// record comes from storage (e.g. database)
 		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
 
 			// get the current prepentObjectId
 		$prependObjectId = $this->prependObjectId;
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
-
-		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $prependObjectId.$appendFormFieldNames);
+		$formFieldNames = $prependObjectId.$appendFormFieldNames;
+		
+		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 
 		$tableAttribs='';
@@ -228,9 +228,14 @@ class t3lib_TCEforms_inline {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
 		}
 
-		$out .= '<div id="'.$prependObjectId.$appendFormFieldNames.'_div" isnewrecord="'.$isNewRecord.'">';
-		$out .= '<div id="'.$prependObjectId.$appendFormFieldNames.'_header">'.$header.'</div>';
-		$out .= '<div id="'.$prependObjectId.$appendFormFieldNames.'_fields">'.$fields.'</div>';
+			// set the appearance style of the records of this table
+		if (is_array($config['appearance']) && count($config['appearance'])) {
+			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'";';
+		}
+		
+		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'">';
+		$out .= '<div id="'.$formFieldNames.'_header">'.$header.'</div>';
+		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.'</div>';
 		$out .= '</div>';
 
 		return $out;
@@ -243,9 +248,10 @@ class t3lib_TCEforms_inline {
 	 * @param	string		$foreign_table
 	 * @param	array		$row
 	 * @param	string		$appendFormFieldNames: Append to prependFormFieldName to get a "namespace" for each form-field
+	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		The HTML code of the header
 	 */
-	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames) {
+	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array()) {
 		$recTitle = $this->fObj->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
 		$altText = t3lib_BEfunc::getRecordIconAltText($row, $foreign_table);
 		$iconImg = t3lib_iconWorks::getIconImage(
@@ -253,7 +259,8 @@ class t3lib_TCEforms_inline {
 			'title="'.htmlspecialchars($altText).'" class="absmiddle"'
 		);
 
-		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."')";
+		$expandSingle = $config['appearance']['expandSingle'] ? 1 : 0;
+		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
 		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
 		// $label .= '<img '.t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/plusbullet.gif').' align="absmiddle" /> ';
 		$label .= $recTitle;
@@ -487,6 +494,8 @@ class t3lib_TCEforms_inline {
 	 * @return	string		An xaJax XML object
 	 */
 	function getSingleField_typeInline_createNewRecord($domObjectId) {
+		global $TCA;
+		
 			// set the TCEforms prependFormFieldNames
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
 		$this->fObj->prependFormFieldNames = $this->prependNaming;
@@ -495,13 +504,19 @@ class t3lib_TCEforms_inline {
 		$paBr = $structureTree['parentBranch'];
 
 		$foreign_table = $structureTree['childBranch']['table'];
+
+			// load TCA 'config' of the current table
+		t3lib_div::loadTCA($paBr['table']);
+		$config = $TCA[$paBr['table']]['columns'][$paBr['field']]['config'];
+		
+			// dynamically create a new record using t3lib_transferData
 		$record = $this->getSingleField_typeInline_getNewRecord($structureTree['pid'], $foreign_table);
 
 			// setting the object id prepend to come back into DOM structure
 		$this->prependObjectId = $structureTree['prependObjectId'];
 
 			// render the foreign record that should passed back to browser
-		$item = $this->getSingleField_typeInline_renderForeignRecord($foreign_table, $record);
+		$item = $this->getSingleField_typeInline_renderForeignRecord($foreign_table, $record, $config);
 
 		$objResponse = new tx_xajax_response('iso-8859-1', true);
 
@@ -690,7 +705,7 @@ class t3lib_TCEforms_inline {
 		}
 
 			// finally save the relations, and perform deletion of records
-		$tce->start($data, array());
+		$tce->start($data, $cmd);
 		$tce->process_datamap();
 		$tce->process_cmdmap();
 

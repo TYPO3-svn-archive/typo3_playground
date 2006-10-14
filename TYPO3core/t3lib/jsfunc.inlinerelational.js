@@ -34,14 +34,29 @@
 		prependFormFieldNames = value;
 	}
 	
-	this.expandCollapseRecord = function(objectId) {
+	this.expandCollapseRecord = function(objectId, expandSingle) {
+			// if only a single record should be visibly for that set of records
+			// and the record clicked itself is no visible, collapse all others
+		if (expandSingle && !Element.visible(objectId+'_fields')) this.collapseAllRecords(objectId);
 		Element.toggle(objectId+'_fields');
 		return false;
 	}
 	
 	this.collapseAllRecords = function(objectId) {
-		
-		return false;
+			// get the form field, where all records are stored
+		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
+		var formObj = document.getElementsByName(objectName);
+
+		if (formObj) {
+				// the uid of the calling object (last part in objectId)
+			var callingUid = this.parseFormElementName('none', objectId, 1);
+			var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
+
+			var records = formObj[0].value.split(',');
+			for (var i = 0; i < records.length; i++) {
+				if (records[i] != callingUid) Element.hide(objectPrefix+'['+records[i]+']_fields');
+			}
+		}
 	}
 	
 	this.createNewRecord = function(objectId) {
@@ -145,7 +160,8 @@
 	
 	this.parseFormElementName = function(wrap, objectId, rightCount, skipRight) {
 			// remove left and right side "inline[...|...]" -> '...|...'
-		objectId = objectId.substr(0, objectId.lastIndexOf(']')).substr(objectId.indexOf('['+1));
+		objectId = objectId.substr(0, objectId.lastIndexOf(']')).substr(objectId.indexOf('[')+1);
+		
 		if (!wrap) wrap = 'full';
 		if (!skipRight) skipRight = 0;
 		
@@ -153,7 +169,13 @@
 		var elParts = new Array();
 		var idParts = objectId.split('][');
 		for (var i = 0; i < skipRight; i++) idParts.pop();
-		for (var i = 0; i < rightCount; i++) elParts.unshift(idParts.pop());
+
+		if (rightCount > 0) {
+			for (var i = 0; i < rightCount; i++) elParts.unshift(idParts.pop());
+		} else {
+			for (var i = 0; i < -rightCount; i++) idParts.shift();
+			elParts = idParts;
+		}
 		
 		if (wrap == 'full') {
 			elReturn = prependFormFieldNames+'['+elParts.join('][')+']';
