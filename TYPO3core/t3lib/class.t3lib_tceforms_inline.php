@@ -34,29 +34,30 @@
  *
  *
  *
- *   69: class t3lib_TCEforms_inline
- *   86:     function init(&$tceForms)
+ *   70: class t3lib_TCEforms_inline
+ *   87:     function init(&$tceForms)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  120:     function getSingleField_typeInline($table,$field,$row,&$PA)
- *  205:     function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec)
- *  248:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames)
- *  288:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames)
- *  463:     function getSingleField_typeInline_addJavaScript()
+ *  121:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *  209:     function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec, $config = array())
+ *  259:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
+ *  301:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
+ *  471:     function getSingleField_typeInline_addJavaScript()
+ *  488:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling for AJAX calls
- *  489:     function getSingleField_typeInline_createNewRecord($domObjectId)
+ *  525:     function getSingleField_typeInline_createNewRecord($domObjectId)
  *
  *              SECTION: Get data from database and handle relations
- *  554:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  606:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  598:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  650:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
  *
  *              SECTION: Helper functions
- *  718:     function getSingleField_typeInline_getNewRecord($pid, $table)
- *  753:     function getSingleField_typeInline_getStructureTree($domObjectId)
- *  805:     function getSingleField_typeInline_processRequest()
+ *  762:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  797:     function getSingleField_typeInline_getStructureTree($domObjectId)
+ *  849:     function getSingleField_typeInline_processRequest()
  *
- * TOTAL FUNCTIONS: 12
+ * TOTAL FUNCTIONS: 13
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -135,6 +136,9 @@ class t3lib_TCEforms_inline {
 
 			// get the records related to this inline record
 		$recordList = $this->getSingleField_typeInline_getRelatedRecords($table,$field,$row,$PA,$config);
+			// set the first and last record to the config array
+		$config['inline']['first'] = $recordList[0]['uid'];
+		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
 			// FIXME: maybe something nicer than overwriting and setting back later
 			// (extend getMainFields with attribute 'prependFormFieldNames'?)
@@ -155,9 +159,7 @@ class t3lib_TCEforms_inline {
 		if (count($recordList) < $maxitems) {
 			$onClick = "return inline.createNewRecord('".$this->prependObjectId."[$foreign_table]')";
 			$item .= '
-					<!--
-						Link for creating a new record:
-					-->
+					<!-- Link for creating a new record: -->
 					<div id="typo3-newRecordLink">
 						<a href="#" onClick="'.$onClick.'">'.
 						'<img'.t3lib_iconWorks::skinImg($this->fObj->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
@@ -167,6 +169,7 @@ class t3lib_TCEforms_inline {
 		}
 
 			// wrap the all inline fields of a record with a <div> (like a container)
+		// $item .= $this->getSingleField_typeInline_addJavaScriptSortable($this->prependObjectId);
 		$item .= '<div id="'.$this->prependObjectId.'">';
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
@@ -175,6 +178,8 @@ class t3lib_TCEforms_inline {
 			}
 		}
 		$item .= '</div>';
+		// DEBUG:
+		// $item .= '<input size="60" type="text" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
 		$item .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
 
 			// include JavaScript files
@@ -209,7 +214,7 @@ class t3lib_TCEforms_inline {
 		$prependObjectId = $this->prependObjectId;
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 		$formFieldNames = $prependObjectId.$appendFormFieldNames;
-		
+
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 
@@ -232,9 +237,9 @@ class t3lib_TCEforms_inline {
 		if (is_array($config['appearance']) && count($config['appearance'])) {
 			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'";';
 		}
-		
-		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'">';
-		$out .= '<div id="'.$formFieldNames.'_header">'.$header.'</div>';
+
+		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
+		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.'</div>';
 		$out .= '</div>';
 
@@ -270,7 +275,7 @@ class t3lib_TCEforms_inline {
 			// $theData[$fCol]=$this->makeControl($table,$row);
 			// $theData[$fCol]=$this->makeClip($table,$row);
 
-		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$formFieldNames);
+		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$formFieldNames,$config);
 
 			// FIXME: Use the correct css-classes to fit with future skins etc.
 		$header =
@@ -290,9 +295,10 @@ class t3lib_TCEforms_inline {
 	 * @param	string		$table
 	 * @param	array		$row
 	 * @param	string		$formFieldNames
+	 * @param	[type]		$config: ...
 	 * @return	string		The HTML code with the control-icons
 	 */
-	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames) {
+	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array()) {
 		global $TCA, $LANG, $SOBE;
 
 			// Initialize:
@@ -396,23 +402,18 @@ class t3lib_TCEforms_inline {
 				}
 
 					// "Up/Down" links
-				if ($permsEdit && $TCA[$table]['ctrl']['sortby']  && !$this->sortField && !$this->searchLevels)	{
-					if (isset($this->currentTable['prev'][$row['uid']]))	{	// Up
-						$params='&cmd['.$table.']['.$row['uid'].'][move]='.$this->currentTable['prev'][$row['uid']];
-						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_up.gif','width="11" height="10"').' title="'.$LANG->getLL('moveUp',1).'" alt="" />'.
-								'</a>';
-					} else {
-						$cells[]='<img src="clear.gif" '.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_up.gif','width="11" height="10"',2).' alt="" />';
-					}
-					if ($this->currentTable['next'][$row['uid']])	{	// Down
-						$params='&cmd['.$table.']['.$row['uid'].'][move]='.$this->currentTable['next'][$row['uid']];
-						$cells[]='<a href="#" onclick="'.htmlspecialchars('return jumpToUrl(\''.$SOBE->doc->issueCommand($params,-1).'\');').'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"').' title="'.$LANG->getLL('moveDown',1).'" alt="" />'.
-								'</a>';
-					} else {
-						$cells[]='<img src="clear.gif" '.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"',2).' alt="" />';
-					}
+				if ($permsEdit && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
+					$onClick = "return inline.changeSorting('".$formFieldNames."', '1')";	// Up
+					$style = $config['inline']['first'] == $row['uid'] ? 'style="visibility: hidden;"' : '';
+					$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="sortingUp" '.$style.'>'.
+							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_up.gif','width="11" height="10"').' title="'.$LANG->getLL('moveUp',1).'" alt="" />'.
+							'</a>';
+
+					$onClick = "return inline.changeSorting('".$formFieldNames."', '-1')";	// Down
+					$style = $config['inline']['last'] == $row['uid'] ? 'style="visibility: hidden;"' : '';
+					$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="sortingDown" '.$style.'>'.
+							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"').' title="'.$LANG->getLL('moveDown',1).'" alt="" />'.
+							'</a>';
 				}
 
 					// "Hide/Unhide" links:
@@ -470,12 +471,40 @@ class t3lib_TCEforms_inline {
 	function getSingleField_typeInline_addJavaScript() {
 		$jsCode = array(
 			'<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'lib/prototype.js" type="text/javascript"></script>',
-			# '<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'lib/prototype.js" type="text/javascript"></script>',
+			'<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'src/scriptaculous.js" type="text/javascript"></script>',
 			'<script src="/t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
 			$this->xajax->getJavascript('/'.t3lib_extMgm::siteRelPath('xajax'), 'xajax_js/xajax_uncompressed.js'),
 		);
 
 		return implode("\n", $jsCode);
+	}
+
+	/**
+	 * Add Sortable functionality using script.acolo.us "Sortable".
+	 *
+	 * @param	string		$objectId: The container id of the object - elements inside will be sortable
+	 * @return	string		The HTML code creating the Sortable element, wrapped by <script>
+	 */
+	function getSingleField_typeInline_addJavaScriptSortable($objectId) {
+		$jsCode = '
+		<script type="text/javascript">
+			window.setTimeout(
+				function() {
+					Sortable.create(
+						"'.$objectId.'",
+						{
+							tag: "div",
+							handle: "inlineHandle",
+							only: "inlineSortable",
+							constraint: false,
+							ghosting: true
+						}
+					);
+				},
+				50
+			);
+		</script>';
+		return $jsCode;
 	}
 
 
@@ -495,7 +524,7 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_createNewRecord($domObjectId) {
 		global $TCA;
-		
+
 			// set the TCEforms prependFormFieldNames
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
 		$this->fObj->prependFormFieldNames = $this->prependNaming;
@@ -508,7 +537,7 @@ class t3lib_TCEforms_inline {
 			// load TCA 'config' of the current table
 		t3lib_div::loadTCA($paBr['table']);
 		$config = $TCA[$paBr['table']]['columns'][$paBr['field']]['config'];
-		
+
 			// dynamically create a new record using t3lib_transferData
 		$record = $this->getSingleField_typeInline_getNewRecord($structureTree['pid'], $foreign_table);
 
@@ -520,13 +549,13 @@ class t3lib_TCEforms_inline {
 
 		$objResponse = new tx_xajax_response('iso-8859-1', true);
 
-			// the name of the form field to store the dynamically created records
-		$ctrlRecordsName = $this->prependNaming.'[__ctrl][records]['.$paBr['table'].']['.$paBr['uid'].']['.$paBr['field'].']';
+			// the HTML-object-id's prefix of the dynamically created record
+		$objectPrefix = $structureTree['prependObjectId'].'['.$structureTree['childBranch']['table'].']';
 
-			// prepend the HTML data at the beginning of the container
+			// append the HTML data at the bottom of the container
 		if (!$structureTree['childBranch']['uid']) {
-			$objResponse->addScriptCall('inline.memorizeAddRecord', $ctrlRecordsName, $record['uid'], null);
 			$objResponse->addScriptCall('inline.domAddNewRecord', 'bottom', $structureTree['prependObjectId'], $item);
+			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], null);
 
 			// ERROR: xajax adds the html data by touching the innerHTML attribute
 			// -> entered data of other records in that section gets lost on doing this
@@ -534,8 +563,8 @@ class t3lib_TCEforms_inline {
 
 			// append the HTML data after an existing record in the container
 		} else {
-			$objResponse->addScriptCall('inline.memorizeAddRecord', $ctrlRecordsName, $record['uid'], $structureTree['childBranch']['uid']);
 			$objResponse->addScriptCall('inline.domAddNewRecord', 'after', $domObjectId.'_div', $item);
+			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], $structureTree['childBranch']['uid']);
 			// $objResponse->addScriptCall('inline.insertRecordAfter', $domObjectId.'_div', $item);
 		}
 

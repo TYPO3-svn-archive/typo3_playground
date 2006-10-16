@@ -71,24 +71,126 @@
 			new Insertion.After(objectId, htmlData);
 	}
 	
-	this.memorizeAddRecord = function(objectName, newUid, afterUid) {
+	this.changeSorting = function(objectId, direction) {
+		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
 		var formObj = document.getElementsByName(objectName);
+		
 		if (formObj) {
-			var parts = new Array();
-			if (formObj[0].value.length) parts = formObj[0].value.split(',');
+				// the uid of the calling object (last part in objectId)
+			var callingUid = this.parseFormElementName('none', objectId, 1);
+			var records = formObj[0].value.split(',');
+			var current = records.indexOf(callingUid);
+			var changed = false;
+			
+				// move up
+			if (direction > 0 && current > 0) {
+				records[current] = records[current-1];
+				records[current-1] = callingUid;
+				changed = true;
+				
+				// move down
+			} else if (direction < 0 && current < records.length-1) {
+				records[current] = records[current+1];
+				records[current+1] = callingUid;
+				changed = true;
+				
+			}
+			
+			if (changed) {
+				formObj[0].value = records.join(',');
+				this.redrawSection(objectId, records);
+			}
+		}
+		
+		return false;
+	}
+	
+	this.redrawSection = function(objectId, records) {
+		var i = 0;
+		var tempSectionObj = new Array();
+		var tempRecordObj;
+
+		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
+		var sectionId = this.parseFormElementName('full', objectId, 0 , 2);
+		var sectionObj = $(sectionId);
+		
+			// if no records were passed, fetch them from form field
+		if (typeof records == 'undefined') {
+			records = new Array();
+			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
+			var formObj = document.getElementsByName(objectName);
+			if (formObj) records = formObj[0].value.split(',');
+		}
+		
+			// clone records from the section, in the new sorting order
+		for (i = 0; i < records.length; i++) {
+			tempSectionObj.push(
+				$(objectPrefix+'['+records[i]+']_div').cloneNode(true)
+			);
+		}
+		
+			// remove records from the section
+		while (sectionObj.hasChildNodes()) {
+			sectionObj.removeChild(sectionObj.firstChild);
+		}
+		
+			// add the cloned records back to the section
+		for (i = 0; i < tempSectionObj.length; i++) {
+			sectionObj.appendChild(tempSectionObj[i]);
+		}
+		
+		this.redrawSortingButtons(objectPrefix, records);
+	}
+	
+	this.redrawSortingButtons = function(objectPrefix, records) {
+		var i;
+		var headerObj;
+		var sortingObj = new Array();
+		
+			// if no records were passed, fetch them from form field
+		if (typeof records == 'undefined') {
+			records = new Array();
+			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+			var formObj = document.getElementsByName(objectName);
+			if (formObj) records = formObj[0].value.split(',');
+		}
+		
+		for (i = 0; i < records.length; i++) {
+			if (!records[i].length) continue;
+			
+			headerObj = $(objectPrefix+'['+records[i]+']_header');
+			sortingObj[0] = headerObj.getElementsByClassName('sortingUp');
+			sortingObj[1] = headerObj.getElementsByClassName('sortingDown');
+			
+			if (sortingObj[0].length)
+				sortingObj[0][0].style.visibility = i == 0 ? 'hidden' : 'visible';
+			if (sortingObj[1].length)
+				sortingObj[1][0].style.visibility = i == records.length-1 ? 'hidden' : 'visible';
+		}
+	}
+	
+	this.memorizeAddRecord = function(objectPrefix, newUid, afterUid) {
+		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+		var formObj = document.getElementsByName(objectName);
+
+		if (formObj) {
+			var records = new Array();
+			if (formObj[0].value.length) records = formObj[0].value.split(',');
 			
 			if (afterUid) {
-				var newParts = new Array();
-				for (var i = 0; i < parts.length; i++) {
-					if (parts[i].length) newParts.push(parts[i]);
-					if (afterUid == parts[i]) newParts.push(newUid);
+				var newRecords = new Array();
+				for (var i = 0; i < records.length; i++) {
+					if (records[i].length) newRecords.push(records[i]);
+					if (afterUid == records[i]) newRecords.push(newUid);
 				}
-				parts = newParts;
+				records = newRecords;
 			} else {
-				parts.push(newUid);
+				records.push(newUid);
 			}
-			formObj[0].value = parts.join(',');
+			formObj[0].value = records.join(',');
 		}
+
+		this.redrawSortingButtons(objectPrefix, records);
 	}
 	
 	this.memorizeRemoveRecord = function(objectName, removeUid) {
@@ -135,6 +237,9 @@
 			prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2),
 			this.parseFormElementName('none', objectId, 1)
 		);
+		
+		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
+		this.redrawSortingButtons(objectPrefix);
 		
 		return false;
 	}
@@ -186,6 +291,10 @@
 		}
 
 		return elReturn;
+	}
+	
+	this.initSortable = function() {
+		
 	}
 }
 
