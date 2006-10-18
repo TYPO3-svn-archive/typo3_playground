@@ -1878,7 +1878,7 @@ class t3lib_TCEmain	{
 			}
 		}
 
-			// Here we should se if 1) the records exist anymore, 2) which are new and check if the BE_USER has read-access to the new ones.
+			// Here we should see if 1) the records exist anymore, 2) which are new and check if the BE_USER has read-access to the new ones.
 		return $valueArray;
 	}
 

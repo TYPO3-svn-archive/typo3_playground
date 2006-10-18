@@ -173,7 +173,7 @@ class t3lib_TCEforms_inline {
 		$item .= '<div id="'.$this->prependObjectId.'">';
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
-				$item .= $this->getSingleField_typeInline_renderForeignRecord($foreign_table,$rec,$config);
+				$item .= $this->getSingleField_typeInline_renderForeignRecord($row['uid'],$rec,$config);
 				$relationList[] = $rec['uid'];
 			}
 		}
@@ -201,15 +201,18 @@ class t3lib_TCEforms_inline {
 	/**
 	 * Render the form-fields of a related (foreign) record.
 	 *
-	 * @param	string		$foreign_table: The name of the foreing table (this is the table to be embedded here as child)
+	 * @param	string		$parentUid: The uid of the parent (embedding) record (uid or NEW...)
 	 * @param	array		$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
 	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		The HTML code for this "foreign record"
 	 */
-	function getSingleField_typeInline_renderForeignRecord($foreign_table, $rec, $config = array()) {
+	function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array()) {
 			// record comes from storage (e.g. database)
 		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
 
+		$foreign_table = $config['foreign_table'];
+		$foreign_field = $config['foreign_field'];
+		
 			// get the current prepentObjectId
 		$prependObjectId = $this->prependObjectId;
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
@@ -241,6 +244,13 @@ class t3lib_TCEforms_inline {
 		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
 		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.'</div>';
+			// if inline records are related by a "foreign_field"
+		if ($foreign_table && $rec['pid']) {
+				// if the parent record is new, put the relation information into [__ctrl], this is processed last
+			$out .= '<input type="hidden" name="'.$this->prependNaming .
+				(t3lib_div::testInt($parentUid) ? '' : '[__ctrl][records]') .
+				$appendFormFieldNames.'['.$foreign_field.']" value="'.$parentUid.'" />';
+		}
 		$out .= '</div>';
 
 		return $out;
@@ -545,7 +555,7 @@ class t3lib_TCEforms_inline {
 		$this->prependObjectId = $structureTree['prependObjectId'];
 
 			// render the foreign record that should passed back to browser
-		$item = $this->getSingleField_typeInline_renderForeignRecord($foreign_table, $record, $config);
+		$item = $this->getSingleField_typeInline_renderForeignRecord($paBr['uid'], $record, $config);
 
 		$objResponse = new tx_xajax_response('iso-8859-1', true);
 
@@ -666,6 +676,18 @@ class t3lib_TCEforms_inline {
 		return $rec;
 	}
 
+	
+	/**
+	 * Wrapper. Calls getSingleField_typeInline_getRecord in case of a new record should be created.
+	 *
+	 * @param	integer		$pid: The pid of the page the record should be stored (only relevant for NEW records)
+	 * @param	string		$table: The table to fetch data from (= foreign_table)
+	 * @return	array		A record row from the database post-processed by t3lib_transferData
+	 */
+	function getSingleField_typeInline_getNewRecord($pid, $table) {
+		return $this->getSingleField_typeInline_getRecord($pid, $table, '', 'new');
+	}
+
 
 	/*******************************************************
 	 *
@@ -737,7 +759,7 @@ class t3lib_TCEforms_inline {
 		$tce->start($data, $cmd);
 		$tce->process_datamap();
 		$tce->process_cmdmap();
-
+		
 		// FIXME: What should happen if record, that embeds inline child records is deleted or moved to another page
 		// - delete: if it's 1:n --> remove the child records (recurisvely!!!)
 		// - delete: if it's m:n --> I dont know... yet ;-)
@@ -750,18 +772,6 @@ class t3lib_TCEforms_inline {
 	 * Helper functions
 	 *
 	 *******************************************************/
-
-
-	/**
-	 * Wrapper. Calls getSingleField_typeInline_getRecord in case of a new record should be created.
-	 *
-	 * @param	integer		$pid: The pid of the page the record should be stored (only relevant for NEW records)
-	 * @param	string		$table: The table to fetch data from (= foreign_table)
-	 * @return	array		A record row from the database post-processed by t3lib_transferData
-	 */
-	function getSingleField_typeInline_getNewRecord($pid, $table) {
-		return $this->getSingleField_typeInline_getRecord($pid, $table, '', 'new');
-	}
 
 
 	/**
