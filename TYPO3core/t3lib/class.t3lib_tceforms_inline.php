@@ -71,6 +71,10 @@ class t3lib_TCEforms_inline {
 	var $fObj;								// Reference to the calling TCEforms instance
 	var $backPath;							// Reference to $fObj->backPath
 
+	var $inlineStructure = array();			// the structure/hierarchy where working in, e.g. cascading inline tables
+	var $inlineFirstPid;					// the first call of an inline type appeared on this page (pid of record)
+	var $inlineNames = array();				// keys: form, object -> hold the name/id for each of them
+	
 	var $prependObjectId = '';				// id for DOM objects, set by function dynamically
 	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 
@@ -119,45 +123,44 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code for the TCEform field
 	 */
 	function getSingleField_typeInline($table,$field,$row,&$PA) {
-			// indicator, if this call is the first in a set of inline types
-		$firstInlineCall = false;
-
 			// Init:
 		$config = $PA['fieldConf']['config'];
 		$foreign_table = $config['foreign_table'];
-
-		$itemArray = array();
-		$recordList = array();
-		$relationList = array();
-
 		$minitems = t3lib_div::intInRange($config['minitems'],0);
 		$maxitems = t3lib_div::intInRange($config['maxitems'],0);
 		if (!$maxitems)	$maxitems=100000;
 
+		if ($config['MM']) {
+				// FIXME: Just copied for now, change the function to the real demands
+			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$PA);
+			$selectorBox = $this->getSingleField_typeInline_renderPossibleRecordsSelector($possibleRecords, $config);
+		}
+		
+			// remember the page id (pid of record) where inline editing started first
+			// we need that pid for ajax calls, so that they would know where the action takes place on the page structure
+		if (!isset($this->inlineFirstPid)) {
+			$this->inlineFirstPid = $row['pid'];
+			$prependFormFieldNames = $this->fObj->prependFormFieldNames;
+			$this->fObj->prependFormFieldNames = $this->prependNaming;
+		}
+			// add the current inline job to the structure stack
+		$this->getSingleField_typeInline_pushStructure($table, $row['uid'], $field);
+			// e.g. inline[<table>][<uid>][<field>]
+		$nameForm = $this->inlineNames['form'];
+			// e.g. inline[<pid>][<table1>][<uid1>][<field1>][<table2>][<uid2>][<field2>]
+		$nameObject = $this->inlineNames['object'];
+		
 			// get the records related to this inline record
 		$recordList = $this->getSingleField_typeInline_getRelatedRecords($table,$field,$row,$PA,$config);
 			// set the first and last record to the config array
 		$config['inline']['first'] = $recordList[0]['uid'];
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
-			// FIXME: maybe something nicer than overwriting and setting back later
-			// (extend getMainFields with attribute 'prependFormFieldNames'?)
-		if (!$this->prependObjectId) {
-			$this->prependObjectId = 'inline['.$row['pid'].']';
-			$firstInlineCall = true;
-		}
-		$itemFormElName = substr($PA['itemFormElName'], strlen($this->fObj->prependFormFieldNames));
-
-			// FIXME: Perhaps use an array stack?
-		$prependObjectId = $this->prependObjectId;
-		$this->prependObjectId .= $itemFormElName;
-
-		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
-		$this->fObj->prependFormFieldNames = $this->prependNaming;
-
+		if ($selectorBox) $item .= $selectorBox;
+		
 			// add the "Create new record" link if there are less than maxitems
 		if (count($recordList) < $maxitems) {
-			$onClick = "return inline.createNewRecord('".$this->prependObjectId."[$foreign_table]')";
+			$onClick = "return inline.createNewRecord('".$nameObject."[$foreign_table]')";
 			$item .= '
 					<!-- Link for creating a new record: -->
 					<div id="typo3-newRecordLink">
@@ -169,8 +172,9 @@ class t3lib_TCEforms_inline {
 		}
 
 			// wrap the all inline fields of a record with a <div> (like a container)
-		// $item .= $this->getSingleField_typeInline_addJavaScriptSortable($this->prependObjectId);
-		$item .= '<div id="'.$this->prependObjectId.'">';
+		// $item .= $this->getSingleField_typeInline_addJavaScriptSortable($nameObject);
+		$item .= '<div id="'.$nameObject.'">';
+		$relationList = array();
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
 				$item .= $this->getSingleField_typeInline_renderForeignRecord($row['uid'],$rec,$config);
@@ -179,10 +183,10 @@ class t3lib_TCEforms_inline {
 		}
 		$item .= '</div>';
 		// DEBUG:
-		// $item .= '<input size="60" type="text" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
-		$item .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][records]'.$itemFormElName.'" value="'.implode(',', $relationList).'" />';
+		// $item .= '<input size="60" type="text" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
+		$item .= '<input type="hidden" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
 
-			// include JavaScript files
+			// include JavaScript files once
 		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
 			$GLOBALS['SOBE']->doc->JScode .= $this->getSingleField_typeInline_addJavaScript();
 			$GLOBALS['T3_VAR']['inlineRelational']['imported'] = true;
@@ -190,10 +194,15 @@ class t3lib_TCEforms_inline {
 				"\t\t\t\twindow.setTimeout(function() { inline.setPrependFormFieldNames('".$this->fObj->prependFormFieldNames."'); }, 10);";
 		}
 
-			// set this value back to that one it had - before we changed it
-		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
-		$this->prependObjectId = $firstInlineCall ? '' : $prependObjectId;
-
+			// on finishing this section, remove the last item from the structure stack
+		$this->getSingleField_typeInline_popStructure();
+		
+			// if this was the first call to the inline type, restore the values
+		if ($prependFormFieldNames) {
+			unset($this->inlineFirstPid);
+			$this->fObj->prependFormFieldNames = $prependFormFieldNames;
+		}
+		
 		return $item;
 	}
 
@@ -214,9 +223,9 @@ class t3lib_TCEforms_inline {
 		$foreign_field = $config['foreign_field'];
 		
 			// get the current prepentObjectId
-		$prependObjectId = $this->prependObjectId;
+		$nameObject = $this->inlineNames['object'];
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
-		$formFieldNames = $prependObjectId.$appendFormFieldNames;
+		$formFieldNames = $nameObject.$appendFormFieldNames;
 
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
@@ -231,21 +240,21 @@ class t3lib_TCEforms_inline {
 
 		$fields = '<table '.$tableAttribs.'>'.$fields.'</table>';
 		if ($isNewRecord) {
-			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
+			$fields .= '<input type="hidden" name="'.$this->inlineNames['form'].$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
 		} else {
-			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
+			$fields .= '<input type="hidden" name="'.$this->inlineNames['form'].$appendFormFieldNames.'[__deleted]" value="0" />';
 		}
 
 			// set the appearance style of the records of this table
 		if (is_array($config['appearance']) && count($config['appearance'])) {
-			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'";';
+			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'"';
 		}
 
 		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
 		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.'</div>';
 			// if inline records are related by a "foreign_field"
-		if ($foreign_table && $rec['pid']) {
+		if ($foreign_field && $rec['pid']) {
 				// if the parent record is new, put the relation information into [__ctrl], this is processed last
 			$out .= '<input type="hidden" name="'.$this->prependNaming .
 				(t3lib_div::testInt($parentUid) ? '' : '[__ctrl][records]') .
@@ -262,7 +271,7 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$foreign_table
 	 * @param	array		$row
-	 * @param	string		$appendFormFieldNames: Append to prependFormFieldName to get a "namespace" for each form-field
+	 * @param	string		$formFieldNames: Append to prependFormFieldName to get a "namespace" for each form-field
 	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		The HTML code of the header
 	 */
@@ -469,6 +478,45 @@ class t3lib_TCEforms_inline {
 											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
 	}
 
+	function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config) {
+		if(!$disabled) {
+				// Create option tags:
+			$opt = array();
+			$styleAttrValue = '';
+			foreach($selItems as $p)	{
+				if ($config['iconsInOptionTags'])	{
+					$styleAttrValue = $this->fObj->optionTagStyle($p[2]);
+				}
+				$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
+								($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue).'"' : '').
+								'>'.htmlspecialchars($p[0]).'</option>';
+			}
+
+				// Put together the selector box:
+			$selector_itemListStyle = isset($config['itemListStyle']) ? ' style="'.htmlspecialchars($config['itemListStyle']).'"' : ' style="'.$this->fObj->defaultMultipleSelectorStyle.'"';
+			$size = intval($config['size']);
+			$size = $config['autoSizeMax'] ? t3lib_div::intInRange(count($itemArray)+1,t3lib_div::intInRange($size,1),$config['autoSizeMax']) : $size;
+			if ($config['exclusiveKeys'])	{
+				$sOnChange = 'setFormValueFromBrowseWin(\''.$PA['itemFormElName'].'\',this.options[this.selectedIndex].value,this.options[this.selectedIndex].text,\''.$config['exclusiveKeys'].'\'); ';
+			} else {
+				$sOnChange = 'setFormValueFromBrowseWin(\''.$PA['itemFormElName'].'\',this.options[this.selectedIndex].value,this.options[this.selectedIndex].text); ';
+			}
+			// $sOnChange .= implode('',$PA['fieldChangeFunc']);
+			$itemsToSelect = '
+				<select name="'.$PA['itemFormElName'].'_sel"'.
+							$this->fObj->insertDefStyle('select').
+							($size ? ' size="'.$size.'"' : '').
+							' onchange="'.htmlspecialchars($sOnChange).'"'.
+							$PA['onFocus'].
+							$selector_itemListStyle.'>
+					'.implode('
+					',$opt).'
+				</select>';
+		}
+		
+		return $itemsToSelect;
+	}
+	
 
 	/**
 	 * Get the <script type="text/javascript" src="..."> tags of:
@@ -538,48 +586,44 @@ class t3lib_TCEforms_inline {
 			// set the TCEforms prependFormFieldNames
 		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
 		$this->fObj->prependFormFieldNames = $this->prependNaming;
-
-		$structureTree = $this->getSingleField_typeInline_getStructureTree($domObjectId);
-		$paBr = $structureTree['parentBranch'];
-
-		$foreign_table = $structureTree['childBranch']['table'];
+		
+		$this->getSingleField_typeInline_parseStructureString($domObjectId);
+		$current = $this->inlineStructure['unstable'];
+		$parent = $this->getSingleField_typeInline_getStructureLevel(-1);
 
 			// load TCA 'config' of the current table
-		t3lib_div::loadTCA($paBr['table']);
-		$config = $TCA[$paBr['table']]['columns'][$paBr['field']]['config'];
+		t3lib_div::loadTCA($parent['table']);
+		$config = $TCA[$parent['table']]['columns'][$parent['field']]['config'];
 
 			// dynamically create a new record using t3lib_transferData
-		$record = $this->getSingleField_typeInline_getNewRecord($structureTree['pid'], $foreign_table);
-
-			// setting the object id prepend to come back into DOM structure
-		$this->prependObjectId = $structureTree['prependObjectId'];
-
+		$record = $this->getSingleField_typeInline_getNewRecord($this->inlineFirstPid, $current['table']);
+		
 			// render the foreign record that should passed back to browser
-		$item = $this->getSingleField_typeInline_renderForeignRecord($paBr['uid'], $record, $config);
+		$item = $this->getSingleField_typeInline_renderForeignRecord($parent['uid'], $record, $config);
 
 		$objResponse = new tx_xajax_response('iso-8859-1', true);
 
 			// the HTML-object-id's prefix of the dynamically created record
-		$objectPrefix = $structureTree['prependObjectId'].'['.$structureTree['childBranch']['table'].']';
+		$objectPrefix = $this->inlineNames['object'].'['.$current['table'].']';
 
 			// append the HTML data at the bottom of the container
-		if (!$structureTree['childBranch']['uid']) {
-			$objResponse->addScriptCall('inline.domAddNewRecord', 'bottom', $structureTree['prependObjectId'], $item);
+		if (!$current['uid']) {
+			$objResponse->addScriptCall('inline.domAddNewRecord', 'bottom', $this->inlineNames['object'], $item);
 			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], null);
 
 			// ERROR: xajax adds the html data by touching the innerHTML attribute
 			// -> entered data of other records in that section gets lost on doing this
-			// $objResponse->addAppend($structureTree['prependObjectId'], 'innerHTML', $item);
+			// $objResponse->addAppend($this->inlineNames['object'], 'innerHTML', $item);
 
 			// append the HTML data after an existing record in the container
 		} else {
 			$objResponse->addScriptCall('inline.domAddNewRecord', 'after', $domObjectId.'_div', $item);
-			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], $structureTree['childBranch']['uid']);
+			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], $current['uid']);
 			// $objResponse->addScriptCall('inline.insertRecordAfter', $domObjectId.'_div', $item);
 		}
 
 			// tell the browser to scroll to the newly created record
-		$objResponse->addScriptCall('Element.scrollTo', $structureTree['prependObjectId'].'['.$foreign_table.']['.$record['uid'].']_div');
+		$objResponse->addScriptCall('Element.scrollTo', $this->inlineNames['object'].'['.$current['table'].']['.$record['uid'].']_div');
 
 			// set the TCEforms prependFormFieldNames value back to its initial value
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
@@ -646,6 +690,48 @@ class t3lib_TCEforms_inline {
 		return $records;
 	}
 
+	/**
+	 * Get possible records.
+	 * Copied from TCEform and modified.
+	 *
+	 * @param	string		The table name of the record
+	 * @param	string		The field name which this element is supposed to edit
+	 * @param	array		The record data array where the value(s) for the field can be found
+	 * @param	array		An array with additional configuration options.
+	 * @return	array		Array of possible record items
+	 */
+	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA) {
+			// Field configuration from TCA:
+		$config = $PA['fieldConf']['config'];
+		
+			// Getting the selector box items from the system
+		$selItems = $this->fObj->addSelectOptionsToItemArray($this->fObj->initItemArray($PA['fieldConf']),$PA['fieldConf'],$this->fObj->setTSconfig($table,$row),$field);
+		if ($config['itemsProcFunc']) $selItems = $this->fObj->procItems($selItems,$PA['fieldTSConfig']['itemsProcFunc.'],$config,$table,$row,$field);
+
+			// Possibly remove some items:
+		$removeItems = t3lib_div::trimExplode(',',$PA['fieldTSConfig']['removeItems'],1);
+		foreach($selItems as $tk => $p)	{
+
+				// Checking languages and authMode:
+			$languageDeny = $TCA[$table]['ctrl']['languageField'] && !strcmp($TCA[$table]['ctrl']['languageField'], $field) && !$GLOBALS['BE_USER']->checkLanguageAccess($p[1]);
+			$authModeDeny = $config['form_type']=='select' && $config['authMode'] && !$GLOBALS['BE_USER']->checkAuthMode($table,$field,$p[1],$config['authMode']);
+			if (in_array($p[1],$removeItems) || $languageDeny || $authModeDeny)	{
+				unset($selItems[$tk]);
+			} elseif (isset($PA['fieldTSConfig']['altLabels.'][$p[1]])) {
+				$selItems[$tk][0]=$this->fObj->sL($PA['fieldTSConfig']['altLabels.'][$p[1]]);
+			}
+
+				// Removing doktypes with no access:
+			if ($table.'.'.$field == 'pages.doktype')	{
+				if (!($GLOBALS['BE_USER']->isAdmin() || t3lib_div::inList($GLOBALS['BE_USER']->groupData['pagetypes_select'],$p[1])))	{
+					unset($selItems[$tk]);
+				}
+			}
+		}
+
+		return $selItems;
+	}
+	
 
 	/**
 	 * Get a single record row for an TCA table from the database.
@@ -773,83 +859,93 @@ class t3lib_TCEforms_inline {
 	 *
 	 *******************************************************/
 
+		
+	function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $params = array()) {
+		$this->inlineStructure['stable'][] = array(
+			'table'	=> $table,
+			'uid' => $uid,
+			'field' => $field,
+			'params' => $params,
+		);
+		$this->getSingleField_typeInline_updateStructureNames();
+	}
+	
+	function getSingleField_typeInline_popStructure() {
+		if (count($this->inlineStructure['stable'])) {
+			$popItem = array_pop($this->inlineStructure['stable']);
+			$this->getSingleField_typeInline_updateStructureNames();
+		}
+		return $popItem;
+	}
+
+	function getSingleField_typeInline_updateStructureNames() {
+		$current = $this->getSingleField_typeInline_getStructureLevel(-1);
+		$lastItemName = $this->getSingleField_typeInline_getStructureItemName($current);
+		$this->inlineNames = array(
+			'form' => $this->fObj->prependFormFieldNames.$lastItemName,
+			'object' => $this->prependNaming.'['.$this->inlineFirstPid.']'.$this->getSingleField_typeInline_getStructurePath(),
+			'ctrlrecords' => $this->fObj->prependFormFieldNames.'[__ctrl][records]'.$lastItemName,
+		);
+	}
+	
+	function getSingleField_typeInline_getStructureItemName($table, $uid = null, $field = null) {
+		if (is_array($table) && !$uid && !$field) {
+			$params = $table['params'];
+			$field = $table['field'];
+			$uid = $table['uid'];
+			$table = $table['table'];
+		}
+		return '['.$table.']['.$uid.']'.(isset($field) ? '['.$field.']' : '');
+	}
+	
+	function getSingleField_typeInline_getStructureLevel($level) {
+		if ($level < 0) $level = count($this->inlineStructure['stable'])+$level;
+		return $this->inlineStructure['stable'][$level];
+	}
+	
+	function getSingleField_typeInline_getStructurePath($structureDepth = -1) {
+		$structureCount = count($this->inlineStructure['stable']);
+		if ($structureDepth < 0 || $structureDepth > $structureCount) $structureDepth = $structureCount;
+
+		for ($i = 1; $i <= $structureDepth; $i++) {
+			$current = $this->getSingleField_typeInline_getStructureLevel(-$i);
+			$string = $this->getSingleField_typeInline_getStructureItemName($current).$string;
+		}
+		
+		return $string;
+	}
 
 	/**
 	 * Convert the DOM object-id of an inline container to an array.
 	 * The object-id could look like 'data[inline][tx_mmftest_company][1][employees]'.
-	 * The returned array could look like this:
-	 *
-	 * >> The 'childBranch' and 'parentBranch' keys are references to the last child child (deep) down in the structure.
-	 *
-	 * Array(
-	 * 	pid => 13,
-	 * 	table => tx_firstlevel,
-	 *  uid => 123,
-	 *  field => somefield,
-	 *  child => Array(
-	 * 		table => tx_secondlevel,
-	 * 		uid => 234,
-	 * 		field => anotherfield,
-	 * 		child => Array(...),
-	 * 	),
-	 * 	childBranch => Array(
-	 * 		table => tx_secondlevel,
-	 * 		uid => 234,
-	 * 		field => anotherfield,
-	 * 		child => Array(...),
-	 * 	),
-	 *  parentBranch => Array(...),
-	 * )
+	 * The result is written to $this->inlineStructure.
+	 * There are two keys:
+	 *  - 'stable': Containing full qualified identifiers (table, uid and field)
+	 *  - 'unstable': Containting partly filled data (e.g. only table and possibly field)
 	 *
 	 * @param	string		$domObjectId: The DOM object-id
-	 * @return	array		The structure tree with the keys table, uid, field, child and lastBranch
+	 * @retunr	void
 	 */
-	function getSingleField_typeInline_getStructureTree($domObjectId) {
-		$strucutreTree = array();
-		$strucutreTree['objectId'] = $domObjectId;
-		$strucutreTree['childBranch'] =& $strucutreTree;
-		$strucutreTree['parentBranch'] =& $strucutreTree;
-		$strucutreTree['prependObjectId'] = 'inline';
-		$currentBranch =& $strucutreTree;
-
+	function getSingleField_typeInline_parseStructureString($string) {
+		$this->inlineStructure['unstable'] = array();
 		$vector = array('table', 'uid', 'field');
-
-		$pattern = '/^inline\[(.+)\]$/';
-		if (preg_match($pattern, $domObjectId, $match)) {
-			$hops = explode('][', $match[1]);
-			$hopsCount = count($hops);
-			if ($hops[0] == 'inline') $hasPrefix = 1;
-
-			foreach ($hops as $index => $hop) {
-
-					// the first one is the pid
-				if ($index == 0) {
-					$strucutreTree['pid'] = $hop;
-					$strucutreTree['prependObjectId'] .= '['.$hop.']';
-					continue;
-
-					// if the set of three items repeats again, it is a new child node
-				} elseif ($index > 1 && ($index-1) % 3 == 0 && $index < $hopsCount) {
-					$currentBranch['child'] = array();
-					$currentBranch =& $currentBranch['child'];
-
-						// if there's a childBranch, reference its parent
-					if ($strucutreTree['childBranch'] != null) $strucutreTree['parentBranch'] =& $strucutreTree['childBranch'];
-					$strucutreTree['childBranch'] =& $currentBranch;
-
-					$strucutreTree['prependObjectId'] .= $recordObjectIdPart;
-					$recordObjectIdPart = '';
+		$pattern = '/^'.$this->prependNaming.'\[(.+?)\]\[(.+)\]$/';
+		if (preg_match($pattern, $string, $match)) {
+			$this->inlineFirstPid = $match[1];
+			$parts = explode('][', $match[2]);
+			$partsCnt = count($parts);
+			for ($i = 0; $i < $partsCnt; $i++) {
+				if ($i > 0 && $i % 3 == 0) {
+					$this->inlineStructure['stable'][] = $this->inlineStructure['unstable'];
+					$this->inlineStructure['unstable'] = array();
 				}
-
-					// add a field (table, uid or field) to the current branch
-				$currentBranch[$vector[($index-1)%3]] = $hop;
-				$recordObjectIdPart .= '['.$hop.']';
+				$this->inlineStructure['unstable'][$vector[$i % 3]] = $parts[$i];
 			}
+			$this->getSingleField_typeInline_updateStructureNames();
+			if (!count($this->inlineStructure['unstable'])) unset($this->inlineStructure['unstable']);
 		}
-
-		return $strucutreTree;
 	}
-
+	
 
 	/**
 	 * Process the xaJax request. This method is normally called directly by alt_doc_ajax.php
