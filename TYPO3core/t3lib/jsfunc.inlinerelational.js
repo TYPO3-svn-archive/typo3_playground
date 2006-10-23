@@ -64,6 +64,11 @@
 		return false;
 	}
 	
+	this.importNewRecord = function(objectId, foreignUid) {
+		inline_createNewRecord(objectId, foreignUid);
+		return false;
+	}
+	
 	this.domAddNewRecord = function(method, objectId, htmlData) {
 		if (method == 'bottom')
 			new Insertion.Bottom(objectId, htmlData);

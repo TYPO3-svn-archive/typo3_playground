@@ -156,6 +156,9 @@ class t3lib_loadDBGroup	{
 			// Now, populate the internal itemArray and tableArray arrays:
 		if ($MMtable)	{	// If MM, then call this function to do that:
 			$this->readMM($MMtable,$MMuid);
+		} elseif ($MMuid && $conf['foreign_field']) {
+				// If not MM but foreign_field, the read the records by the foreign_field
+			$this->readForeignField($MMuid, $conf);	
 		} else {
 				// If not MM, then explode the itemlist by "," and traverse the list:
 			$this->readList($itemlist);
@@ -333,6 +336,30 @@ class t3lib_loadDBGroup	{
 		}
 	}
 
+	/**
+	 * Reads items from a foreign_table, that have a foreign_field (uid of the parent record) and
+	 * stores the parts in the internal array itemArray and tableArray.
+	 *
+	 * @param	integer		$uid: The uid of the parent record (this value is also on the foreign_table in the foreign_field)
+	 * @param	array		$conf: TCA configuration for current field
+	 * @return	void 
+	 */
+	function readForeignField($uid, $conf) {
+		$key = 0;
+		$rows = t3lib_BEfunc::getRecordsByField(
+			$conf['foreign_table'],
+			$conf['foreign_field'],
+			intval($uid)
+		);
+		
+		foreach ($rows as $row) {
+			$this->itemArray[$key]['id'] = $row['uid'];
+			$this->itemArray[$key]['table'] = $conf['foreign_table'];
+			$this->tableArray[$theTable][]= $row['uid'];
+			$key++;
+		}
+	}
+	
 	/**
 	 * After initialization you can extract an array of the elements from the object. Use this function for that.
 	 *

@@ -1157,7 +1157,7 @@ class t3lib_TCEmain	{
 			case 'group':
 			case 'select':
 			case 'inline':
-				$res = $this->checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);
+				$res = $this->checkValue_inline($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);
 			break;
 			case 'flex':
 				if ($field)	{	// FlexForms are only allowed for real fields.
@@ -1305,7 +1305,7 @@ class t3lib_TCEmain	{
 		// NOTE!!! Must check max-items of files before the later check because that check would just leave out filenames if there are too many!!
 
 			// Checking for select / authMode, removing elements from $valueArray if any of them is not allowed!
-		if (($tcaFieldConf['type']=='select' || $tcaFieldConf['type']=='inline') && $tcaFieldConf['authMode'])	{
+		if ($tcaFieldConf['type']=='select' && $tcaFieldConf['authMode'])	{
 			$preCount = count($valueArray);
 			foreach($valueArray as $kk => $vv)	{
 				if (!$this->BE_USER->checkAuthMode($table,$field,$vv,$tcaFieldConf['authMode']))	{
@@ -1340,7 +1340,7 @@ class t3lib_TCEmain	{
 			}
 		}
 			// For select types which has a foreign table attached:
-		if (($tcaFieldConf['type']=='select' || $tcaFieldConf['type']=='inline') && $tcaFieldConf['foreign_table'])	{
+		if ($tcaFieldConf['type']=='select' && $tcaFieldConf['foreign_table'])	{
 			$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'select', $table);
 		}
 
@@ -1687,6 +1687,91 @@ class t3lib_TCEmain	{
 		}
 	}
 
+	/**
+	 * Evaluates 'inline' type values.
+	 * (partly copied from the select_group function on this issue)
+	 *
+	 * @param	array		The result array. The processed value (if any!) is set in the 'value' key.
+	 * @param	string		The value to set.
+	 * @param	array		Field configuration from TCA
+	 * @param	array		Additional parameters in a numeric array: $table,$id,$curValue,$status,$realPid,$recFID
+	 * @param	[type]		$uploadedFiles: ...
+	 * @param	string		Field name
+	 * @return	array		Modified $res array
+	 */
+	function checkValue_inline($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)	{
+
+		list($table,$id,$curValue,$status,$realPid,$recFID) = $PP;
+
+			// Detecting if value sent is an array and if so, implode it around a comma:
+		if (is_array($value))	{
+			$value = implode(',',$value);
+		}
+
+			// This converts all occurencies of '&#123;' to the byte 123 in the string - this is needed in very rare cases where filenames with special characters (like ???, umlaud etc) gets sent to the server as HTML entities instead of bytes. The error is done only by MSIE, not Mozilla and Opera.
+			// Anyways, this should NOT disturb anything else:
+		$value = $this->convNumEntityToByteValue($value);
+
+			// When values are sent as group or select they come as comma-separated values which are exploded by this function:
+		$valueArray = $this->checkValue_group_select_explodeSelectGroupValue($value);
+
+			// If not multiple is set, then remove duplicates:
+		if (!$tcaFieldConf['multiple'])	{
+			$valueArray = array_unique($valueArray);
+		}
+
+		// This could be a good spot for parsing the array through a validation-function which checks if the values are alright (except that database references are not in their final form - but that is the point, isn't it?)
+		// NOTE!!! Must check max-items of files before the later check because that check would just leave out filenames if there are too many!!
+
+			// Checking for inline / authMode, removing elements from $valueArray if any of them is not allowed!
+		if ($tcaFieldConf['authMode'])	{
+			$preCount = count($valueArray);
+			foreach($valueArray as $kk => $vv)	{
+				if (!$this->BE_USER->checkAuthMode($table,$field,$vv,$tcaFieldConf['authMode']))	{
+					unset($valueArray[$kk]);
+				}
+			}
+
+				// During the check it turns out that the value / all values were removed - we respond by simply returning an empty array so nothing is written to DB for this field.
+			if ($preCount && !count($valueArray))	{
+				return array();
+			}
+		}
+		
+			// For select types which has a foreign table attached:
+			// FIXME: Normally every inline type has a foreign-table!
+		if ($tcaFieldConf['foreign_table'])	{
+			$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'select', $table);
+		}
+
+			// If a foreign_field is used to relate records, only the reference count
+			// is stored on this record - like it's done for MM-relations
+		if ($tcaFieldConf['foreign_field']) {
+			$valueArray = array(count($valueArray));
+		}
+		
+// BTW, checking for min and max items here does NOT make any sense when MM is used because the above function calls will just return an array with a single item (the count) if MM is used... Why didn't I perform the check before? Probably because we could not evaluate the validity of record uids etc... Hmm...
+
+			// Checking the number of items, that it is correct.
+			// If files, there MUST NOT be too many files in the list at this point, so check that prior to this code.
+		$valueArrayC = count($valueArray);
+		$minI = isset($tcaFieldConf['minitems']) ? intval($tcaFieldConf['minitems']):0;
+
+			// NOTE to the comment: It's not really possible to check for too few items, because you must then determine first, if the field is actual used regarding the CType.
+		$maxI = isset($tcaFieldConf['maxitems']) ? intval($tcaFieldConf['maxitems']):1;
+		if ($valueArrayC > $maxI)	{$valueArrayC=$maxI;}	// Checking for not too many elements
+
+			// Dumping array to list
+		$newVal=array();
+		foreach($valueArray as $nextVal)	{
+			if ($valueArrayC==0)	{break;}
+			$valueArrayC--;
+			$newVal[]=$nextVal;
+		}
+		$res['value'] = implode(',',$newVal);
+
+		return $res;
+	}
 
 
 

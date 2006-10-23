@@ -324,7 +324,6 @@ class t3lib_transferData {
 	 * @return	string		Modified $value
 	 */
 	function renderRecord_SW($data,$fieldConfig,$TSconfig,$table,$row,$field)	{
-
 		switch((string)$fieldConfig['config']['type'])	{
 			case 'group':
 				$data = $this->renderRecord_groupProc($data,$fieldConfig,$TSconfig,$table,$row,$field);
@@ -563,7 +562,7 @@ class t3lib_transferData {
 			if ($TCA[$foreign_table])	{
 					// if there are elements and a default ordering is defined,
 					// show the current elements with this defined default order
-				if ($TCA[$foreign_table]['ctrl']['default_sortby'] && count($elements)) {
+				if ($TCA[$foreign_table]['ctrl']['default_sortby'] && count($elements) > 1) {
 					$wgolPartsFC = $GLOBALS['TYPO3_DB']->splitGroupOrderLimit($fieldConfig['config']['foreign_table_where']);
 					$wgolPartsCTRL = $GLOBALS['TYPO3_DB']->splitGroupOrderLimit($TCA[$foreign_table]['ctrl']['default_sortby']);
 					
@@ -889,7 +888,7 @@ class t3lib_transferData {
 		foreach($dataIds as $theId)	{
 			if (isset($recordList[$theId]))	{
 				$lPrefix = $this->sL($fieldConfig['config'][($theId>0?'':'neg_').'foreign_table_prefix']);
-				if ($fieldConfig['config']['MM'])	{
+				if ($fieldConfig['config']['MM'] || $fieldConfig['config']['foreign_field'])	{
 					$dataAcc[]=rawurlencode($theId).'|'.rawurlencode(t3lib_div::fixed_lgd_cs($lPrefix.strip_tags($recordList[$theId]),$GLOBALS['BE_USER']->uc['titleLen']));
 				} else {
 					foreach($elements as $eKey => $value)	{

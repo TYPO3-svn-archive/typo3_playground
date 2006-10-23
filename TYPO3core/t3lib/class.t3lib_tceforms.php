@@ -749,8 +749,20 @@ class t3lib_TCEforms	{
 		$PA['fieldConf'] = $TCA[$table]['columns'][$field];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
 
+			// check, if a field should be rendered, that was defined to be handled as foreign_field of a parent record of the "inline"-type
+			// if so, we have to skip this field - the rendering is done via "inline" as hidden field
+		if ($this->inline->getSingleField_typeInline_getStructureDepth()) {
+			$searchArray = array(
+				'foreign_table' => $table,
+				'foreign_field' => $field
+			);
+				// if the test on the configuration was successful, skip this field
+			if ($this->inline->getSingleField_typeInline_compareStructureConfiguration($searchArray)) $skipThisField = true;
+		}
+		
 			// Now, check if this field is configured and editable (according to excludefields + other configuration)
 		if (	is_array($PA['fieldConf']) &&
+				!$skipThisField &&
 				(!$PA['fieldConf']['exclude'] || $BE_USER->check('non_exclude_fields',$table.':'.$field)) &&
 				$PA['fieldConf']['config']['form_type']!='passthrough' &&
 				($this->RTEenabled || !$PA['fieldConf']['config']['showIfRTE']) &&
