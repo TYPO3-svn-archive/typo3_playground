@@ -37,36 +37,37 @@
  *
  *
  *
- *   98: class t3lib_transferData
+ *   99: class t3lib_transferData
  *
  *              SECTION: Getting record content, ready for display in TCEforms
- *  137:     function fetchRecord($table,$idList,$operation)
- *  224:     function renderRecord($table, $id, $pid, $row)
- *  268:     function renderRecordRaw($table, $id, $pid, $row, $TSconfig='', $tscPID=0)
- *  326:     function renderRecord_SW($data,$fieldConfig,$TSconfig,$table,$row,$field)
- *  356:     function renderRecord_groupProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
- *  407:     function renderRecord_selectProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
- *  470:     function renderRecord_flexProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
- *  499:     function renderRecord_typesProc($totalRecordContent,$types_fieldConfig,$tscPID,$table,$pid)
+ *  138:     function fetchRecord($table,$idList,$operation)
+ *  225:     function renderRecord($table, $id, $pid, $row)
+ *  269:     function renderRecordRaw($table, $id, $pid, $row, $TSconfig='', $tscPID=0)
+ *  327:     function renderRecord_SW($data,$fieldConfig,$TSconfig,$table,$row,$field)
+ *  359:     function renderRecord_groupProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
+ *  410:     function renderRecord_selectProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
+ *  473:     function renderRecord_flexProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
+ *  504:     function renderRecord_typesProc($totalRecordContent,$types_fieldConfig,$tscPID,$table,$pid)
+ *  545:     function renderRecord_inlineProc($data,$fieldConfig,$TSconfig,$table,$row,$field)
  *
  *              SECTION: FlexForm processing functions
- *  555:     function renderRecord_flexProc_procInData($dataPart,$dataStructArray,$pParams)
- *  584:     function renderRecord_flexProc_procInData_travDS(&$dataValues,$DSelements,$pParams)
+ *  632:     function renderRecord_flexProc_procInData($dataPart,$dataStructArray,$pParams)
+ *  661:     function renderRecord_flexProc_procInData_travDS(&$dataValues,$DSelements,$pParams)
  *
  *              SECTION: Selector box processing functions
- *  661:     function selectAddSpecial($dataAcc, $elements, $specialKey)
- *  785:     function selectAddForeign($dataAcc, $elements, $fieldConfig, $field, $TSconfig, $row)
- *  838:     function getDataIdList($elements, $fieldConfig, $row)
- *  861:     function procesItemArray($selItems,$config,$fieldTSConfig,$table,$row,$field)
- *  876:     function addItems($items,$iArray)
- *  898:     function procItems($items,$itemsProcFuncTSconfig,$config,$table,$row,$field)
+ *  738:     function selectAddSpecial($dataAcc, $elements, $specialKey)
+ *  863:     function selectAddForeign($dataAcc, $elements, $fieldConfig, $field, $TSconfig, $row, $table)
+ *  917:     function getDataIdList($elements, $fieldConfig, $row, $table)
+ *  946:     function procesItemArray($selItems,$config,$fieldTSConfig,$table,$row,$field)
+ *  961:     function addItems($items,$iArray)
+ *  983:     function procItems($items,$itemsProcFuncTSconfig,$config,$table,$row,$field)
  *
  *              SECTION: Helper functions
- *  933:     function lockRecord($table, $id, $pid=0)
- *  950:     function regItem($table, $id, $field, $content)
- *  960:     function sL($in)
+ * 1018:     function lockRecord($table, $id, $pid=0)
+ * 1035:     function regItem($table, $id, $field, $content)
+ * 1045:     function sL($in)
  *
- * TOTAL FUNCTIONS: 19
+ * TOTAL FUNCTIONS: 20
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -565,7 +566,7 @@ class t3lib_transferData {
 				if ($TCA[$foreign_table]['ctrl']['default_sortby'] && count($elements) > 1) {
 					$wgolPartsFC = $GLOBALS['TYPO3_DB']->splitGroupOrderLimit($fieldConfig['config']['foreign_table_where']);
 					$wgolPartsCTRL = $GLOBALS['TYPO3_DB']->splitGroupOrderLimit($TCA[$foreign_table]['ctrl']['default_sortby']);
-					
+
 					$selfFieldConfig = $fieldConfig;
 					$selfFieldConfig['config']['foreign_table_where'] =
 						($wgolPartsFC['WHERE'] ? $wgolPartsFC['WHERE'] : '') .
@@ -573,14 +574,14 @@ class t3lib_transferData {
 						($wgolPartsFC['GROUPBY'] ? ' GROUP BY '.$wgolPartsFC['GROUPBY'] : '') .
 						($wgolPartsCTRL['ORDERBY'] ? ' ORDER BY '.$foreign_table.'.'.$wgolPartsCTRL['ORDERBY'] : '') .
 						($wgolPartsFC['LIMIT'] ? ' LIMIT '.$wgolPartsFC['LIMIT'] : '');
-						
+
 					$res = t3lib_BEfunc::exec_foreign_table_where_query($selfFieldConfig, $field, $TSconfig);
 					if ($GLOBALS['TYPO3_DB']->sql_num_rows($res)) {
 						$elements = array();
 						while ($elRow = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) $elements[] = $elRow['uid'];
 					}
 				}
-				
+
 				$dataAcc = $this->selectAddForeign($dataAcc, $elements, $fieldConfig, $field, $TSconfig, $row, $table);
 			}
 

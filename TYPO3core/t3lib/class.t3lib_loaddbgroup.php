@@ -37,17 +37,19 @@
  *
  *
  *
- *   72: class t3lib_loadDBGroup
- *   99:     function start($itemlist,$tablelist, $MMtable='',$MMuid=0)
- *  140:     function readList($itemlist)
- *  186:     function readMM($tableName,$uid)
- *  215:     function writeMM($tableName,$uid,$prependTableName=0)
- *  251:     function getValueArray($prependTableName='')
- *  279:     function convertPosNeg($valueArray,$fTable,$nfTable)
- *  301:     function getFromDB()
- *  333:     function readyForInterface()
+ *   74: class t3lib_loadDBGroup
+ *  108:     function start($itemlist, $tablelist, $MMtable='', $MMuid=0, $currentTable='', $conf=array())
+ *  176:     function readList($itemlist)
+ *  222:     function readMM($tableName,$uid)
+ *  273:     function writeMM($tableName,$uid,$prependTableName=0)
+ *  349:     function readForeignField($uid, $conf)
+ *  391:     function writeForeignField($uid, $conf)
+ *  422:     function getValueArray($prependTableName='')
+ *  450:     function convertPosNeg($valueArray,$fTable,$nfTable)
+ *  472:     function getFromDB()
+ *  507:     function readyForInterface()
  *
- * TOTAL FUNCTIONS: 8
+ * TOTAL FUNCTIONS: 10
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -158,7 +160,7 @@ class t3lib_loadDBGroup	{
 			$this->readMM($MMtable,$MMuid);
 		} elseif ($MMuid && $conf['foreign_field']) {
 				// If not MM but foreign_field, the read the records by the foreign_field
-			$this->readForeignField($MMuid, $conf);	
+			$this->readForeignField($MMuid, $conf);
 		} else {
 				// If not MM, then explode the itemlist by "," and traverse the list:
 			$this->readList($itemlist);
@@ -337,29 +339,80 @@ class t3lib_loadDBGroup	{
 	}
 
 	/**
-	 * Reads items from a foreign_table, that have a foreign_field (uid of the parent record) and
+	 * Reads items from a foreign_table, that has a foreign_field (uid of the parent record) and
 	 * stores the parts in the internal array itemArray and tableArray.
 	 *
 	 * @param	integer		$uid: The uid of the parent record (this value is also on the foreign_table in the foreign_field)
 	 * @param	array		$conf: TCA configuration for current field
-	 * @return	void 
+	 * @return	void
 	 */
 	function readForeignField($uid, $conf) {
 		$key = 0;
+		$foreign_table = $conf['foreign_table'];
+		$foreign_field = $conf['foreign_field'];
+
+		if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
+			$sortby = $conf['foreign_sortby'];
+		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// specific sortby for all table records
+			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
+		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby'])	// default sortby for all table records
+			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby'];
+
+			// strip a possible "ORDER BY" in front of the $sortby value
+		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
+
+			// get the rows from storage
 		$rows = t3lib_BEfunc::getRecordsByField(
 			$conf['foreign_table'],
 			$conf['foreign_field'],
-			intval($uid)
+			intval($uid),
+			'',
+			'',
+			$sortby
 		);
-		
-		foreach ($rows as $row) {
-			$this->itemArray[$key]['id'] = $row['uid'];
-			$this->itemArray[$key]['table'] = $conf['foreign_table'];
-			$this->tableArray[$theTable][]= $row['uid'];
-			$key++;
+
+		if (count($rows)) {
+			foreach ($rows as $row) {
+				$this->itemArray[$key]['id'] = $row['uid'];
+				$this->itemArray[$key]['table'] = $conf['foreign_table'];
+				$this->tableArray[$theTable][]= $row['uid'];
+				$key++;
+			}
 		}
 	}
-	
+
+	/**
+	 * Write the sorting values to a foreign_table, that has a foreign_field (uid of the parent record)
+	 *
+	 * @param	integer		$uid: The uid of the parent record (this value is also on the foreign_table in the foreign_field)
+	 * @param	array		$conf: TCA configuration for current field
+	 * @return	void
+	 */
+	function writeForeignField($uid, $conf) {
+		$c = 0;
+		$foreign_table = $conf['foreign_table'];
+		$foreign_field = $conf['foreign_field'];
+
+		if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
+			$sortby = $conf['foreign_sortby'];
+		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// specific sortby for all table records
+			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
+
+			// strip a possible "ORDER BY" in front of the $sortby value
+		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
+
+			// if there is a manual sortby field (not the default_sortby!) and items in the tableArray
+		if ($sortby && count($this->tableArray)) {
+			$andWhere = " AND $foreign_field='".intval($uid)."'";
+			foreach ($this->itemArray as $val) {
+				$c++;
+				$uid = $val['id'];
+				$table = $val['table'];
+				$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'".$andWhere, array($sortby => $c));
+			}
+		}
+	}
+
 	/**
 	 * After initialization you can extract an array of the elements from the object. Use this function for that.
 	 *

@@ -34,40 +34,44 @@
  *
  *
  *
- *   80: class t3lib_TCEforms_inline
- *  101:     function init(&$tceForms)
+ *   84: class t3lib_TCEforms_inline
+ *  105:     function init(&$tceForms)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  135:     function getSingleField_typeInline($table,$field,$row,&$PA)
- *  228:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
- *  288:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
- *  330:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
- *  498:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
- *  546:     function getSingleField_typeInline_addJavaScript()
- *  563:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
+ *  139:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *  233:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
+ *  293:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
+ *  343:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
+ *  513:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
+ *  559:     function getSingleField_typeInline_addJavaScript()
+ *  576:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling for AJAX calls
- *  600:     function getSingleField_typeInline_createNewRecord($domObjectId)
+ *  614:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
  *
  *              SECTION: Get data from database and handle relations
- *  669:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  720:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
- *  763:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
- *  790:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  691:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  743:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
+ *  786:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  813:     function getSingleField_typeInline_getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- *  890:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
- *  905:     function getSingleField_typeInline_popStructure()
- *  918:     function getSingleField_typeInline_updateStructureNames()
- *  936:     function getSingleField_typeInline_getStructureItemName($table, $uid = null, $field = null)
- *  952:     function getSingleField_typeInline_getStructureLevel($level)
- *  963:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
- *  987:     function getSingleField_typeInline_parseStructureString($string)
+ *  913:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
+ *  929:     function getSingleField_typeInline_popStructure()
+ *  946:     function getSingleField_typeInline_updateStructureNames()
+ *  963:     function getSingleField_typeInline_getStructureItemName($levelData)
+ *  978:     function getSingleField_typeInline_getStructureLevel($level)
+ *  991:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
+ * 1016:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1020:     function getSingleField_typeInline_processRequest()
+ * 1056:     function getSingleField_typeInline_processRequest()
+ * 1071:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
+ * 1087:     function getSingleField_typeInline_getStructureDepth()
+ * 1116:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1162:     function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false)
  *
- * TOTAL FUNCTIONS: 21
+ * TOTAL FUNCTIONS: 25
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -287,7 +291,15 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code of the header
 	 */
 	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array()) {
-		$recTitle = $this->fObj->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
+			// if an alternative label for the field we render is set, use it
+		$titleCol = $config['foreign_label'] && $row[$config['foreign_label']]
+			? $config['foreign_label']
+			: $GLOBALS['TCA'][$foreign_table]['ctrl']['label'];
+
+			// old: $recTitle = $this->fObj->noTitle(t3lib_BEfunc::getRecordTitle($foreign_table, $row));
+		$recTitle = t3lib_BEfunc::getProcessedValueExtra($foreign_table, $titleCol, $row[$titleCol]);
+		$recTitle = $this->fObj->noTitle($recTitle);
+
 		$altText = t3lib_BEfunc::getRecordIconAltText($row, $foreign_table);
 		$iconImg = t3lib_iconWorks::getIconImage(
 			$foreign_table, $row, $this->backPath,
@@ -489,7 +501,7 @@ class t3lib_TCEforms_inline {
 											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
 	}
 
-	
+
 	/**
 	 * Get a selector as used for the select type, to select from all available
 	 * records and to create a relation to the embedding record (e.g. like MM).
@@ -513,7 +525,7 @@ class t3lib_TCEforms_inline {
 			}
 
 			// FIXME: Change the JavaScript calls of each <option> for "inline" usage
-			
+
 				// Put together the selector box:
 			$selector_itemListStyle = isset($config['itemListStyle']) ? ' style="'.htmlspecialchars($config['itemListStyle']).'"' : ' style="'.$this->fObj->defaultMultipleSelectorStyle.'"';
 			$size = intval($config['size']);
@@ -596,6 +608,7 @@ class t3lib_TCEforms_inline {
 	 * Normally this method is never called from inside TYPO3. Always from outside by AJAX.
 	 *
 	 * @param	mixed		$arguments: What to do and where to add, information from the calling browser.
+	 * @param	[type]		$foreignUid: ...
 	 * @return	string		An xaJax XML object
 	 */
 	function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0) {
@@ -615,7 +628,7 @@ class t3lib_TCEforms_inline {
 		$config = $parent['config'];
 
 			// dynamically create a new record using t3lib_transferData
-		if (!t3lib_div::testInt($foreignUid)) {
+		if (!$foreignUid || !t3lib_div::testInt($foreignUid)) {
 			$record = $this->getSingleField_typeInline_getNewRecord($this->inlineFirstPid, $current['table']);
 
 			// dynamically import an existing record (this could be a call from a select box)
@@ -623,7 +636,7 @@ class t3lib_TCEforms_inline {
 		} else {
 			$record = $this->getSingleField_typeInline_getRecord($this->inlineFirstPid, $current['table'], $foreignUid);
 		}
-		
+
 			// render the foreign record that should passed back to browser
 		$item = $this->getSingleField_typeInline_renderForeignRecord($parent['uid'], $record, $config);
 
@@ -716,7 +729,7 @@ class t3lib_TCEforms_inline {
 		return $records;
 	}
 
-	
+
 	/**
 	 * Get possible records.
 	 * Copied from TCEform and modified.
@@ -907,7 +920,7 @@ class t3lib_TCEforms_inline {
 		$this->getSingleField_typeInline_updateStructureNames();
 	}
 
-	
+
 	/**
 	 * Remove the item on top of the structure stack and return it.
 	 *
@@ -921,7 +934,7 @@ class t3lib_TCEforms_inline {
 		return $popItem;
 	}
 
-	
+
 	/**
 	 * For common use of DOM object-ids and form field names of a several inline-level,
 	 * these names/identifiers are preprocessed and set to $this->inlineNames.
@@ -940,7 +953,7 @@ class t3lib_TCEforms_inline {
 		);
 	}
 
-	
+
 	/**
 	 * Create a name/id for usage in HTML output of a level of the structure stack.
 	 *
@@ -953,7 +966,7 @@ class t3lib_TCEforms_inline {
 				(isset($levelData['field']) ? '['.$levelData['field'].']' : '');
 	}
 
-	
+
 	/**
 	 * Get a level from the stack and return the data.
 	 * If the $level value is negative, this function works top-down,
@@ -966,7 +979,7 @@ class t3lib_TCEforms_inline {
 		if ($level < 0) $level = count($this->inlineStructure['stable'])+$level;
 		return $this->inlineStructure['stable'][$level];
 	}
-	
+
 
 	/**
 	 * Get the identifiers of a given depth of level, from the top of the stack to the bottom.
@@ -986,7 +999,7 @@ class t3lib_TCEforms_inline {
 
 		return $string;
 	}
-	
+
 
 	/**
 	 * Convert the DOM object-id of an inline container to an array.
@@ -997,12 +1010,12 @@ class t3lib_TCEforms_inline {
 	 *  - 'unstable': Containting partly filled data (e.g. only table and possibly field)
 	 *
 	 * @param	string		$domObjectId: The DOM object-id
-	 * @param 	boolean		$loadConfig: Load the TCA configuration for that level
+	 * @param	boolean		$loadConfig: Load the TCA configuration for that level
 	 * @return	void
 	 */
 	function getSingleField_typeInline_parseStructureString($string, $loadConfig = false) {
 		global $TCA;
-		
+
 		$unstable = array();
 		$vector = array('table', 'uid', 'field');
 		$pattern = '/^'.$this->prependNaming.'\[(.+?)\]\[(.+)\]$/';
@@ -1043,57 +1056,119 @@ class t3lib_TCEforms_inline {
 	function getSingleField_typeInline_processRequest() {
 		$this->xajax->processRequests();
 	}
-	
-	
+
+
 	/**
 	 * Check the keys and values in the $compare array against the ['config'] part of the top level of the stack.
-	 * A boolean value is return depending on how the comparision was successful.
+	 * A boolean value is return depending on how the comparison was successful.
 	 *
 	 * @param	array		$compare: keys and values to compare to the ['config'] part of the top level of the stack
-	 * @return	boolean		Whether the comparision was successful
+	 * @param	boolean		$isComplex: Use the regular comparison or the complex one
+	 * @return	boolean		Whether the comparison was successful
+	 * @see		arrayCompare
+	 * @see 	arrayCompareComplex
 	 */
-	function getSingleField_typeInline_compareStructureConfiguration($compare) {
+	function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false) {
 		$level = $this->getSingleField_typeInline_getStructureLevel(-1);
-		if ($this->arrayCompare($level['config'], $compare)) return true;
-		
-		return false;
+		$result = $isComplex
+			? $this->arrayCompareComplex($level['config'], $compare)
+			: $this->arrayCompare($level['config'], $compare);
+
+		return $result;
 	}
-	
-	
+
+
 	/**
 	 * Get the depth of the stable structure stack.
 	 * (count($this->inlineStructure['stable'])
-	 * 
-	 * @return 	integer		The depth of the structure stack
+	 *
+	 * @return	integer		The depth of the structure stack
 	 */
 	function getSingleField_typeInline_getStructureDepth() {
 		return count($this->inlineStructure['stable']);
 	}
-	
-	
+
+	/**
+	 * Handles complex comparison requests for $this->arrayCompare.
+	 * A request could look like the following:
+	 *
+	 * $searchArray = array(
+	 * 		'AND'	=> array(
+	 * 			'key1'	=> 'value1',
+	 * 			'key2'	=> 'value2',
+	 * 			'OR'	=> array(
+	 * 				'key3'	=> 'value3',
+	 * 				'key4'	=> 'value4'
+	 * 			)
+	 * 		)
+	 * );
+	 *
+	 * The example above means, key1 *AND* key2 (and their values) have to match with
+	 * the $subjectArray and additional one *OR* key3 or key4 have to meet the same
+	 * condition
+	 *
+	 * @param	array		$subjectArray: The array to search in
+	 * @param	array		$searchArray: The array with keys and values to search for
+	 * @param	string		$type: Use AND or OR for comparision
+	 * @return	boolean		The result of the comparison
+	 * @see		arrayCompare
+	 */
+	function arrayCompareComplex($subjectArray, $searchArray, $type = '') {
+		$localMatches = 0;
+		$localEntries = 0;
+		$localSearchArray = array();
+
+		if (is_array($searchArray) && count($searchArray)) {
+				// if no type was passed, try to determine
+			if (!$type) {
+				reset($searchArray);
+				$type = key($searchArray);
+				$searchArray = current($searchArray);
+			}
+
+				// split regular elements from sub elements
+			foreach ($searchArray as $key => $value) {
+				if ($key == 'OR' || $key == 'AND') {
+					$localEntries++;
+					$localMatches += $this->arrayCompareComplex($subjectArray, $value, $key) ? 1 : 0;
+				} else {
+					$localEntries++;
+					$localSearchArray = array($key => $value);
+					$localMatches += $this->arrayCompare($subjectArray, $localSearchArray, $type == 'OR') ? 1 : 0;
+				}
+
+					// if one or more matches are required, return true after the first successful match
+				if ($type == 'OR' && $localMatches > 0) return true;
+			}
+		}
+
+			// return the result (if nothing was checked, true is returned)
+		return $localEntries == $localMatches ? true : false;
+	}
+
 	/**
 	 * Checks, if the keys and values of $searchArray are equal to that keys and values
 	 * of the $subjectArray. So only the things from $searchArray are compared and not the
 	 * whole arrays against each other.
-	 * 
+	 *
 	 * If $searchArray is part of $subjectArray, a true value is returned.
 	 * Otherwise this function returns false.
 	 *
 	 * @param	array		$subjectArray: The array to search in
 	 * @param	array		$searchArray: The array with keys and values to search for
-	 * @param	boolean		$useBooleanOr: Use an OR comparision (= one ore more matches required) instead of an AND
-	 * @return	boolean		The result of the comparision
+	 * @param	boolean		$useBooleanOr: Use an OR comparison (= one ore more matches required) instead of an AND
+	 * @return	boolean		The result of the comparison
 	 */
 	function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false) {
 		$matches = 0;
-		
+
 		foreach ($searchArray as $searchKey => $searchValue) {
 			if ($subjectArray[$searchKey] === $searchValue) {
 				if ($useBooleanOr == true) return true;
 				$matches++;
 			}
 		}
-		
+
 		return count($searchArray) == $matches ? true : false;
 	}
 }
