@@ -34,44 +34,45 @@
  *
  *
  *
- *   84: class t3lib_TCEforms_inline
- *  105:     function init(&$tceForms)
+ *   85: class t3lib_TCEforms_inline
+ *  106:     function init(&$tceForms)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  139:     function getSingleField_typeInline($table,$field,$row,&$PA)
- *  233:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
- *  293:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
- *  343:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
- *  513:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
- *  559:     function getSingleField_typeInline_addJavaScript()
- *  576:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
+ *  140:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *  236:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
+ *  299:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
+ *  349:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
+ *  520:     function getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config = array())
+ *  567:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
+ *  613:     function getSingleField_typeInline_addJavaScript()
+ *  630:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling for AJAX calls
- *  614:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
+ *  668:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
  *
  *              SECTION: Get data from database and handle relations
- *  691:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  743:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
- *  786:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
- *  813:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  745:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  797:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
+ *  840:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  867:     function getSingleField_typeInline_getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- *  913:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
- *  929:     function getSingleField_typeInline_popStructure()
- *  946:     function getSingleField_typeInline_updateStructureNames()
- *  963:     function getSingleField_typeInline_getStructureItemName($levelData)
- *  978:     function getSingleField_typeInline_getStructureLevel($level)
- *  991:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
- * 1016:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
+ *  992:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
+ * 1008:     function getSingleField_typeInline_popStructure()
+ * 1025:     function getSingleField_typeInline_updateStructureNames()
+ * 1042:     function getSingleField_typeInline_getStructureItemName($levelData)
+ * 1057:     function getSingleField_typeInline_getStructureLevel($level)
+ * 1070:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
+ * 1095:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1056:     function getSingleField_typeInline_processRequest()
- * 1071:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
- * 1087:     function getSingleField_typeInline_getStructureDepth()
- * 1116:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
- * 1162:     function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false)
+ * 1135:     function getSingleField_typeInline_processRequest()
+ * 1149:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
+ * 1165:     function getSingleField_typeInline_getStructureDepth()
+ * 1193:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1241:     function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false)
  *
- * TOTAL FUNCTIONS: 25
+ * TOTAL FUNCTIONS: 26
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -88,8 +89,8 @@ class t3lib_TCEforms_inline {
 	var $inlineStructure = array();			// the structure/hierarchy where working in, e.g. cascading inline tables
 	var $inlineFirstPid;					// the first call of an inline type appeared on this page (pid of record)
 	var $inlineNames = array();				// keys: form, object -> hold the name/id for each of them
+	var $inlineSkip = false;				// Attention: setting this variable, no inline type would be processed anymore
 
-	var $prependObjectId = '';				// id for DOM objects, set by function dynamically
 	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 
 	var $xajax;								// Instance of the tx_xajax extension
@@ -137,6 +138,8 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code for the TCEform field
 	 */
 	function getSingleField_typeInline($table,$field,$row,&$PA) {
+		if ($this->inlineSkip === true) return '';
+
 			// Init:
 		$config = $PA['fieldConf']['config'];
 		$foreign_table = $config['foreign_table'];
@@ -243,6 +246,7 @@ class t3lib_TCEforms_inline {
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
+		$attributes = $this->getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 
 		$tableAttribs='';
@@ -259,6 +263,8 @@ class t3lib_TCEforms_inline {
 		} else {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
 		}
+			// if MM attributes exist, wrap them with a table
+		if ($attributes) $attributes = '<table '.$tableAttribs.'>'.$attributes.'</table>';
 
 			// set the appearance style of the records of this table
 		if (is_array($config['appearance']) && count($config['appearance'])) {
@@ -267,7 +273,7 @@ class t3lib_TCEforms_inline {
 
 		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
 		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
-		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.'</div>';
+		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$attributes.$fields.'</div>';
 			// if inline records are related by a "foreign_field"
 		if ($foreign_field && $rec['pid']) {
 				// if the parent record is new, put the relation information into [__ctrl], this is processed last
@@ -292,7 +298,7 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array()) {
 			// if an alternative label for the field we render is set, use it
-		$titleCol = $config['foreign_label'] && $row[$config['foreign_label']]
+		$titleCol = $config['foreign_label']
 			? $config['foreign_label']
 			: $GLOBALS['TCA'][$foreign_table]['ctrl']['label'];
 
@@ -501,6 +507,54 @@ class t3lib_TCEforms_inline {
 											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
 	}
 
+	/**
+	 * Handle and render attributes on MM intermediate tables.
+	 * Note: That intermediate table must hava a propper own $TCA configuration!
+	 * Note: Inside that $TCA configuration of the MM table, NO inline types are allowed!
+	 *
+	 * @param	string		$parentUid: The uid of the parent (embedding) record
+	 * @param	array		$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
+	 * @param	array		$config: content of $PA['fieldConf']['config']
+	 * @return	unknown
+	 */
+	function getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config = array()) {
+		global $TCA;
+
+		$mmTable = $config['MM'];
+
+		if ($mmTable && $TCA[$mmTable]) {
+			$mmRecord = array();
+			$mmOposite = isset($config['MM_opposite_field']);
+
+				// set uid order for uid_local and uid_foreign (or reversed)
+			$uid = array($parentUid, $rec['uid']);
+			if ($mmOposite) array_reverse($uid);
+
+				// fetch MM record from MM intermediate table
+			if (t3lib_div::testInt($uid[0]) && t3lib_div::testInt($uid[1])) {
+				$whereClause = 'uid_local='.$uid[0].' AND uid_foreign='.$uid[1];
+				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', $mmTable, $whereClause, '', '', 1);
+				$mmRecord = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
+			}
+
+				// make settings, to get it through TCEforms
+			$mmRecord['uid'] = implode('__', $uid);		// to indentify data later
+			$mmRecord['pid'] = $this->inlineFirstPid;	// has no effect, but must be some integer
+
+				// prevent from using inline types on MM intermediate tables!
+			$this->inlineSkip = true;
+				// set a new prepend valud for form fields
+			$prependFormFieldNames = $this->fObj->prependFormFieldNames;
+			$this->fObj->prependFormFieldNames = $this->prependNaming.'[__ctrl][mm]';
+				// get the TCEforms interpretation of the TCA of the MM table
+			$out = $this->fObj->getMainFields($config['MM'], $mmRecord);
+				// revert things
+			$this->fObj->prependFormFieldNames = $prependFormFieldNames;
+			$this->inlineSkip = false;
+		}
+
+		return $out;
+	}
 
 	/**
 	 * Get a selector as used for the select type, to select from all available
@@ -886,6 +940,31 @@ class t3lib_TCEforms_inline {
 		$tce->process_datamap();
 		$tce->process_cmdmap();
 
+			// DEBUG only
+			/* expect something like this:
+				Array
+				(
+				    [tx_irretestmm_person_employer_mm] => Array
+				        (
+				            [1__1] => Array
+				                (
+				                    [position] => PM
+				                    [ismanager] => 1
+				                )
+
+				            [1__2] => Array
+				                (
+				                    [position] => PM
+				                    [ismanager] => 0
+				                )
+
+				        )
+
+				)
+			*/
+
+		t3lib_div::debug($ctrl['mm']);
+
 		// FIXME: What should happen if record, that embeds inline child records is deleted or moved to another page
 		// - delete: if it's 1:n --> remove the child records (recurisvely!!!)
 		// - delete: if it's m:n --> I dont know... yet ;-)
@@ -1065,7 +1144,6 @@ class t3lib_TCEforms_inline {
 	 * @param	array		$compare: keys and values to compare to the ['config'] part of the top level of the stack
 	 * @param	boolean		$isComplex: Use the regular comparison or the complex one
 	 * @return	boolean		Whether the comparison was successful
-	 * @see		arrayCompare
 	 * @see 	arrayCompareComplex
 	 */
 	function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false) {
@@ -1089,7 +1167,7 @@ class t3lib_TCEforms_inline {
 	}
 
 	/**
-	 * Handles complex comparison requests for $this->arrayCompare.
+	 * Handles complex comparison requests on an array.
 	 * A request could look like the following:
 	 *
 	 * $searchArray = array(
@@ -1111,12 +1189,10 @@ class t3lib_TCEforms_inline {
 	 * @param	array		$searchArray: The array with keys and values to search for
 	 * @param	string		$type: Use AND or OR for comparision
 	 * @return	boolean		The result of the comparison
-	 * @see		arrayCompare
 	 */
 	function arrayCompareComplex($subjectArray, $searchArray, $type = '') {
 		$localMatches = 0;
 		$localEntries = 0;
-		$localSearchArray = array();
 
 		if (is_array($searchArray) && count($searchArray)) {
 				// if no type was passed, try to determine
@@ -1126,23 +1202,24 @@ class t3lib_TCEforms_inline {
 				$searchArray = current($searchArray);
 			}
 
+				// we use 'AND' and 'OR' in uppercase
+			$type = strtoupper($type);
+
 				// split regular elements from sub elements
 			foreach ($searchArray as $key => $value) {
-				if ($key == 'OR' || $key == 'AND') {
-					$localEntries++;
-					$localMatches += $this->arrayCompareComplex($subjectArray, $value, $key) ? 1 : 0;
-				} else {
-					$localEntries++;
-					$localSearchArray = array($key => $value);
-					$localMatches += $this->arrayCompare($subjectArray, $localSearchArray, $type == 'OR') ? 1 : 0;
-				}
+				$localEntries++;
 
-					// if one or more matches are required, return true after the first successful match
+				if (strtoupper($key) == 'OR' || strtoupper($key) == 'AND')
+					$localMatches += $this->arrayCompareComplex($subjectArray, $value, $key) ? 1 : 0;
+				else
+					$localMatches += isset($subjectArray[$key]) && isset($value) && $subjectArray[$key] === $value ? 1 : 0;
+
+					// if one or more matches are required ('OR'), return true after the first successful match
 				if ($type == 'OR' && $localMatches > 0) return true;
 			}
 		}
 
-			// return the result (if nothing was checked, true is returned)
+			// return the result for 'AND' (if nothing was checked, true is returned)
 		return $localEntries == $localMatches ? true : false;
 	}
 
@@ -1159,6 +1236,8 @@ class t3lib_TCEforms_inline {
 	 * @param	boolean		$useBooleanOr: Use an OR comparison (= one ore more matches required) instead of an AND
 	 * @return	boolean		The result of the comparison
 	 */
+	/*
+	### OBSOLETE ###
 	function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false) {
 		$matches = 0;
 
@@ -1171,5 +1250,6 @@ class t3lib_TCEforms_inline {
 
 		return count($searchArray) == $matches ? true : false;
 	}
+	*/
 }
 ?>
