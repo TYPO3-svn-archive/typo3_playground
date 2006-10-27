@@ -384,12 +384,13 @@ class t3lib_loadDBGroup	{
 	/**
 	 * Write the sorting values to a foreign_table, that has a foreign_field (uid of the parent record)
 	 *
-	 * @param	integer		$uid: The uid of the parent record (this value is also on the foreign_table in the foreign_field)
 	 * @param	array		$conf: TCA configuration for current field
+	 * @param	integer		$parentUid: The uid of the parent record (if not set, no update on this field is done)
 	 * @return	void
 	 */
-	function writeForeignField($uid, $conf) {
+	function writeForeignField($conf, $parentUid = 0) {
 		$c = 0;
+		$updateValues = array();
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
 
@@ -401,14 +402,17 @@ class t3lib_loadDBGroup	{
 			// strip a possible "ORDER BY" in front of the $sortby value
 		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
 
-			// if there is a manual sortby field (not the default_sortby!) and items in the tableArray
-		if ($sortby && count($this->tableArray)) {
-			$andWhere = " AND $foreign_field='".intval($uid)."'";
+			// if there is a manual sortby field (not the default_sortby!) or a parentUid to be updated and items in the tableArray
+		if (($sortby || $parentUid) && count($this->tableArray)) {
+				// if positive integer, set the foreing_field (pointer to parent) the the given uid
+			if (t3lib_div::testInt($parentUid) && $parentUid > 0) $updateValues[$foreign_field] = $parentUid;
+
+				// update all items
 			foreach ($this->itemArray as $val) {
-				$c++;
 				$uid = $val['id'];
 				$table = $val['table'];
-				$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'".$andWhere, array($sortby => $c));
+				if ($sortby) $updateValues[$sortby] = ++$c;
+				$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'".$andWhere, $updateValues);
 			}
 		}
 	}
@@ -522,6 +526,18 @@ class t3lib_loadDBGroup	{
 			}
 		}
 		return implode(',',$output);
+	}
+	
+	/**
+	 * Counts the items in $this->itemArray and puts this value in an array by default.
+	 *
+	 * @param	boolean		Whether to put the count value in an array
+	 * @return	mixed		The plain count as integer or the same inside an array
+	 */
+	function countItems($returnAsArray = true) {
+		$count = count($this->itemArray);
+		if ($returnAsArray) $count = array($count);
+		return $count;
 	}
 }
 

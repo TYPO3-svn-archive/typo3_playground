@@ -1532,8 +1532,7 @@ class t3lib_TCEmain	{
 				} else {
 					$this->dbAnalysisStore[] = array($dbAnalysis, $tcaFieldConf['MM'], $id, 0);	// This will be traversed later to execute the actions
 				}
-				$cc=count($dbAnalysis->itemArray);
-				$valueArray = array($cc);
+				$valueArray = $dbAnalysis->countItems();
 			}
 		}
 
@@ -1949,13 +1948,12 @@ class t3lib_TCEmain	{
 			} else {
 				$this->dbAnalysisStore[] = array($dbAnalysis,$tcaFieldConf['MM'],$id,$prep);	// This will be traversed later to execute the actions
 			}
-			$cc=count($dbAnalysis->itemArray);
-			$valueArray = array($cc);
+			$valueArray = $dbAnalysis->countItems();
 		} elseif ($type == 'inline') {
 			if ($tcaFieldConf['foreign_field']) {
-				$dbAnalysis->writeForeignField($id, $tcaFieldConf);
-				$cc = count($dbAnalysis->itemArray);
-				$valueArray = array($cc);
+					// update sorting
+				$valueArray = $dbAnalysis->writeForeignField($tcaFieldConf);
+				$valueArray = $dbAnalysis->countItems();
 			} else {
 				$valueArray = $dbAnalysis->getValueArray($prep);
 				if ($prep) {
@@ -2683,10 +2681,10 @@ class t3lib_TCEmain	{
 
 			// Process references and files, currently that means only the files, prepending absolute paths (so the TCEmain engine will detect the file as new and one that should be made into a copy)
 		$value = $this->copyRecord_procFilesRefs($conf, $uid, $value);
+		$inlineSubType = $this->getInlineFieldType($conf); 
 
-
-			// Register if there are references to take care of (no change to value):
-		if ($this->isReferenceField($conf))	{
+			// Register if there are references to take care of or MM is used on an inline field (no change to value):
+		if ($this->isReferenceField($conf) || $inlineSubType == 'mm')	{
 			$allowedTables = $conf['type']=='group' ? $conf['allowed'] : $conf['foreign_table'].','.$conf['neg_foreign_table'];
 			$prependName = $conf['type']=='group' ? $conf['prepend_tname'] : $conf['neg_foreign_table'];
 			if ($conf['MM'])	{
@@ -2697,6 +2695,23 @@ class t3lib_TCEmain	{
 			if ($value)	{	// Setting the value in this array will notify the remapListedDBRecords() function that this field MAY need references to be corrected
 				$this->registerDBList[$table][$uid][$field] = $value;
 			}
+			
+			// if another inline subtype is used (foreing_field, mm with attributes or simply item list)
+		} elseif ($inlineSubType !== false) {
+			$allowedTables = $conf['foreign_table'].','.$conf['neg_foreign_table'];
+			$prependName = $conf['neg_foreign_table'];
+			$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
+			$dbAnalysis->start($value, $allowedTables, $conf['MM'], $uid, $table, $conf);
+
+				// walk through the items, copy them and remember the new id
+			foreach ($dbAnalysis->itemArray as $k => $v) {
+				$newId = $this->copyRecord($v['table'], $v['id'], -$v['id']);
+				$dbAnalysis->itemArray[$k]['id'] = $newId;
+			}
+			
+				// store the new values, we will set up the uids for the subtype later on
+			$value = implode(',',$dbAnalysis->getValueArray($prependName));
+			$this->registerDBList[$table][$uid][$field] = $value;
 		}
 
 			// For "flex" fieldtypes we need to traverse the structure for two reasons: If there are file references they have to be prepended with absolute paths and if there are database reference they MIGHT need to be remapped (still done in remapListedDBRecords())
@@ -3825,6 +3840,11 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 									}
 								}
 							break;
+							case 'inline':
+								$newValue = $this->remapListedDBRecords_procInline($conf, $value, $theUidToUpdate, $table);
+								if (isset($newValue)) $newData[$fieldName] = $newValue;
+								// echo "$fieldName:".$value.'->'.$newData[$fieldName].', ';
+							break;
 							default:
 								debug('Field type should not appear here: '. $conf['type']);
 							break;
@@ -3914,7 +3934,42 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 		}
 	}
 
+	/**
+	 * Performs remapping of old UID values to NEW uid values for a inline field.
+	 *
+	 * @param	array		TCA field config
+	 * @param	string		Field value
+	 * @param	integer		UID of local record (for MM relations - might need to change if support for FlexForms should be done!)
+	 * @param	string		Table name
+	 * @return	string		The value to be updated on the table field in the database
+	 */
+	function remapListedDBRecords_procInline($conf, $value, $theUidToUpdate, $table) {
+		if ($conf['foreign_table']) {
+			$inlineType = $this->getInlineFieldType($conf);
+		
+			if ($inlineType == 'list') {
+				$newValue = $value;				
 
+			} elseif ($inlineType == 'field') {
+				$allowedTables = $conf['foreign_table'].','.$conf['neg_foreign_table'];
+
+				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
+				$dbAnalysis->start($value, $allowedTables, $conf['MM'], 0, $table, $conf);
+
+				$dbAnalysis->writeForeignField($conf, $theUidToUpdate);
+				$newValue = $dbAnalysis->countItems();
+				
+			} elseif ($inlineType == 'mmattr') {
+
+				
+			} elseif ($inlineType == 'mm') {
+				$vArray = $this->remapListedDBRecords_procDBRefs($conf, $value, $theUidToUpdate, $table);
+				if (is_array($vArray)) $newValue = implode(',',$vArray);
+			}
+		}
+		
+		return $newValue;
+	}
 
 
 
@@ -5209,6 +5264,27 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	 */
 	function isReferenceField($conf)	{
 		return ($conf['type']=='group' && $conf['internal_type']=='db') ||	($conf['type']=='select' && $conf['foreign_table']);
+	}
+	
+	/**
+	 * Returns the subtype as a string of an inline field.
+	 * If it's not a inline field at all, it returns false.
+	 *
+	 * @param	array		config array for TCA/columns field
+	 * @return	mixed		string: inline subtype (field|mmattr|mm|list), boolean: false
+	 */
+	function getInlineFieldType($conf) {
+		if ($conf['type'] == 'inline' && $conf['foreign_table']) {
+			if ($conf['foreign_field'])
+				return 'field';		// the reference to the parent is stored in a pointer field in the child record
+			elseif ($conf['MM'] && $GLOBALS['TCA'][$conf['MM']])
+				return 'mmattr';	// MM intermediate table with attributes is used to store data
+			elseif ($conf['MM'])
+				return 'mm';		// regular MM intermediate table is used to store data
+			else
+				return 'list';		// a item list (separated by comma) is stored (like select type is doing)
+		}
+		return false;
 	}
 
 	/**

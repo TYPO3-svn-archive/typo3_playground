@@ -612,8 +612,8 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_addJavaScript() {
 		$jsCode = array(
-			'<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'lib/prototype.js" type="text/javascript"></script>',
-			'<script src="/'.t3lib_extMgm::siteRelPath('scriptaculous').'src/scriptaculous.js" type="text/javascript"></script>',
+			'<script src="prototype.js" type="text/javascript"></script>',
+			'<script src="scriptaculous/scriptaculous.js" type="text/javascript"></script>',
 			'<script src="/t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
 			$this->xajax->getJavascript('/'.t3lib_extMgm::siteRelPath('xajax'), 'xajax_js/xajax_uncompressed.js'),
 		);
@@ -963,7 +963,7 @@ class t3lib_TCEforms_inline {
 				)
 			*/
 
-		t3lib_div::debug($ctrl['mm']);
+		if (is_array($ctrl['mm'])) t3lib_div::debug($ctrl['mm']);
 
 		// FIXME: What should happen if record, that embeds inline child records is deleted or moved to another page
 		// - delete: if it's 1:n --> remove the child records (recurisvely!!!)
