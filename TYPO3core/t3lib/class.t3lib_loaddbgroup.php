@@ -37,19 +37,20 @@
  *
  *
  *
- *   74: class t3lib_loadDBGroup
- *  108:     function start($itemlist, $tablelist, $MMtable='', $MMuid=0, $currentTable='', $conf=array())
- *  176:     function readList($itemlist)
- *  222:     function readMM($tableName,$uid)
- *  273:     function writeMM($tableName,$uid,$prependTableName=0)
- *  349:     function readForeignField($uid, $conf)
- *  391:     function writeForeignField($uid, $conf)
- *  422:     function getValueArray($prependTableName='')
- *  450:     function convertPosNeg($valueArray,$fTable,$nfTable)
- *  472:     function getFromDB()
- *  507:     function readyForInterface()
+ *   75: class t3lib_loadDBGroup
+ *  109:     function start($itemlist, $tablelist, $MMtable='', $MMuid=0, $currentTable='', $conf=array())
+ *  177:     function readList($itemlist)
+ *  223:     function readMM($tableName,$uid)
+ *  274:     function writeMM($tableName,$uid,$prependTableName=0)
+ *  350:     function readForeignField($uid, $conf)
+ *  394:     function writeForeignField($conf, $parentUid = 0)
+ *  429:     function getValueArray($prependTableName='')
+ *  457:     function convertPosNeg($valueArray,$fTable,$nfTable)
+ *  479:     function getFromDB()
+ *  514:     function readyForInterface()
+ *  540:     function countItems($returnAsArray = true)
  *
- * TOTAL FUNCTIONS: 10
+ * TOTAL FUNCTIONS: 11
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -368,7 +369,9 @@ class t3lib_loadDBGroup	{
 			intval($uid),
 			'',
 			'',
-			$sortby
+			$sortby,
+			'',
+			false
 		);
 
 		if (count($rows)) {
@@ -527,7 +530,7 @@ class t3lib_loadDBGroup	{
 		}
 		return implode(',',$output);
 	}
-	
+
 	/**
 	 * Counts the items in $this->itemArray and puts this value in an array by default.
 	 *

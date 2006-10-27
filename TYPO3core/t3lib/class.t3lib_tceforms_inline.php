@@ -966,8 +966,8 @@ class t3lib_TCEforms_inline {
 		if (is_array($ctrl['mm'])) t3lib_div::debug($ctrl['mm']);
 
 		// FIXME: What should happen if record, that embeds inline child records is deleted or moved to another page
-		// - delete: if it's 1:n --> remove the child records (recurisvely!!!)
-		// - delete: if it's m:n --> I dont know... yet ;-)
+		// OK (TCEmain) - delete: if it's 1:n --> remove the child records (recurisvely!!!)
+		// PARTLY (TCEmain) - delete: if it's m:n --> I dont know... yet ;-)
 		// - move: possibly adjust the pid of the child records (recurisvely!!!)
 	}
 
