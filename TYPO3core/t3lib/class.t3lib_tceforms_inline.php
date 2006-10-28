@@ -189,7 +189,11 @@ class t3lib_TCEforms_inline {
 			$GLOBALS['SOBE']->doc->JScode .= $this->getSingleField_typeInline_addJavaScript();
 			$GLOBALS['T3_VAR']['inlineRelational']['imported'] = true;
 			$this->fObj->additionalJS_post[] =
-				"\t\t\t\twindow.setTimeout(function() { inline.setPrependFormFieldNames('".$this->fObj->prependFormFieldNames."'); }, 10);";
+				"\t\t\t\twindow.setTimeout(
+				function() {
+					inline.setPrependFormFieldNames('".$this->fObj->prependFormFieldNames."');
+					inline.setNoTitleString('".$this->fObj->noTitle('')."');
+				}, 10);";
 		}
 
 			// on finishing this section, remove the last item from the structure stack
@@ -296,7 +300,7 @@ class t3lib_TCEforms_inline {
 		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
 		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
 		// $label .= '<img '.t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/plusbullet.gif').' align="absmiddle" /> ';
-		$label .= $recTitle;
+		$label .= '<span id="'.$formFieldNames.'_label">'.$recTitle.'</span>';
 		$label .= '</a>';
 
 			// from class.db_list_extra.inc
@@ -1153,7 +1157,21 @@ class t3lib_TCEforms_inline {
 		return $result;
 	}
 
-
+	/**
+	 * Checks if the $table is the child of a inline type AND the $field is the label field of this table.
+	 * This function is used to dynamically update the label while editing. This has no effect on labels,
+	 * that were processed by a TCEmain-hook on saving.
+	 *
+	 * @param	string		$table: The table to check
+	 * @param	string		$field: The field on this table to check
+	 * @return	boolean		is inline child and field is responsible for the label
+	 */
+	function getSingleField_typeInline_isInlineChildAndLabelField($table, $field) {
+		$level = $this->getSingleField_typeInline_getStructureLevel(-1);
+		$label = $GLOBALS['TCA'][$table]['ctrl']['label'];
+		return $level['config']['foreign_table'] === $table && $label == $field ? true : false;
+	}
+	
 	/**
 	 * Get the depth of the stable structure stack.
 	 * (count($this->inlineStructure['stable'])

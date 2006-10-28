@@ -750,7 +750,7 @@ class t3lib_TCEforms	{
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
 
 			// check, if a field should be rendered, that was defined to be handled as foreign_field or foreign_sortby of
-			// a parent record of the "inline"-type - if so, we have to skip this field - the rendering is done via "inline" as hidden field
+			// the parent record of the "inline"-type - if so, we have to skip this field - the rendering is done via "inline" as hidden field
 		if ($this->inline->getSingleField_typeInline_getStructureDepth()) {
 			$searchArray = array(
 				'AND' => array(
@@ -835,7 +835,10 @@ class t3lib_TCEforms	{
 					$PA['fieldChangeFunc']=array();
 					$PA['fieldChangeFunc']['TBE_EDITOR_fieldChanged'] = "TBE_EDITOR_fieldChanged('".$table."','".$row['uid']."','".$field."','".$PA['itemFormElName']."');";
 					$PA['fieldChangeFunc']['alert']=$alertMsgOnChange;
-
+						// if this is the child of a inline type and it is the field creating the label
+					if ($this->inline->getSingleField_typeInline_isInlineChildAndLabelField($table, $field))
+						$PA['fieldChangeFunc']['inline'] = "inline.handleChangedField('".$PA['itemFormElName']."','".$this->inline->inlineNames['object']."[$table][".$row['uid']."]');";
+					
 						// Based on the type of the item, call a render function:
 					$item = $this->getSingleField_SW($table,$field,$row,$PA);
 

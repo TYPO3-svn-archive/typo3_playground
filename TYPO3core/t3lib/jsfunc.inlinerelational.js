@@ -29,9 +29,14 @@
  function inlineRelational() {
 	var inlineRelational = this;
 	var prependFormFieldNames = 'inline';
+	var noTitleString = '[No title]';
 	
 	this.setPrependFormFieldNames = function(value) {
 		prependFormFieldNames = value;
+	}
+	
+	this.setNoTitleString = function(value) {
+		noTitleString = value;
 	}
 	
 	this.expandCollapseRecord = function(objectId, expandSingle) {
@@ -322,6 +327,16 @@
 	
 	this.initSortable = function() {
 		
+	}
+	
+	this.handleChangedField = function(formFieldName, objectId) {
+			// perhaps limit to a maximum of string length
+		var formObj = document.getElementsByName(formFieldName);
+		if (formObj) {
+			var value = formObj[0].value;
+			$(objectId+'_label').innerHTML = value ? value : noTitleString;
+		}
+		return true;
 	}
 }
 
