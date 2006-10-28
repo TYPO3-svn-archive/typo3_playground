@@ -34,54 +34,48 @@
  *
  *
  *
- *   85: class t3lib_TCEforms_inline
- *  106:     function init(&$tceForms)
+ *   79: class t3lib_TCEforms_inline
+ *   97:     function init(&$tceForms)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  140:     function getSingleField_typeInline($table,$field,$row,&$PA)
- *  236:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
- *  299:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
- *  349:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
- *  520:     function getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config = array())
- *  567:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
- *  613:     function getSingleField_typeInline_addJavaScript()
- *  630:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
+ *  120:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *  216:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
+ *  279:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
+ *  329:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
+ *  500:     function getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config = array())
+ *  547:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
+ *  592:     function getSingleField_typeInline_addJavaScript()
+ *  608:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
  *
- *              SECTION: Handling for AJAX calls
- *  668:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
+ *              SECTION: Handling of AJAX calls
+ *  646:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
+ *  715:     function getSingleField_typeInline_getJSON($jsonArray)
  *
  *              SECTION: Get data from database and handle relations
- *  745:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  797:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
- *  840:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
- *  867:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  753:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  805:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
+ *  848:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  875:     function getSingleField_typeInline_getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- *  992:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
- * 1008:     function getSingleField_typeInline_popStructure()
- * 1025:     function getSingleField_typeInline_updateStructureNames()
- * 1042:     function getSingleField_typeInline_getStructureItemName($levelData)
- * 1057:     function getSingleField_typeInline_getStructureLevel($level)
- * 1070:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
- * 1095:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
+ * 1000:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
+ * 1016:     function getSingleField_typeInline_popStructure()
+ * 1033:     function getSingleField_typeInline_updateStructureNames()
+ * 1050:     function getSingleField_typeInline_getStructureItemName($levelData)
+ * 1065:     function getSingleField_typeInline_getStructureLevel($level)
+ * 1078:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
+ * 1103:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1135:     function getSingleField_typeInline_processRequest()
- * 1149:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
- * 1165:     function getSingleField_typeInline_getStructureDepth()
- * 1193:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
- * 1241:     function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false)
+ * 1147:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
+ * 1163:     function getSingleField_typeInline_getStructureDepth()
+ * 1191:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1239:     function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false)
  *
  * TOTAL FUNCTIONS: 26
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
-
-
-
-require_once(t3lib_extMgm::extPath('xajax').'class.tx_xajax.php');
-
-
 class t3lib_TCEforms_inline {
 	var $fObj;								// Reference to the calling TCEforms instance
 	var $backPath;							// Reference to $fObj->backPath
@@ -93,9 +87,6 @@ class t3lib_TCEforms_inline {
 
 	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 
-	var $xajax;								// Instance of the tx_xajax extension
-	var $xajaxPrefix = 'inline_';			// prefix for xajax functions in JavaScript
-
 
 	/**
 	 * Intialize an instance of t3lib_TCEforms_inline
@@ -106,17 +97,6 @@ class t3lib_TCEforms_inline {
 	function init(&$tceForms) {
 		$this->fObj = $tceForms;
 		$this->backPath =& $tceForms->backPath;
-
-		$this->xajax = t3lib_div::makeInstance('tx_xajax');
-		$this->xajax->setRequestURI('alt_doc_ajax.php');
-		$this->xajax->decodeUTF8InputOn();
-		$this->xajax->outputEntitiesOn();
-		// $this->xajax->setCharEncoding('utf-8');
-		$this->xajax->setCharEncoding('iso-8859-1');
-		$this->xajax->setWrapperPrefix($this->xajaxPrefix);
-
-		$this->xajax->registerFunction(array('createNewRecord', &$this, 'getSingleField_typeInline_createNewRecord'));
-		// $this->xajax->registerFunction(array('getHeaderLabel', &$this, 'getHeaderLabel'));
 	}
 
 
@@ -606,7 +586,6 @@ class t3lib_TCEforms_inline {
 	 * Get the <script type="text/javascript" src="..."> tags of:
 	 * - prototype.js
 	 * - script.acolo.us
-	 * - xajax.js
 	 *
 	 * @return	string		The HTML code of the <script type="text/javascript" src="..."> tags
 	 */
@@ -615,7 +594,6 @@ class t3lib_TCEforms_inline {
 			'<script src="prototype.js" type="text/javascript"></script>',
 			'<script src="scriptaculous/scriptaculous.js" type="text/javascript"></script>',
 			'<script src="/t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
-			$this->xajax->getJavascript('/'.t3lib_extMgm::siteRelPath('xajax'), 'xajax_js/xajax_uncompressed.js'),
 		);
 
 		return implode("\n", $jsCode);
@@ -652,18 +630,18 @@ class t3lib_TCEforms_inline {
 
 	/*******************************************************
 	 *
-	 * Handling for AJAX calls
+	 * Handling of AJAX calls
 	 *
 	 *******************************************************/
 
 
 	/**
-	 * Handle calls from xajax to show a new inline-record of the given table.
+	 * Handle AJAX calls to show a new inline-record of the given table.
 	 * Normally this method is never called from inside TYPO3. Always from outside by AJAX.
 	 *
 	 * @param	mixed		$arguments: What to do and where to add, information from the calling browser.
-	 * @param	[type]		$foreignUid: ...
-	 * @return	string		An xaJax XML object
+	 * @param	string		$foreignUid: If set, the new record should be inserted after that one
+	 * @return	string		A JSON string
 	 */
 	function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0) {
 		global $TCA;
@@ -694,34 +672,64 @@ class t3lib_TCEforms_inline {
 			// render the foreign record that should passed back to browser
 		$item = $this->getSingleField_typeInline_renderForeignRecord($parent['uid'], $record, $config);
 
-		$objResponse = new tx_xajax_response('iso-8859-1', true);
-
 			// the HTML-object-id's prefix of the dynamically created record
 		$objectPrefix = $this->inlineNames['object'].'['.$current['table'].']';
 
 			// append the HTML data at the bottom of the container
 		if (!$current['uid']) {
-			$objResponse->addScriptCall('inline.domAddNewRecord', 'bottom', $this->inlineNames['object'], $item);
-			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], null);
-
-			// ERROR: xajax adds the html data by touching the innerHTML attribute
-			// -> entered data of other records in that section gets lost on doing this
-			// $objResponse->addAppend($this->inlineNames['object'], 'innerHTML', $item);
+			$jsonArray = array(
+				'data'	=> $item,
+				'scriptCall' => array(
+					"inline.domAddNewRecord('bottom','".$this->inlineNames['object']."',json.data);",
+					"inline.memorizeAddRecord('".$objectPrefix."','".$record['uid']."',null);"
+				)
+			);
 
 			// append the HTML data after an existing record in the container
 		} else {
-			$objResponse->addScriptCall('inline.domAddNewRecord', 'after', $domObjectId.'_div', $item);
-			$objResponse->addScriptCall('inline.memorizeAddRecord', $objectPrefix, $record['uid'], $current['uid']);
-			// $objResponse->addScriptCall('inline.insertRecordAfter', $domObjectId.'_div', $item);
+			$jsonArray = array(
+				'data'	=> $item,
+				'scriptCall' => array(
+					"inline.domAddNewRecord('after','".$domObjectId.'_div'."',json.data);",
+					"inline.memorizeAddRecord('".$objectPrefix."','".$record['uid']."','".$current['uid']."');"
+				)
+			);
 		}
 
 			// tell the browser to scroll to the newly created record
-		$objResponse->addScriptCall('Element.scrollTo', $this->inlineNames['object'].'['.$current['table'].']['.$record['uid'].']_div');
+		// $objResponse->addScriptCall('Element.scrollTo', $this->inlineNames['object'].'['.$current['table'].']['.$record['uid'].']_div');
 
 			// set the TCEforms prependFormFieldNames value back to its initial value
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
+			// return the JSON string
+		return $this->getSingleField_typeInline_getJSON($jsonArray);
+	}
 
-		return $objResponse->getXML();
+
+	/**
+	 * Creates recursively a JSON literal from a mulidimensional associative array.
+	 *
+	 * @param	array		$jsonArray: The array (or part of) to be transformed to JSON
+	 * @return	string		If $level>0: part of JSON literal; if $level==0: whole JSON literal wrapped with <script> tags
+	 */
+	function getSingleField_typeInline_getJSON($jsonArray) {
+		if (is_array($jsonArray)) {
+			$jsonArrayCnt = count($jsonArray);
+			$pointer = 0;
+
+			$json .= '{';
+			foreach ($jsonArray as $key => $value) {
+				$json .= "'".addslashes($key)."':";
+				$json .= is_array($value)
+					? $this->getSingleField_typeInline_getJSON($value)	// resurse down one level
+					: "'".addslashes(preg_replace("/\r|\n/", '', $value))."'";		// add the value directly
+					// if this is not the last element on this level, add a comma
+				if (++$pointer < $jsonArrayCnt) $json .= ',';
+			}
+			$json .= '}';
+		}
+
+		return $json;
 	}
 
 
@@ -1125,16 +1133,6 @@ class t3lib_TCEforms_inline {
 	 * Helper functions
 	 *
 	 *******************************************************/
-
-
-	/**
-	 * Process the xaJax request. This method is normally called directly by alt_doc_ajax.php
-	 *
-	 * @return	void
-	 */
-	function getSingleField_typeInline_processRequest() {
-		$this->xajax->processRequests();
-	}
 
 
 	/**

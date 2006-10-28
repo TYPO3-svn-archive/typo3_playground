@@ -60,12 +60,34 @@
 	}
 	
 	this.createNewRecord = function(objectId) {
-		inline_createNewRecord(objectId);
+		this.makeAjaxCall('createNewRecord', objectId);
 		return false;
+	}
+
+	this.makeAjaxCall = function() {
+		if (arguments.length > 1) {
+			var params = '';
+			for (var i = 0; i < arguments.length; i++) params += '&ajax['+i+']='+arguments[i];
+
+			var url = 'alt_doc_ajax.php';
+			var options = {
+				method:		'post',
+				parameters:	params,
+				onSuccess:	inlineRelational.processAjaxResponse
+			};
+			
+			new Ajax.Request(url, options);
+		}
+	}
+	
+	this.processAjaxResponse = function(xhr) {
+		var json = eval('('+xhr.responseText+')');
+		for (var i in json.scriptCall) eval(json.scriptCall[i]);
 	}
 	
 	this.importNewRecord = function(objectId, foreignUid) {
 		inline_createNewRecord(objectId, foreignUid);
+		
 		return false;
 	}
 	

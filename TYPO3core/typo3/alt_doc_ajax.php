@@ -26,7 +26,24 @@
 ***************************************************************/
 /**
  * Main form rendering script for AJAX calls only.
+ *
+ * @author	Oliver Hader <oh@inpublica.de>
  */
+/**
+ * [CLASS/FUNCTION INDEX of SCRIPT]
+ *
+ *
+ *
+ *   64: class SC_alt_doc_ajax
+ *   74:     function init()
+ *  132:     function main()
+ *  157:     function printContent()
+ *
+ * TOTAL FUNCTIONS: 3
+ * (This index is automatically created/updated by the extension "extdeveval")
+ *
+ */
+
 
 
 require('init.php');
@@ -52,9 +69,13 @@ class SC_alt_doc_ajax {
 	var $R_URI;					// Set to the URL of this script including variables which is needed to re-display the form. See main()
 	var $tceforms;				// Contains the instance of TCEforms class.
 	var $localizationMode;		// GP var, localization mode for TCEforms (eg. "text")
-	
+	var $ajax = array();		// the AJAX paramerts from get/post
+
 	function init() {
 		global $BE_USER;
+
+			// get AJAX parameters
+		$this->ajax = t3lib_div::_GP('ajax');
 
 	/*
 			// Setting return URL
@@ -63,12 +84,12 @@ class SC_alt_doc_ajax {
 			// Make R_URL (request url) based on input GETvars:
 		$this->R_URL_parts = parse_url(t3lib_div::getIndpEnv('REQUEST_URI'));
 		$this->R_URL_getvars = t3lib_div::_GET();
-		
+
 			// Set other internal variables:
 		$this->R_URL_getvars['returnUrl']=$this->retUrl;
 		$this->R_URI = $this->R_URL_parts['path'].'?'.t3lib_div::implodeArrayForUrl('',$this->R_URL_getvars);
 	*/
-		
+
 			// MENU-ITEMS:
 			// If array, then it's a selector box menu
 			// If empty string it's just a variable, that'll be saved.
@@ -84,7 +105,7 @@ class SC_alt_doc_ajax {
 		$this->MOD_SETTINGS = t3lib_BEfunc::getModuleData($this->MOD_MENU, t3lib_div::_GP('SET'), $this->MCONF['name']);
 
 		$this->localizationMode = t3lib_div::_GP('localizationMode');
-		
+
 		$this->tceforms = t3lib_div::makeInstance('t3lib_TCEforms');
 		$this->tceforms->initDefaultBEMode();
 		$this->tceforms->doSaveFieldName = 'doSave';
@@ -102,13 +123,37 @@ class SC_alt_doc_ajax {
 			// Setting external variables:
 		if ($BE_USER->uc['edit_showFieldHelp']!='text' && $this->MOD_SETTINGS['showDescriptions'])	$this->tceforms->edit_showFieldHelp='text';
 	}
-	
+
+	/**
+	 * [Describe function...]
+	 *
+	 * @return	[type]		...
+	 */
 	function main() {
+		header('Expires: Fri, 27 Nov 1981 09:43:00 GMT');
+		header('Last-Modified: '.gmdate("D, d M Y H:i:s").' GMT');
+		header('Cache-Control: no-cache, must-revalidate');
+		header('Pragma: no-cache');
+
 		$this->content = '';
-		$this->tceforms->inline->getSingleField_typeInline_processRequest();
-		
+
+		if (is_array($this->ajax) && count($this->ajax)) {
+				// the first argument is the method that should handle the AJAX call
+			$method = array_shift($this->ajax);
+
+				// FIXME: check if it's really a method name and no other code
+			$this->content = call_user_func_array(
+				array(&$this->tceforms->inline, 'getSingleField_typeInline_'.$method),
+				$this->ajax
+			);
+		}
 	}
-	
+
+	/**
+	 * [Describe function...]
+	 *
+	 * @return	[type]		...
+	 */
 	function printContent() {
 		echo $this->content;
 	}
