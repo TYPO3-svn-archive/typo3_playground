@@ -753,16 +753,26 @@ class t3lib_TCEforms	{
 			// the parent record of the "inline"-type - if so, we have to skip this field - the rendering is done via "inline" as hidden field
 		if ($this->inline->getSingleField_typeInline_getStructureDepth()) {
 			$searchArray = array(
-				'%AND' => array(
-					'foreign_table' => $table,
-					'%OR' => array(
-						'foreign_field' => $field,
-						'foreign_sortby' => $field,
-						'%AND' => array(
-							'appearance' => array('useCombination' => 1),
-							'foreign_selector' => $field,
+				'%OR' => array(
+					'%AND.0' => array(
+						'config' => array(
+							'foreign_table' => $table,
+							'%OR' => array(
+								'foreign_field' => $field,
+								'foreign_sortby' => $field,
+								'%AND' => array(
+									'appearance' => array('useCombination' => 1),
+									'foreign_selector' => $field,
+								),
+								'MM' => $PA['fieldConf']['config']['MM']
+							)
+						)
+					),
+					'%AND.1' => array(
+						'config' => array(
+							'foreign_table' => $PA['fieldConf']['config']['foreign_table'],
+							'foreign_selector' => $PA['fieldConf']['config']['foreign_field']
 						),
-						'MM' => $PA['fieldConf']['config']['MM']
 					)
 				)
 			);

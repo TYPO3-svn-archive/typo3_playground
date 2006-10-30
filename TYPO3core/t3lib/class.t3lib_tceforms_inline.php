@@ -1151,15 +1151,12 @@ class t3lib_TCEforms_inline {
 	 * A boolean value is return depending on how the comparison was successful.
 	 *
 	 * @param	array		$compare: keys and values to compare to the ['config'] part of the top level of the stack
-	 * @param	boolean		$isComplex: Use the regular comparison or the complex one
 	 * @return	boolean		Whether the comparison was successful
 	 * @see 	arrayCompareComplex
 	 */
-	function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false) {
+	function getSingleField_typeInline_compareStructureConfiguration($compare) {
 		$level = $this->getSingleField_typeInline_getStructureLevel(-1);
-		$result = $isComplex
-			? $this->arrayCompareComplex($level['config'], $compare)
-			: $this->arrayCompare($level['config'], $compare);
+		$result = $this->arrayCompareComplex($level, $compare);
 
 		return $result;
 	}
@@ -1247,6 +1244,9 @@ class t3lib_TCEforms_inline {
 	 * 			)
 	 * 		)
 	 * );
+	 * 
+	 * It is possible to use the array keys '%AND.1', '%AND.2', etc. to prevent
+	 * overwriting the sub-array. It could be neccessary, if you use complex comparisons.
 	 *
 	 * The example above means, key1 *AND* key2 (and their values) have to match with
 	 * the $subjectArray and additional one *OR* key3 or key4 have to meet the same
@@ -1278,9 +1278,12 @@ class t3lib_TCEforms_inline {
 			foreach ($searchArray as $key => $value) {
 				$localEntries++;
 
-					// process a sub-group of conditions
-				if (strtoupper($key) == '%OR' || strtoupper($key) == '%AND')
-					$localMatches += $this->arrayCompareComplex($subjectArray, $value, $key) ? 1 : 0;
+					// process a sub-group of OR-conditions
+				if (substr(strtoupper($key),0,3) == '%OR')
+					$localMatches += $this->arrayCompareComplex($subjectArray, $value, '%OR') ? 1 : 0;
+					// process a sub-group of AND-conditions
+				elseif (substr(strtoupper($key),0,4) == '%AND')
+					$localMatches += $this->arrayCompareComplex($subjectArray, $value, '%AND') ? 1 : 0;
 					// a part of a array should be compared, so step down in the array hierarchy
 				elseif (is_array($value))
 					$localMatches += $this->arrayCompareComplex($subjectArray[$key], $value, $type) ? 1 : 0;
