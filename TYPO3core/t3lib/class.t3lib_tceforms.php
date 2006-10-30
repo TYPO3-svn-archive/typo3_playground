@@ -758,6 +758,7 @@ class t3lib_TCEforms	{
 					'OR' => array(
 						'foreign_field' => $field,
 						'foreign_sortby' => $field,
+						'foreign_selector' => $field,
 						'MM' => $PA['fieldConf']['config']['MM']
 					)
 				)

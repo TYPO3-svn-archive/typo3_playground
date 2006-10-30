@@ -91,8 +91,7 @@
 	}
 	
 	this.importNewRecord = function(objectId, foreignUid) {
-		inline_createNewRecord(objectId, foreignUid);
-		
+		this.makeAjaxCall('createNewRecord', objectId, foreignUid);
 		return false;
 	}
 	

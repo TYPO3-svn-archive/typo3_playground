@@ -146,12 +146,9 @@ class t3lib_TCEforms_inline {
 		$config['inline']['first'] = $recordList[0]['uid'];
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
-			// if dealing with MM records, add a selector box
-			// FIXME: This should be configurable, if a selector box should be shown
-			// (postulate: "~ inline children depend on their parent")
-		if ($config['MM']) {
-				// FIXME: Just copied for now, change the function to the real demands
-			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$PA);
+			// if it's required to select from possible child records (reusable children), add a selector box
+		if ($config['foreign_selector']) {
+			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$config);
 			$selectorBox = $this->getSingleField_typeInline_renderPossibleRecordsSelector($possibleRecords, $config);
 			$item .= $selectorBox;
 		}
@@ -218,21 +215,26 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code for this "foreign record"
 	 */
 	function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array()) {
-			// record comes from storage (e.g. database)
-		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
-
 		$foreign_table = $config['foreign_table'];
 		$foreign_field = $config['foreign_field'];
+		$foreign_selector = $config['foreign_selector'];
 
+			// record comes from storage (e.g. database)
+		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
+			// if there is a selector field, normalize it
+		if ($foreign_selector) $rec[$foreign_selector] = $this->getSingleField_typeInline_normalizeUid($rec[$foreign_selector]);
+		
 			// get the current prepentObjectId
 		$nameObject = $this->inlineNames['object'];
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
-		$attributes = $this->getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config);
+		// $attributes = $this->getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config);
+		$combination = $this->getSingleField_typeInline_renderCombinationTable($parentUid, $rec, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 
+			// FIXME: Add a new function doing the wrapping stuff
 		$tableAttribs='';
 		$tableAttribs.= ' style="margin-right: 5px;' .
 			# ($this->borderStyle[0] ? ' '.htmlspecialchars($this->borderStyle[0]) : '') .
@@ -249,6 +251,7 @@ class t3lib_TCEforms_inline {
 		}
 			// if MM attributes exist, wrap them with a table
 		if ($attributes) $attributes = '<table '.$tableAttribs.'>'.$attributes.'</table>';
+		if ($combination) $combination = '<table '.$tableAttribs.'>'.$combination.'</table>';
 
 			// set the appearance style of the records of this table
 		if (is_array($config['appearance']) && count($config['appearance'])) {
@@ -257,14 +260,31 @@ class t3lib_TCEforms_inline {
 
 		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
 		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
-		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$attributes.$fields.'</div>';
+		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$attributes.$fields.$combination.'</div>';
 			// if inline records are related by a "foreign_field"
+			// $rec['pid'] is set if a new inline record should be inserted
+			// so, we do only have to store the foreign_field pointer, if it IS a new record
 		if ($foreign_field && $rec['pid']) {
 				// if the parent record is new, put the relation information into [__ctrl], this is processed last
 			$out .= '<input type="hidden" name="'.$this->prependNaming .
 				(t3lib_div::testInt($parentUid) ? '' : '[__ctrl][records]') .
 				$appendFormFieldNames.'['.$foreign_field.']" value="'.$parentUid.'" />';
 		}
+			// if the is a foreign_selector, handle it's uid like it's done for foreign_field
+		if ($foreign_selector && $rec['pid']) {
+				// if the it's a new record to the intermediate table, it is also a new child of the intermediat, so set the pid
+				// FIXME: Move this to the combination function
+			if ($isNewRecord) {
+				$foreign_selector_table = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector]['config']['foreign_table'];
+				$out .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.'['.$foreign_selector_table.']['.$rec[$foreign_selector].'][pid]" value="'.$rec['pid'].'"/>';
+			}				
+
+			$out .= '<input type="hidden" name="'.$this->prependNaming .
+				(t3lib_div::testInt($rec[$foreign_selector]) ? '' : '[__ctrl][records]') .
+				$appendFormFieldNames.'['.$foreign_selector.']" value="'.$rec[$foreign_selector].'" />';
+		}
+		
+		
 		$out .= '</div>';
 
 		return $out;
@@ -540,15 +560,62 @@ class t3lib_TCEforms_inline {
 		return $out;
 	}
 
+	function getSingleField_typeInline_renderCombinationTable($parentUid, &$rec, $config = array()) {
+		$foreign_table = $config['foreign_table'];
+		$foreign_selector = $config['foreign_selector'];
+		
+		if ($foreign_selector) {
+			$comboConfig = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector]['config'];
+			$comboRecord = array();
+
+				// record does already exist, so load it
+			if (t3lib_div::testInt($rec[$foreign_selector])) {
+				$comboRecord = $this->getSingleField_typeInline_getRecord(
+					$this->inlineFirstPid,
+					$comboConfig['foreign_table'],
+					$rec[$foreign_selector]
+				);
+			} else {
+				$comboRecord = $this->getSingleField_typeInline_getNewRecord(
+					$this->inlineFirstPid,
+					$comboConfig['foreign_table']
+				);
+				$rec[$foreign_selector] = $comboRecord['uid'];
+			}
+			
+				// prevent from using inline types on intermediate tables!
+			$this->inlineSkip = true;
+				// set a new prepend valud for form fields
+			$prependFormFieldNames = $this->fObj->prependFormFieldNames;
+			// $this->fObj->prependFormFieldNames = $this->prependNaming.'[__ctrl][mm]';
+				// get the TCEforms interpretation of the TCA of the MM table
+			$out = $this->fObj->getMainFields($comboConfig['foreign_table'], $comboRecord);
+				// revert things
+			// $this->fObj->prependFormFieldNames = $prependFormFieldNames;
+			$this->inlineSkip = false;
+		}
+		
+		return $out;
+	}
+	
 	/**
 	 * Get a selector as used for the select type, to select from all available
 	 * records and to create a relation to the embedding record (e.g. like MM).
 	 *
 	 * @param	array		$selItems: Array of all possible records
-	 * @param	array		$config: TCA configuration
+	 * @param	array		$conf: TCA configuration of the parent(!) field
 	 * @return	string		A HTML <select> box with all possible records
 	 */
-	function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config) {
+	function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $conf) {
+		$foreign_table = $conf['foreign_table'];
+		$foreign_selector = $conf['foreign_selector'];
+		
+		$PA = array();
+		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector];
+		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
+		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_selector);
+		$config = $PA['fieldConf']['config'];
+		
 		if(!$disabled) {
 				// Create option tags:
 			$opt = array();
@@ -571,7 +638,7 @@ class t3lib_TCEforms_inline {
 			$sOnChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$config['foreign_table']."]', this.options[this.selectedIndex].value)";
 			// $sOnChange .= implode('',$PA['fieldChangeFunc']);
 			$itemsToSelect = '
-				<select name="'.$PA['itemFormElName'].'_sel"'.
+				<select id="'.$this->inlineNames['object'].'_selector"'.
 							$this->fObj->insertDefStyle('select').
 							($size ? ' size="'.$size.'"' : '').
 							' onchange="'.htmlspecialchars($sOnChange).'"'.
@@ -664,7 +731,7 @@ class t3lib_TCEforms_inline {
 		$config = $parent['config'];
 
 			// dynamically create a new record using t3lib_transferData
-		if (!$foreignUid || !t3lib_div::testInt($foreignUid)) {
+		if (!$foreignUid || !t3lib_div::testInt($foreignUid) || $config['foreign_selector']) {
 			$record = $this->getSingleField_typeInline_getNewRecord($this->inlineFirstPid, $current['table']);
 
 			// dynamically import an existing record (this could be a call from a select box)
@@ -673,6 +740,13 @@ class t3lib_TCEforms_inline {
 			$record = $this->getSingleField_typeInline_getRecord($this->inlineFirstPid, $current['table'], $foreignUid);
 		}
 
+			// now there is a foreign_selector, so there is a new record on the intermediate table, but
+			// this intermediate table holds a field, which is responsible for the foreign_selector, so
+			// we have to set this field to the uid we get - or if none, to a new uid
+		if ($config['foreign_selector'] && $foreignUid) {
+			$record[$config['foreign_selector']] = $foreignUid;
+		}
+		
 			// render the foreign record that should passed back to browser
 		$item = $this->getSingleField_typeInline_renderForeignRecord($parent['uid'], $record, $config);
 
@@ -806,8 +880,15 @@ class t3lib_TCEforms_inline {
 	 * @param	array		An array with additional configuration options.
 	 * @return	array		Array of possible record items
 	 */
-	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA) {
+	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf) {
 			// Field configuration from TCA:
+		$foreign_table = $conf['foreign_table'];
+		$foreign_selector = $conf['foreign_selector'];
+		
+		$PA = array();
+		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector];
+		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
+		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_selector);
 		$config = $PA['fieldConf']['config'];
 
 			// Getting the selector box items from the system
@@ -1157,6 +1238,17 @@ class t3lib_TCEforms_inline {
 		return $result;
 	}
 
+	/**
+	 * Normalize a relation "uid" published by transferData, like "1|Company%201"
+	 *
+	 * @param	string		$string: A transferData reference string, containing the uid
+	 * @return	string		The normalized uid
+	 */
+	function getSingleField_typeInline_normalizeUid($string) {
+		$parts = explode('|', $string);
+		return $parts[0];
+	}
+	
 	/**
 	 * Checks if the $table is the child of a inline type AND the $field is the label field of this table.
 	 * This function is used to dynamically update the label while editing. This has no effect on labels,
