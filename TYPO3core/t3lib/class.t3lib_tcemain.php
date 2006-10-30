@@ -115,79 +115,79 @@
  * 4009:     function remapListedDBRecords_procInline($conf, $value, $theUidToUpdate, $table)
  *
  *              SECTION: Access control / Checking functions
- * 4063:     function checkModifyAccessList($table)
- * 4075:     function isRecordInWebMount($table,$id)
- * 4089:     function isInWebMount($pid)
- * 4103:     function checkRecordUpdateAccess($table,$id)
- * 4127:     function checkRecordInsertAccess($insertTable,$pid,$action=1)
- * 4161:     function isTableAllowedForThisPage($page_uid, $checkTable)
- * 4194:     function doesRecordExist($table,$id,$perms)
- * 4255:     function doesRecordExist_pageLookUp($id, $perms)
- * 4281:     function doesBranchExist($inList,$pid,$perms,$recurse)
- * 4315:     function tableReadOnly($table)
- * 4327:     function tableAdminOnly($table)
- * 4341:     function destNotInsideSelf($dest,$id)
- * 4373:     function getExcludeListArray()
- * 4396:     function doesPageHaveUnallowedTables($page_uid,$doktype)
+ * 4060:     function checkModifyAccessList($table)
+ * 4072:     function isRecordInWebMount($table,$id)
+ * 4086:     function isInWebMount($pid)
+ * 4100:     function checkRecordUpdateAccess($table,$id)
+ * 4124:     function checkRecordInsertAccess($insertTable,$pid,$action=1)
+ * 4158:     function isTableAllowedForThisPage($page_uid, $checkTable)
+ * 4191:     function doesRecordExist($table,$id,$perms)
+ * 4252:     function doesRecordExist_pageLookUp($id, $perms)
+ * 4278:     function doesBranchExist($inList,$pid,$perms,$recurse)
+ * 4312:     function tableReadOnly($table)
+ * 4324:     function tableAdminOnly($table)
+ * 4338:     function destNotInsideSelf($dest,$id)
+ * 4370:     function getExcludeListArray()
+ * 4393:     function doesPageHaveUnallowedTables($page_uid,$doktype)
  *
  *              SECTION: Information lookup
- * 4445:     function pageInfo($id,$field)
- * 4465:     function recordInfo($table,$id,$fieldList)
- * 4486:     function getRecordProperties($table,$id,$noWSOL=FALSE)
- * 4502:     function getRecordPropertiesFromRow($table,$row)
+ * 4442:     function pageInfo($id,$field)
+ * 4462:     function recordInfo($table,$id,$fieldList)
+ * 4483:     function getRecordProperties($table,$id,$noWSOL=FALSE)
+ * 4499:     function getRecordPropertiesFromRow($table,$row)
  *
  *              SECTION: Storing data to Database Layer
- * 4545:     function updateDB($table,$id,$fieldArray)
- * 4597:     function insertDB($table,$id,$fieldArray,$newVersion=FALSE,$suggestedUid=0,$dontSetNewIdIndex=FALSE)
- * 4670:     function checkStoredRecord($table,$id,$fieldArray,$action)
- * 4707:     function setHistory($table,$id,$logId)
- * 4740:     function clearHistory($maxAgeSeconds=604800,$table)
- * 4754:     function updateRefIndex($table,$id)
+ * 4542:     function updateDB($table,$id,$fieldArray)
+ * 4594:     function insertDB($table,$id,$fieldArray,$newVersion=FALSE,$suggestedUid=0,$dontSetNewIdIndex=FALSE)
+ * 4667:     function checkStoredRecord($table,$id,$fieldArray,$action)
+ * 4704:     function setHistory($table,$id,$logId)
+ * 4737:     function clearHistory($maxAgeSeconds=604800,$table)
+ * 4751:     function updateRefIndex($table,$id)
  *
  *              SECTION: Misc functions
- * 4786:     function getSortNumber($table,$uid,$pid)
- * 4859:     function resorting($table,$pid,$sortRow, $return_SortNumber_After_This_Uid)
- * 4890:     function setTSconfigPermissions($fieldArray,$TSConfig_p)
- * 4907:     function newFieldArray($table)
- * 4939:     function addDefaultPermittedLanguageIfNotSet($table,&$incomingFieldArray)
- * 4963:     function overrideFieldArray($table,$data)
- * 4979:     function compareFieldArrayWithCurrentAndUnset($table,$id,$fieldArray)
- * 5025:     function assemblePermissions($string)
- * 5042:     function rmComma($input)
- * 5052:     function convNumEntityToByteValue($input)
- * 5074:     function destPathFromUploadFolder($folder)
- * 5084:     function deleteClause($table)
- * 5100:     function getTCEMAIN_TSconfig($tscPID)
- * 5115:     function getTableEntries($table,$TSconfig)
- * 5128:     function getPID($table,$uid)
- * 5141:     function dbAnalysisStoreExec()
- * 5157:     function removeRegisteredFiles()
- * 5169:     function removeCacheFiles()
- * 5183:     function int_pageTreeInfo($CPtable,$pid,$counter, $rootID)
- * 5204:     function compileAdminTables()
- * 5221:     function fixUniqueInPid($table,$uid)
- * 5257:     function fixCopyAfterDuplFields($table,$uid,$prevUid,$update, $newData=array())
- * 5282:     function extFileFields($table)
- * 5303:     function getUniqueFields($table)
- * 5328:     function isReferenceField($conf)
- * 5339:     function getInlineFieldType($conf)
- * 5364:     function getCopyHeader($table,$pid,$field,$value,$count,$prevTitle='')
- * 5393:     function prependLabel($table)
- * 5410:     function resolvePid($table,$pid)
- * 5440:     function clearPrefixFromValue($table,$value)
- * 5455:     function extFileFunctions($table,$field,$filelist,$func)
- * 5485:     function noRecordsFromUnallowedTables($inList)
- * 5511:     function notifyStageChange($stat,$stageId,$table,$id,$comment)
- * 5606:     function notifyStageChange_getEmails($listOfUsers,$noTablePrefix=FALSE)
+ * 4783:     function getSortNumber($table,$uid,$pid)
+ * 4856:     function resorting($table,$pid,$sortRow, $return_SortNumber_After_This_Uid)
+ * 4887:     function setTSconfigPermissions($fieldArray,$TSConfig_p)
+ * 4904:     function newFieldArray($table)
+ * 4936:     function addDefaultPermittedLanguageIfNotSet($table,&$incomingFieldArray)
+ * 4960:     function overrideFieldArray($table,$data)
+ * 4976:     function compareFieldArrayWithCurrentAndUnset($table,$id,$fieldArray)
+ * 5022:     function assemblePermissions($string)
+ * 5039:     function rmComma($input)
+ * 5049:     function convNumEntityToByteValue($input)
+ * 5071:     function destPathFromUploadFolder($folder)
+ * 5081:     function deleteClause($table)
+ * 5097:     function getTCEMAIN_TSconfig($tscPID)
+ * 5112:     function getTableEntries($table,$TSconfig)
+ * 5125:     function getPID($table,$uid)
+ * 5138:     function dbAnalysisStoreExec()
+ * 5154:     function removeRegisteredFiles()
+ * 5166:     function removeCacheFiles()
+ * 5180:     function int_pageTreeInfo($CPtable,$pid,$counter, $rootID)
+ * 5201:     function compileAdminTables()
+ * 5218:     function fixUniqueInPid($table,$uid)
+ * 5254:     function fixCopyAfterDuplFields($table,$uid,$prevUid,$update, $newData=array())
+ * 5279:     function extFileFields($table)
+ * 5300:     function getUniqueFields($table)
+ * 5325:     function isReferenceField($conf)
+ * 5336:     function getInlineFieldType($conf)
+ * 5359:     function getCopyHeader($table,$pid,$field,$value,$count,$prevTitle='')
+ * 5388:     function prependLabel($table)
+ * 5405:     function resolvePid($table,$pid)
+ * 5435:     function clearPrefixFromValue($table,$value)
+ * 5450:     function extFileFunctions($table,$field,$filelist,$func)
+ * 5480:     function noRecordsFromUnallowedTables($inList)
+ * 5506:     function notifyStageChange($stat,$stageId,$table,$id,$comment)
+ * 5601:     function notifyStageChange_getEmails($listOfUsers,$noTablePrefix=FALSE)
  *
  *              SECTION: Clearing cache
- * 5652:     function clear_cache($table,$uid)
- * 5762:     function clear_cacheCmd($cacheCmd)
+ * 5647:     function clear_cache($table,$uid)
+ * 5757:     function clear_cacheCmd($cacheCmd)
  *
  *              SECTION: Logging
- * 5868:     function log($table,$recuid,$action,$recpid,$error,$details,$details_nr=-1,$data=array(),$event_pid=-1,$NEWid='')
- * 5885:     function newlog($message, $error=0)
- * 5895:     function printLogErrorMessages($redirect)
+ * 5863:     function log($table,$recuid,$action,$recpid,$error,$details,$details_nr=-1,$data=array(),$event_pid=-1,$NEWid='')
+ * 5880:     function newlog($message, $error=0)
+ * 5890:     function printLogErrorMessages($redirect)
  *
  * TOTAL FUNCTIONS: 120
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -4022,9 +4022,6 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 				$dbAnalysis->writeForeignField($conf, $theUidToUpdate);
 				$newValue = $dbAnalysis->countItems(false);
 
-			} elseif ($inlineType == 'mmattr') {
-
-
 			} elseif ($inlineType == 'mm') {
 				$vArray = $this->remapListedDBRecords_procDBRefs($conf, $value, $theUidToUpdate, $table);
 				if (is_array($vArray)) $newValue = implode(',',$vArray);
@@ -5334,14 +5331,12 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	 * If it's not a inline field at all, it returns false.
 	 *
 	 * @param	array		config array for TCA/columns field
-	 * @return	mixed		string: inline subtype (field|mmattr|mm|list), boolean: false
+	 * @return	mixed		string: inline subtype (field|mm|list), boolean: false
 	 */
 	function getInlineFieldType($conf) {
 		if ($conf['type'] == 'inline' && $conf['foreign_table']) {
 			if ($conf['foreign_field'])
 				return 'field';		// the reference to the parent is stored in a pointer field in the child record
-			elseif ($conf['MM'] && $GLOBALS['TCA'][$conf['MM']])
-				return 'mmattr';	// MM intermediate table with attributes is used to store data
 			elseif ($conf['MM'])
 				return 'mm';		// regular MM intermediate table is used to store data
 			else

@@ -34,45 +34,47 @@
  *
  *
  *
- *   79: class t3lib_TCEforms_inline
- *   97:     function init(&$tceForms)
+ *   81: class t3lib_TCEforms_inline
+ *   99:     function init(&$tceForms)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  120:     function getSingleField_typeInline($table,$field,$row,&$PA)
- *  216:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
- *  279:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
- *  329:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
- *  500:     function getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config = array())
- *  547:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $config)
- *  592:     function getSingleField_typeInline_addJavaScript()
- *  608:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
+ *  122:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *  219:     function getSingleField_typeInline_renderForeignRecord($parentUid, $rec, $config = array())
+ *  284:     function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array())
+ *  334:     function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array())
+ *  504:     function getSingleField_typeInline_renderCombinationTable(&$rec, $config = array())
+ *  560:     function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $conf)
+ *  614:     function getSingleField_typeInline_addJavaScript()
+ *  630:     function getSingleField_typeInline_addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling of AJAX calls
- *  646:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
- *  715:     function getSingleField_typeInline_getJSON($jsonArray)
+ *  668:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
+ *  744:     function getSingleField_typeInline_getJSON($jsonArray)
  *
  *              SECTION: Get data from database and handle relations
- *  753:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  805:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,&$PA)
- *  848:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
- *  875:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  782:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  834:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf)
+ *  884:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  911:     function getSingleField_typeInline_getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- * 1000:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
- * 1016:     function getSingleField_typeInline_popStructure()
- * 1033:     function getSingleField_typeInline_updateStructureNames()
- * 1050:     function getSingleField_typeInline_getStructureItemName($levelData)
- * 1065:     function getSingleField_typeInline_getStructureLevel($level)
- * 1078:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
- * 1103:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
+ * 1011:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
+ * 1027:     function getSingleField_typeInline_popStructure()
+ * 1044:     function getSingleField_typeInline_updateStructureNames()
+ * 1061:     function getSingleField_typeInline_getStructureItemName($levelData)
+ * 1076:     function getSingleField_typeInline_getStructureLevel($level)
+ * 1089:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
+ * 1114:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1147:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
- * 1163:     function getSingleField_typeInline_getStructureDepth()
- * 1191:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
- * 1239:     function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false)
+ * 1158:     function getSingleField_typeInline_compareStructureConfiguration($compare, $isComplex = false)
+ * 1174:     function getSingleField_typeInline_normalizeUid($string)
+ * 1188:     function getSingleField_typeInline_wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
+ * 1217:     function getSingleField_typeInline_isInlineChildAndLabelField($table, $field)
+ * 1229:     function getSingleField_typeInline_getStructureDepth()
+ * 1262:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
  *
- * TOTAL FUNCTIONS: 26
+ * TOTAL FUNCTIONS: 28
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -160,7 +162,7 @@ class t3lib_TCEforms_inline {
 					<!-- Link for creating a new record: -->
 					<div id="typo3-newRecordLink">
 						<a href="#" onClick="'.$onClick.'">'.
-						'<img'.t3lib_iconWorks::skinImg($this->fObj->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
+						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
 						$this->fObj->getLL('l_new',1).
 						'</a>
 					</div>';
@@ -223,42 +225,31 @@ class t3lib_TCEforms_inline {
 		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
 			// if there is a selector field, normalize it
 		if ($foreign_selector) $rec[$foreign_selector] = $this->getSingleField_typeInline_normalizeUid($rec[$foreign_selector]);
-		
+
 			// get the current prepentObjectId
 		$nameObject = $this->inlineNames['object'];
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
-		$combination = $this->getSingleField_typeInline_renderCombinationTable($parentUid, $rec, $config);
+		$combination = $this->getSingleField_typeInline_renderCombinationTable($rec, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
+		$fields = $this->getSingleField_typeInline_wrapFormsSection($fields);
 
-			// FIXME: Add a new function doing the wrapping stuff
-		$tableAttribs='';
-		$tableAttribs.= ' style="margin-right: 5px;' .
-			# ($this->borderStyle[0] ? ' '.htmlspecialchars($this->borderStyle[0]) : '') .
-			'"';
-		$tableAttribs.= $this->fObj->borderStyle[2] ? ' background="'.htmlspecialchars($this->backPath.$this->borderStyle[2]).'"':'';
-		# $tableAttribs.= $this->borderStyle[3] ? ' class="'.htmlspecialchars($this->borderStyle[3]).'"':'';
-		if ($tableAttribs) $tableAttribs='border="0" cellspacing="0" cellpadding="0" width="100%"'.$tableAttribs;
-
-		$fields = '<table '.$tableAttribs.'>'.$fields.'</table>';
 		if ($isNewRecord) {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
 		} else {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
 		}
-			// if combination exists, wrap them with a table
-		if ($combination) $combination = '<table '.$tableAttribs.'>'.$combination.'</table>';
 
 			// set the appearance style of the records of this table
-		if (is_array($config['appearance']) && count($config['appearance'])) {
+		if (is_array($config['appearance']) && count($config['appearance']))
 			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'"';
-		}
 
 		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
 		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
+
 			// if inline records are related by a "foreign_field"
 			// $rec['pid'] is set if a new inline record should be inserted
 			// so, we do only have to store the foreign_field pointer, if it IS a new record
@@ -270,19 +261,11 @@ class t3lib_TCEforms_inline {
 		}
 			// if the is a foreign_selector, handle it's uid like it's done for foreign_field
 		if ($foreign_selector && $rec['pid']) {
-				// if the it's a new record to the intermediate table, it is also a new child of the intermediat, so set the pid
-				// FIXME: Move this to the combination function
-			if ($isNewRecord) {
-				$foreign_selector_table = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector]['config']['foreign_table'];
-				$out .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.'['.$foreign_selector_table.']['.$rec[$foreign_selector].'][pid]" value="'.$rec['pid'].'"/>';
-			}				
-
 			$out .= '<input type="hidden" name="'.$this->prependNaming .
 				(t3lib_div::testInt($rec[$foreign_selector]) ? '' : '[__ctrl][records]') .
 				$appendFormFieldNames.'['.$foreign_selector.']" value="'.$rec[$foreign_selector].'" />';
 		}
-		
-		
+
 		$out .= '</div>';
 
 		return $out;
@@ -509,12 +492,20 @@ class t3lib_TCEforms_inline {
 											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
 	}
 
-
-	function getSingleField_typeInline_renderCombinationTable($parentUid, &$rec, $config = array()) {
+	/**
+	 * Render a table with TCEforms, that occurs on a intermediate table but should be editable directly,
+	 * so two tables are combined (the intermediate table with attributes and the sub-embedded table).
+	 * -> This is a direct embedding over two levels!
+	 *
+	 * @param	array		$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
+	 * @param	array		$config: content of $PA['fieldConf']['config']
+	 * @return	string		A HTML string with <table> tag around.
+	 */
+	function getSingleField_typeInline_renderCombinationTable(&$rec, $config = array()) {
 		$foreign_table = $config['foreign_table'];
 		$foreign_selector = $config['foreign_selector'];
-		
-		if ($foreign_selector) {
+
+		if ($foreign_selector && $config['appearance']['useCombination']) {
 			$comboConfig = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector]['config'];
 			$comboRecord = array();
 
@@ -525,29 +516,39 @@ class t3lib_TCEforms_inline {
 					$comboConfig['foreign_table'],
 					$rec[$foreign_selector]
 				);
+				$isNewRecord = false;
+
+				// it's a new record, so get some default data
 			} else {
 				$comboRecord = $this->getSingleField_typeInline_getNewRecord(
 					$this->inlineFirstPid,
 					$comboConfig['foreign_table']
 				);
+					// tell the parent, that we have a uid (NEW...)
 				$rec[$foreign_selector] = $comboRecord['uid'];
+				$isNewRecord = true;
 			}
-			
+
 				// prevent from using inline types on intermediate tables!
 			$this->inlineSkip = true;
-				// set a new prepend valud for form fields
-			$prependFormFieldNames = $this->fObj->prependFormFieldNames;
-			// $this->fObj->prependFormFieldNames = $this->prependNaming.'[__ctrl][mm]';
-				// get the TCEforms interpretation of the TCA of the MM table
+
+				// get the TCEforms interpretation of the TCA of the child table
 			$out = $this->fObj->getMainFields($comboConfig['foreign_table'], $comboRecord);
+			$out = $this->getSingleField_typeInline_wrapFormsSection($out);
+
+				// if it is a new record, add a pid value to store this record
+			if ($isNewRecord) {
+				$formFieldName = $this->fObj->prependFormFieldNames.'['.$comboConfig['foreign_table'].']['.$comboRecord['uid'].'][pid]';
+				$out .= '<input type="hidden" name="'.$formFieldName.'" value="'.$this->inlineFirstPid.'"/>';
+			}
+
 				// revert things
-			// $this->fObj->prependFormFieldNames = $prependFormFieldNames;
 			$this->inlineSkip = false;
 		}
-		
+
 		return $out;
 	}
-	
+
 	/**
 	 * Get a selector as used for the select type, to select from all available
 	 * records and to create a relation to the embedding record (e.g. like MM).
@@ -559,13 +560,13 @@ class t3lib_TCEforms_inline {
 	function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $conf) {
 		$foreign_table = $conf['foreign_table'];
 		$foreign_selector = $conf['foreign_selector'];
-		
+
 		$PA = array();
 		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
 		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_selector);
 		$config = $PA['fieldConf']['config'];
-		
+
 		if(!$disabled) {
 				// Create option tags:
 			$opt = array();
@@ -696,7 +697,7 @@ class t3lib_TCEforms_inline {
 		if ($config['foreign_selector'] && $foreignUid) {
 			$record[$config['foreign_selector']] = $foreignUid;
 		}
-		
+
 			// render the foreign record that should passed back to browser
 		$item = $this->getSingleField_typeInline_renderForeignRecord($parent['uid'], $record, $config);
 
@@ -834,7 +835,7 @@ class t3lib_TCEforms_inline {
 			// Field configuration from TCA:
 		$foreign_table = $conf['foreign_table'];
 		$foreign_selector = $conf['foreign_selector'];
-		
+
 		$PA = array();
 		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
@@ -982,31 +983,6 @@ class t3lib_TCEforms_inline {
 		$tce->start($data, $cmd);
 		$tce->process_datamap();
 		$tce->process_cmdmap();
-
-			// DEBUG only
-			/* expect something like this:
-				Array
-				(
-				    [tx_irretestmm_person_employer_mm] => Array
-				        (
-				            [1__1] => Array
-				                (
-				                    [position] => PM
-				                    [ismanager] => 1
-				                )
-
-				            [1__2] => Array
-				                (
-				                    [position] => PM
-				                    [ismanager] => 0
-				                )
-
-				        )
-
-				)
-			*/
-
-		if (is_array($ctrl['mm'])) t3lib_div::debug($ctrl['mm']);
 
 		// FIXME: What should happen if record, that embeds inline child records is deleted or moved to another page
 		// OK (TCEmain) - delete: if it's 1:n --> remove the child records (recurisvely!!!)
@@ -1188,6 +1164,7 @@ class t3lib_TCEforms_inline {
 		return $result;
 	}
 
+
 	/**
 	 * Normalize a relation "uid" published by transferData, like "1|Company%201"
 	 *
@@ -1198,7 +1175,36 @@ class t3lib_TCEforms_inline {
 		$parts = explode('|', $string);
 		return $parts[0];
 	}
-	
+
+
+	/**
+	 * Wrap the HTML code of a section with a table tag.
+	 *
+	 * @param	string		$section: The HTML code to be wrapped
+	 * @param	array		$styleAttrs: Attributes for the style argument in the table tag
+	 * @param	array		$tableAttrs: Attributes for the table tag (like width, border, etc.)
+	 * @return	string		The wrapped HTML code
+	 */
+	function getSingleField_typeInline_wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array()) {
+		if (!$styleAttrs['margin-right']) $styleAttrs['margin-right'] = '5px';
+
+		foreach ($styleAttrs as $key => $value) $style .= $key.': '.htmlspecialchars($value).'; ';
+		if ($style) $style = ' style="'.$style.'"';
+
+		if (!$tableAttrs['background'] && $this->fObj->borderStyle[2]) $tableAttrs['background'] = $this->backPath.$this->borderStyle[2];
+		if (!$tableAttrs['cellspacing']) $tableAttrs['cellspacing'] = '0';
+		if (!$tableAttrs['cellpadding']) $tableAttrs['cellpadding'] = '0';
+		if (!$tableAttrs['border']) $tableAttrs['border'] = '0';
+		if (!$tableAttrs['width']) $tableAttrs['width'] = '100%';
+		if (!$tableAttrs['class'] && $this->borderStyle[3]) $tableAttrs['class'] = $this->borderStyle[3];
+
+		foreach ($tableAttrs as $key => $value) $table .= $key.'="'.htmlspecialchars($value).'"';
+
+		$out = '<table '.$table.$style.'>'.$section.'</table';
+		return $out;
+	}
+
+
 	/**
 	 * Checks if the $table is the child of a inline type AND the $field is the label field of this table.
 	 * This function is used to dynamically update the label while editing. This has no effect on labels,
@@ -1213,7 +1219,7 @@ class t3lib_TCEforms_inline {
 		$label = $GLOBALS['TCA'][$table]['ctrl']['label'];
 		return $level['config']['foreign_table'] === $table && $label == $field ? true : false;
 	}
-	
+
 	/**
 	 * Get the depth of the stable structure stack.
 	 * (count($this->inlineStructure['stable'])
@@ -1229,10 +1235,13 @@ class t3lib_TCEforms_inline {
 	 * A request could look like the following:
 	 *
 	 * $searchArray = array(
-	 * 		'AND'	=> array(
+	 * 		'%AND'	=> array(
 	 * 			'key1'	=> 'value1',
 	 * 			'key2'	=> 'value2',
-	 * 			'OR'	=> array(
+	 * 			'%OR'	=> array(
+	 * 				'subarray' => array(
+	 * 					'subkey' => 'subvalue'
+	 * 				),
 	 * 				'key3'	=> 'value3',
 	 * 				'key4'	=> 'value4'
 	 * 			)
@@ -1241,11 +1250,13 @@ class t3lib_TCEforms_inline {
 	 *
 	 * The example above means, key1 *AND* key2 (and their values) have to match with
 	 * the $subjectArray and additional one *OR* key3 or key4 have to meet the same
-	 * condition
+	 * condition.
+	 * It is also possible to compare parts of a sub-array (e.g. "subarray"), so this
+	 * function recurses down one level in that sub-array.
 	 *
 	 * @param	array		$subjectArray: The array to search in
 	 * @param	array		$searchArray: The array with keys and values to search for
-	 * @param	string		$type: Use AND or OR for comparision
+	 * @param	string		$type: Use '%AND' or '%OR' for comparision
 	 * @return	boolean		The result of the comparison
 	 */
 	function arrayCompareComplex($subjectArray, $searchArray, $type = '') {
@@ -1260,54 +1271,30 @@ class t3lib_TCEforms_inline {
 				$searchArray = current($searchArray);
 			}
 
-				// we use 'AND' and 'OR' in uppercase
+				// we use '%AND' and '%OR' in uppercase
 			$type = strtoupper($type);
 
 				// split regular elements from sub elements
 			foreach ($searchArray as $key => $value) {
 				$localEntries++;
 
-				if (strtoupper($key) == 'OR' || strtoupper($key) == 'AND')
+					// process a sub-group of conditions
+				if (strtoupper($key) == '%OR' || strtoupper($key) == '%AND')
 					$localMatches += $this->arrayCompareComplex($subjectArray, $value, $key) ? 1 : 0;
+					// a part of a array should be compared, so step down in the array hierarchy
+				elseif (is_array($value))
+					$localMatches += $this->arrayCompareComplex($subjectArray[$key], $value, $type) ? 1 : 0;
+					// directly compare a value
 				else
 					$localMatches += isset($subjectArray[$key]) && isset($value) && $subjectArray[$key] === $value ? 1 : 0;
 
 					// if one or more matches are required ('OR'), return true after the first successful match
-				if ($type == 'OR' && $localMatches > 0) return true;
+				if ($type == '%OR' && $localMatches > 0) return true;
 			}
 		}
 
-			// return the result for 'AND' (if nothing was checked, true is returned)
+			// return the result for '%AND' (if nothing was checked, true is returned)
 		return $localEntries == $localMatches ? true : false;
 	}
-
-	/**
-	 * Checks, if the keys and values of $searchArray are equal to that keys and values
-	 * of the $subjectArray. So only the things from $searchArray are compared and not the
-	 * whole arrays against each other.
-	 *
-	 * If $searchArray is part of $subjectArray, a true value is returned.
-	 * Otherwise this function returns false.
-	 *
-	 * @param	array		$subjectArray: The array to search in
-	 * @param	array		$searchArray: The array with keys and values to search for
-	 * @param	boolean		$useBooleanOr: Use an OR comparison (= one ore more matches required) instead of an AND
-	 * @return	boolean		The result of the comparison
-	 */
-	/*
-	### OBSOLETE ###
-	function arrayCompare($subjectArray, $searchArray, $useBooleanOr = false) {
-		$matches = 0;
-
-		foreach ($searchArray as $searchKey => $searchValue) {
-			if ($subjectArray[$searchKey] === $searchValue) {
-				if ($useBooleanOr == true) return true;
-				$matches++;
-			}
-		}
-
-		return count($searchArray) == $matches ? true : false;
-	}
-	*/
 }
 ?>
