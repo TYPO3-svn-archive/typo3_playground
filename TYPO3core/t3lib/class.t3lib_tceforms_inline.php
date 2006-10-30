@@ -230,7 +230,6 @@ class t3lib_TCEforms_inline {
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
-		// $attributes = $this->getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config);
 		$combination = $this->getSingleField_typeInline_renderCombinationTable($parentUid, $rec, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 
@@ -249,8 +248,7 @@ class t3lib_TCEforms_inline {
 		} else {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
 		}
-			// if MM attributes exist, wrap them with a table
-		if ($attributes) $attributes = '<table '.$tableAttribs.'>'.$attributes.'</table>';
+			// if combination exists, wrap them with a table
 		if ($combination) $combination = '<table '.$tableAttribs.'>'.$combination.'</table>';
 
 			// set the appearance style of the records of this table
@@ -260,7 +258,7 @@ class t3lib_TCEforms_inline {
 
 		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
 		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
-		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$attributes.$fields.$combination.'</div>';
+		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
 			// if inline records are related by a "foreign_field"
 			// $rec['pid'] is set if a new inline record should be inserted
 			// so, we do only have to store the foreign_field pointer, if it IS a new record
@@ -511,54 +509,6 @@ class t3lib_TCEforms_inline {
 											<div class="typo3-DBctrl">'.implode('',$cells).'</div>';
 	}
 
-	/**
-	 * Handle and render attributes on MM intermediate tables.
-	 * Note: That intermediate table must hava a propper own $TCA configuration!
-	 * Note: Inside that $TCA configuration of the MM table, NO inline types are allowed!
-	 *
-	 * @param	string		$parentUid: The uid of the parent (embedding) record
-	 * @param	array		$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
-	 * @param	array		$config: content of $PA['fieldConf']['config']
-	 * @return	unknown
-	 */
-	function getSingleField_typeInline_renderAttributesMM($parentUid, $rec, $config = array()) {
-		global $TCA;
-
-		$mmTable = $config['MM'];
-
-		if ($mmTable && $TCA[$mmTable]) {
-			$mmRecord = array();
-			$mmOposite = isset($config['MM_opposite_field']);
-
-				// set uid order for uid_local and uid_foreign (or reversed)
-			$uid = array($parentUid, $rec['uid']);
-			if ($mmOposite) array_reverse($uid);
-
-				// fetch MM record from MM intermediate table
-			if (t3lib_div::testInt($uid[0]) && t3lib_div::testInt($uid[1])) {
-				$whereClause = 'uid_local='.$uid[0].' AND uid_foreign='.$uid[1];
-				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', $mmTable, $whereClause, '', '', 1);
-				$mmRecord = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
-			}
-
-				// make settings, to get it through TCEforms
-			$mmRecord['uid'] = implode('__', $uid);		// to indentify data later
-			$mmRecord['pid'] = $this->inlineFirstPid;	// has no effect, but must be some integer
-
-				// prevent from using inline types on MM intermediate tables!
-			$this->inlineSkip = true;
-				// set a new prepend valud for form fields
-			$prependFormFieldNames = $this->fObj->prependFormFieldNames;
-			$this->fObj->prependFormFieldNames = $this->prependNaming.'[__ctrl][mm]';
-				// get the TCEforms interpretation of the TCA of the MM table
-			$out = $this->fObj->getMainFields($config['MM'], $mmRecord);
-				// revert things
-			$this->fObj->prependFormFieldNames = $prependFormFieldNames;
-			$this->inlineSkip = false;
-		}
-
-		return $out;
-	}
 
 	function getSingleField_typeInline_renderCombinationTable($parentUid, &$rec, $config = array()) {
 		$foreign_table = $config['foreign_table'];
