@@ -373,6 +373,26 @@ class t3lib_loadDBGroup	{
 			'',
 			false
 		);
+		
+			// FIXME: Experiments on bidirectional symmetric record handling with attributes
+		if ($conf['symmetric_field']) {
+			$symRows = t3lib_BEfunc::getRecordsByField(
+				$conf['foreign_table'],
+				$conf['symmetric_field'],
+				intval($uid),
+				'',
+				'',
+				$sortby,
+				'',
+				false
+			);
+			if (count($symRows)) {
+				if (count($rows))
+					$rows = array_merge($symRows, $rows);
+				else
+					$rows = $symRows;
+			}
+		}
 
 		if (count($rows)) {
 			foreach ($rows as $row) {

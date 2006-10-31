@@ -894,6 +894,16 @@ class t3lib_TCEforms_inline {
 		reset($trData->regTableItems_data);
 		$rec = current($trData->regTableItems_data);
 
+			// FIXME: Experiments on bidirectional symmetric record handling with attributes
+		$level = $this->getSingleField_typeInline_getStructureLevel(-1);
+		if ($level['config']['symmetric_field']) {
+			if ($level['uid'] == $rec[$level['config']['symmetric_field']]) {
+				$temp = $rec[$level['config']['foreign_field']];
+				$rec[$level['config']['foreign_field']] = $rec[$level['config']['symmetric_field']];
+				$rec[$level['config']['symmetric_field']] = $temp;
+			}
+		}
+		
 		$rec['uid'] = $cmd == 'new' ? uniqid('NEW') : $uid;
 		if ($cmd=='new') $rec['pid'] = $pid;
 
@@ -1293,6 +1303,8 @@ class t3lib_TCEforms_inline {
 
 					// if one or more matches are required ('OR'), return true after the first successful match
 				if ($type == '%OR' && $localMatches > 0) return true;
+					// if all matches are required ('AND') and we have no result after the first run, return false
+				if ($type == '%AND' && $localMatches == 0) return false;
 			}
 		}
 
