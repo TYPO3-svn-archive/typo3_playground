@@ -534,7 +534,7 @@ class t3lib_TCEforms_inline {
 
 				// get the TCEforms interpretation of the TCA of the child table
 			$out = $this->fObj->getMainFields($comboConfig['foreign_table'], $comboRecord);
-			$out = $this->getSingleField_typeInline_wrapFormsSection($out);
+			$out = $this->getSingleField_typeInline_wrapFormsSection($out, array(), array('class' => 'wrapperAttention'));
 
 				// if it is a new record, add a pid value to store this record
 			if ($isNewRecord) {
