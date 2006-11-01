@@ -169,7 +169,6 @@ class t3lib_TCEforms_inline {
 		}
 
 			// wrap the all inline fields of a record with a <div> (like a container)
-		// $item .= $this->getSingleField_typeInline_addJavaScriptSortable($nameObject);
 		$item .= '<div id="'.$nameObject.'">';
 		$relationList = array();
 		if (count($recordList)) {
@@ -179,8 +178,10 @@ class t3lib_TCEforms_inline {
 			}
 		}
 		$item .= '</div>';
-		// DEBUG:
-		// $item .= '<input size="60" type="text" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
+			// add Drag&Drop functions for sorting
+		$item .= $this->getSingleField_typeInline_addJavaScriptSortable($nameObject);
+			// DEBUG:
+			// $item .= '<input size="60" type="text" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
 		$item .= '<input type="hidden" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
 
 			// include JavaScript files once
@@ -246,8 +247,8 @@ class t3lib_TCEforms_inline {
 		if (is_array($config['appearance']) && count($config['appearance']))
 			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'"';
 
-		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" class="inlineSortable">';
-		$out .= '<div id="'.$formFieldNames.'_header" class="inlineDragable">'.$header.'</div>';
+		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" style="cursor:move;">';
+		$out .= '<div id="'.$formFieldNames.'_header" class="sortableHandle">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
 
 			// if inline records are related by a "foreign_field"
@@ -630,20 +631,16 @@ class t3lib_TCEforms_inline {
 	function getSingleField_typeInline_addJavaScriptSortable($objectId) {
 		$jsCode = '
 		<script type="text/javascript">
-			window.setTimeout(
-				function() {
-					Sortable.create(
-						"'.$objectId.'",
-						{
-							tag: "div",
-							handle: "inlineHandle",
-							only: "inlineSortable",
-							constraint: false,
-							ghosting: true
-						}
-					);
-				},
-				50
+			Sortable.create(
+				"'.$objectId.'",
+				{
+					onUpdate: function() { alert("done"); },
+					tag: "div",
+					handle: "sortableHandle",
+					overlap: "vertical",
+					constraint: "vertical",
+					delay: 300
+				}
 			);
 		</script>';
 		return $jsCode;
