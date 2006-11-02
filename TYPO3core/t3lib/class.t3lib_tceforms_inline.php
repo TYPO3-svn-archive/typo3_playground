@@ -150,8 +150,9 @@ class t3lib_TCEforms_inline {
 
 			// if it's required to select from possible child records (reusable children), add a selector box
 		if ($config['foreign_selector']) {
+			$uniqueIds = $this->getSingleField_typeInline_getUniqueIds($recordList, $config);
 			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$config);
-			$selectorBox = $this->getSingleField_typeInline_renderPossibleRecordsSelector($possibleRecords, $config);
+			$selectorBox = $this->getSingleField_typeInline_renderPossibleRecordsSelector($possibleRecords,$config,$uniqueIds);
 			$item .= $selectorBox;
 		}
 
@@ -183,6 +184,8 @@ class t3lib_TCEforms_inline {
 			// DEBUG:
 			// $item .= '<input size="60" type="text" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
 		$item .= '<input type="hidden" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
+			// if uniqueness should be handled, tell the browser what we have
+		if ($config['foreign_unique']) $item .= '<input type="text" id="'.$nameObject.'_unique" value="'.implode(',', $uniqueIds).'" />';
 
 			// include JavaScript files once
 		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
@@ -563,9 +566,10 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	array		$selItems: Array of all possible records
 	 * @param	array		$conf: TCA configuration of the parent(!) field
+	 * @param	array		$uniqueIds: The uids that have already been used and should be unique
 	 * @return	string		A HTML <select> box with all possible records
 	 */
-	function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $conf) {
+	function getSingleField_typeInline_renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array()) {
 		$foreign_table = $conf['foreign_table'];
 		$foreign_selector = $conf['foreign_selector'];
 
@@ -584,8 +588,9 @@ class t3lib_TCEforms_inline {
 					$styleAttrValue = $this->fObj->optionTagStyle($p[2]);
 				}
 				$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
-								($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue).'"' : '').
-								'>'.htmlspecialchars($p[0]).'</option>';
+								' style="'.(in_array($p[1], $uniqueIds) ? 'display:none;' : '').
+								($styleAttrValue ? ' '.htmlspecialchars($styleAttrValue) : '').'">'.
+								htmlspecialchars($p[0]).'</option>';
 			}
 
 			// FIXME: Change the JavaScript calls of each <option> for "inline" usage
@@ -602,7 +607,8 @@ class t3lib_TCEforms_inline {
 							($size ? ' size="'.$size.'"' : '').
 							' onchange="'.htmlspecialchars($sOnChange).'"'.
 							$PA['onFocus'].
-							$selector_itemListStyle.'>
+							$selector_itemListStyle.
+							($conf['foreign_unique'] ? ' isunique="isunique"' : '').'>
 					'.implode('
 					',$opt).'
 				</select>';
@@ -874,6 +880,23 @@ class t3lib_TCEforms_inline {
 		return $selItems;
 	}
 
+	/**
+	 * Gets the uids of a select/selector that should be unique an have already been used.
+	 *
+	 * @param	array	$records: All inline records on this level
+	 * @param	array	$conf: The TCA field configuration of the inline field to be rendered
+	 * @return	array	The uids, that have been used already and should be used unique
+	 */
+	function getSingleField_typeInline_getUniqueIds($records, $conf=array()) {
+		$uniqueIds = array();
+		
+		if ($conf['foreign_unique'] && count($records)) {
+			foreach ($records as $rec) $uniqueIds[] = $rec[$conf['foreign_unique']];
+		}
+		
+		return $uniqueIds;
+	}
+	
 
 	/**
 	 * Get a single record row for an TCA table from the database.
