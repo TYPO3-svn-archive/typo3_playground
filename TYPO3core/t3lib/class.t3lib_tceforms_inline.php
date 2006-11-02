@@ -254,12 +254,19 @@ class t3lib_TCEforms_inline {
 			// if inline records are related by a "foreign_field"
 			// $rec['pid'] is set if a new inline record should be inserted
 			// so, we do only have to store the foreign_field pointer, if it IS a new record
-		if ($foreign_field && $rec['pid']) {
+		if ($foreign_field && $isNewRecord) {
 				// if the parent record is new, put the relation information into [__ctrl], this is processed last
 			$out .= '<input type="hidden" name="'.$this->prependNaming .
 				(t3lib_div::testInt($parentUid) ? '' : '[__ctrl][records]') .
 				$appendFormFieldNames.'['.$foreign_field.']" value="'.$parentUid.'" />';
+			// if the fields for symmetric relations were swapped, send a information about the keys (foreign_field|symmetric_fields)
+			// on saving the record, this information is swapped back for storing via TCEmain
+		} elseif ($rec['__symmetric']) {
+			$out .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][symmetric]' .
+				$appendFormFieldNames.'" value="'.htmlspecialchars($rec['__symmetric']).'" />';
 		}
+		
+		
 			// if the is a foreign_selector, handle it's uid like it's done for foreign_field
 		if ($foreign_selector && $rec['pid']) {
 			$out .= '<input type="hidden" name="'.$this->prependNaming .
@@ -898,6 +905,7 @@ class t3lib_TCEforms_inline {
 				$temp = $rec[$level['config']['foreign_field']];
 				$rec[$level['config']['foreign_field']] = $rec[$level['config']['symmetric_field']];
 				$rec[$level['config']['symmetric_field']] = $temp;
+				$rec['__symmetric'] = $level['config']['foreign_field'].'|'.$level['config']['symmetric_field'];
 			}
 		}
 		
@@ -957,6 +965,18 @@ class t3lib_TCEforms_inline {
 			}
 		}
 
+			// find records that were used in symmetric context and the field swapped for viewing
+		if (is_array($ctrl['symmetric'])) {
+			foreach ($ctrl['symmetric'] as $table => $uidData) {
+				foreach ($uidData as $uid => $value) {
+						// parts[0]: foreign_field, parts[1]: symmetric_field
+					$parts = explode('|', $value);
+					$inline[$table][$uid][$parts[0]] = $inline[$table][$uid][$parts[1]];
+					unset($inline[$table][$uid][$parts[1]]);
+				}
+			}
+		}
+		
 			// save the inline data without the relations
 		$tce->start($inline, array());
 		$tce->process_datamap();

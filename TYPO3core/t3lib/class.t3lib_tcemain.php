@@ -1956,7 +1956,7 @@ class t3lib_TCEmain	{
 		} elseif ($type == 'inline') {
 			if ($tcaFieldConf['foreign_field']) {
 					// update sorting
-				$valueArray = $dbAnalysis->writeForeignField($tcaFieldConf);
+				$valueArray = $dbAnalysis->writeForeignField($tcaFieldConf, $id);
 				$valueArray = $dbAnalysis->countItems();
 			} else {
 				$valueArray = $dbAnalysis->getValueArray($prep);
@@ -4019,7 +4019,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
 				$dbAnalysis->start($value, $allowedTables, $conf['MM'], 0, $table, $conf);
 
-				$dbAnalysis->writeForeignField($conf, $theUidToUpdate);
+				$dbAnalysis->writeForeignField($conf, $theUidToUpdate, true);
 				$newValue = $dbAnalysis->countItems(false);
 
 			} elseif ($inlineType == 'mm') {
