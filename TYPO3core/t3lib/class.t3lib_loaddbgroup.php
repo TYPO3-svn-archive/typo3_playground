@@ -93,6 +93,7 @@ class t3lib_loadDBGroup	{
 	var $MM_oppositeFieldConf = ''; // only set if MM_is_foreign is set
 	var $MM_isMultiTableRelationship = 0;	// is empty by default; if MM_is_foreign is set and there is more than one table allowed (on the "local" side), then it contains the first table (as a fallback)
 	var $currentTable;	// current table => Only needed for reverse relations
+	var $undeleteRecord;		// if a record should be undeleted (so do not use the $useDeleteClause on t3lib_BEfunc)
 
 
 	/**
@@ -351,6 +352,7 @@ class t3lib_loadDBGroup	{
 		$key = 0;
 		$uid = intval($uid);
 		$foreign_table = $conf['foreign_table'];
+		$useDeleteClause = $this->undeleteRecord ? false : true;
 
 		if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
 			$sortby = $conf['foreign_sortby'];
@@ -363,12 +365,12 @@ class t3lib_loadDBGroup	{
 		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
 	
 			// get the rows from storage
-		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,'','',$sortby,'',false);
+		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,'','',$sortby,'',$useDeleteClause);
 		
 			// FIXME: Experiments on bidirectional symmetric record handling with attributes
 		if ($conf['symmetric_field']) {
 			$symSortby = $conf['symmetric_sortby'] ? $conf['symmetric_sortby'] : $sortby;
-			$symRows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['symmetric_field'],$uid,'','',$symSortby,'',false);
+			$symRows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['symmetric_field'],$uid,'','',$symSortby,'',$useDeleteClause);
 			
 			if (count($symRows)) {
 					// if there are rows and symRows, we have to merge them, but keeping the sorting order
@@ -429,48 +431,57 @@ class t3lib_loadDBGroup	{
 	 * @param	boolean		$updateForeignField: Whether to update the foreign field with the $parentUid (on Copy)
 	 * @return	void
 	 */
-	function writeForeignField($conf, $parentUid, $updateForeignField = false) {
+	function writeForeignField($conf, $parentUid, $updateToUid=0) {
 		$c = 0;
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
-		
-		if (!$updateForeignField) {
-			if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
-				$sortby = $conf['foreign_sortby'];
-			elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// specific sortby for all table records
-				$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
-	
-				// strip a possible "ORDER BY" in front of the $sortby value
-			$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
-			$symSortby = $conf['symmetric_sortby'];
-		}
+		$symmetric_field = $conf['symmetric_field'];
 
-			// if there is a manual sortby field (not the default_sortby!) or a parentUid to be updated and items in the tableArray
-		if (($sortby || $parentUid) && count($this->tableArray)) {
-				// if positive integer, set the foreing_field (pointer to parent) the the given uid
-			if (!($updateForeignField && t3lib_div::testInt($parentUid) && $parentUid > 0)) $updateForeignField = false;
+			// if there are table items and we have a proper $parentUid
+		if (t3lib_div::testInt($parentUid) && count($this->tableArray)) {
+				// if updateToUid is not a positive integer, set it to '0', so it will be ignored
+			if (!(t3lib_div::testInt($updateToUid) && $updateToUid > 0)) $updateToUid = 0;
+			$fields = $foreign_field.($symmetric_field ? ','.$symmetric_field : '');
 			
 				// update all items
 			foreach ($this->itemArray as $val) {
 				$uid = $val['id'];
 				$table = $val['table'];
+
+					// fetch the current (not overwritten) relation record if we handle symmetric relations
+				$row = t3lib_BEfunc::getRecord($table,$uid,$fields,'',false);
 				
 				$updateValues = array();
-				if (!$updateForeignField) {
-					if ($conf['symmetric_field'] && $symSortby) {
-						$row = t3lib_BEfunc::getRecord($table, $uid, $foreign_field, '', false);
-							// if the parentId is the record, that created the relation (is in foreign_field)
-						if ($row[$foreign_field] == $parentUid) $updateValues[$sortby] = ++$c;
-							// if the parentId was referenced by a symmetric relation
-						else $updateValues[$symSortby] = ++$c;
-						
-					} elseif ($sortby) {
+
+					// no update to a foreign_field/symmetric_field pointer is requested -> just sorting
+				if (!$updateToUid) {
+						// specific sortby for data handled by this field
+					if ($conf['foreign_sortby'])
+						$sortby = $conf['foreign_sortby'];
+						// specific sortby for all table records
+					elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])
+						$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
+			
+						// strip a possible "ORDER BY" in front of the $sortby value
+					$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
+					$symSortby = $conf['symmetric_sortby'];
+					
+						// set the sorting on the right side, it depends on who created the relation, so what uid is in the symmetric_field
+					if ($symmetric_field && $row[$symmetric_field] == $parentUid && $symSortby)
+						$updateValues[$symSortby] = ++$c;
+					elseif ($sortby)
 						$updateValues[$sortby] = ++$c;
-					}
+
+					// update to a foreign_field/symmetric_field pointer is requested, normally used on record copies
+					// only update the fields, if the old uid is found somewhere - for select fields, TCEmain is doing this already!
+				} else {
+					if ($symmetric_field && $row[$symmetric_field] == $parentUid)
+						$updateValues[$symmetric_field] = $updateToUid;
+					elseif ($row[$foreign_field] == $parentUid)
+						$updateValues[$foreign_field] = $updateToUid;
 				}
-				
-				if ($updateForeignField) $updateValues[$foreign_field] = $parentUid;
-				$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'", $updateValues);
+
+				if (count($updateValues)) $GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'", $updateValues);
 			}
 		}
 	}

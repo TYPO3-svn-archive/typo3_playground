@@ -3424,6 +3424,7 @@ class t3lib_TCEmain	{
 				$prependName = $conf['neg_foreign_table'];
 				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
 				$dbAnalysis->start($value, $allowedTables, $conf['MM'], $uid, $table, $conf);
+				$dbAnalysis->undeleteRecord = true;
 
 					// walk through the items and remove them
 				foreach ($dbAnalysis->itemArray as $v) {
@@ -3904,7 +3905,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 								}
 							break;
 							case 'inline':
-								$newValue = $this->remapListedDBRecords_procInline($conf, $value, $theUidToUpdate, $table);
+								$newValue = $this->remapListedDBRecords_procInline($conf, $value, $uid, $table);
 								if (isset($newValue)) $newData[$fieldName] = $newValue;
 								// echo "$fieldName:".$value.'->'.$newData[$fieldName].', ';
 							break;
@@ -4000,13 +4001,15 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	/**
 	 * Performs remapping of old UID values to NEW uid values for a inline field.
 	 *
-	 * @param	array		TCA field config
-	 * @param	string		Field value
-	 * @param	integer		UID of local record (for MM relations - might need to change if support for FlexForms should be done!)
-	 * @param	string		Table name
+	 * @param	array		$conf: TCA field config
+	 * @param	string		$value: Field value
+	 * @param	integer		$uid: The uid of the ORIGINAL record
+	 * @param	string		$table: Table name
 	 * @return	string		The value to be updated on the table field in the database
 	 */
-	function remapListedDBRecords_procInline($conf, $value, $theUidToUpdate, $table) {
+	function remapListedDBRecords_procInline($conf, $value, $uid, $table) {
+		$theUidToUpdate = $this->copyMappingArray_merged[$table][$uid];
+		
 		if ($conf['foreign_table']) {
 			$inlineType = $this->getInlineFieldType($conf);
 
@@ -4019,7 +4022,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
 				$dbAnalysis->start($value, $allowedTables, $conf['MM'], 0, $table, $conf);
 
-				$dbAnalysis->writeForeignField($conf, $theUidToUpdate, true);
+				$dbAnalysis->writeForeignField($conf, $uid, $theUidToUpdate);
 				$newValue = $dbAnalysis->countItems(false);
 
 			} elseif ($inlineType == 'mm') {
