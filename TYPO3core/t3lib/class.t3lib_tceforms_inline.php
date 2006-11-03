@@ -86,7 +86,9 @@ class t3lib_TCEforms_inline {
 	var $inlineFirstPid;					// the first call of an inline type appeared on this page (pid of record)
 	var $inlineNames = array();				// keys: form, object -> hold the name/id for each of them
 	var $inlineSkip = false;				// Attention: setting this variable, no inline type would be processed anymore
-
+	var $inlineData = array();				// inline data array used for JSON output
+	var $inlineCount = 0;
+	
 	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 
 
@@ -120,8 +122,11 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code for the TCEform field
 	 */
 	function getSingleField_typeInline($table,$field,$row,&$PA) {
+			// if inline elements should not be processed, break here
 		if ($this->inlineSkip === true) return '';
-
+			// count the number of processed inline elements
+		$this->inlineCount++;
+		
 			// Init:
 		$config = $PA['fieldConf']['config'];
 		$foreign_table = $config['foreign_table'];
@@ -148,9 +153,21 @@ class t3lib_TCEforms_inline {
 		$config['inline']['first'] = $recordList[0]['uid'];
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
+			// if relations are required to be unique, get the uids that have already been used on the foreign side of the relation
+		if ($config['foreign_unique']) {
+			$uniqueIds = $this->getSingleField_typeInline_getUniqueIds($recordList, $config);
+			$this->inlineData['unique'][$nameObject.'['.$foreign_table.']'] = array(
+				'used' => $uniqueIds,
+				'table' => $config['foreign_table'],
+				'field' => $config['foreign_unique'],
+				'selector' => $config['foreign_selector'] ? true : false
+			);
+		} else {
+			$uniqueIds = array();
+		}
+
 			// if it's required to select from possible child records (reusable children), add a selector box
 		if ($config['foreign_selector']) {
-			$uniqueIds = $this->getSingleField_typeInline_getUniqueIds($recordList, $config);
 			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$config);
 			$selectorBox = $this->getSingleField_typeInline_renderPossibleRecordsSelector($possibleRecords,$config,$uniqueIds);
 			$item .= $selectorBox;
@@ -180,24 +197,10 @@ class t3lib_TCEforms_inline {
 		}
 		$item .= '</div>';
 			// add Drag&Drop functions for sorting
-		$item .= $this->getSingleField_typeInline_addJavaScriptSortable($nameObject);
+		// $item .= $this->getSingleField_typeInline_addJavaScriptSortable($nameObject);
 			// DEBUG:
 			// $item .= '<input size="60" type="text" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
 		$item .= '<input type="hidden" name="'.$this->inlineNames['ctrlrecords'].'" value="'.implode(',', $relationList).'" />';
-			// if uniqueness should be handled, tell the browser what we have
-		if ($config['foreign_unique']) $item .= '<input type="text" id="'.$nameObject.'_unique" value="'.implode(',', $uniqueIds).'" />';
-
-			// include JavaScript files once
-		if (!$GLOBALS['T3_VAR']['inlineRelational']['imported']) {
-			$GLOBALS['SOBE']->doc->JScode .= $this->getSingleField_typeInline_addJavaScript();
-			$GLOBALS['T3_VAR']['inlineRelational']['imported'] = true;
-			$this->fObj->additionalJS_post[] =
-				"\t\t\t\twindow.setTimeout(
-				function() {
-					inline.setPrependFormFieldNames('".$this->fObj->prependFormFieldNames."');
-					inline.setNoTitleString('".$this->fObj->noTitle('')."');
-				}, 10);";
-		}
 
 			// on finishing this section, remove the last item from the structure stack
 		$this->getSingleField_typeInline_popStructure();
@@ -271,7 +274,7 @@ class t3lib_TCEforms_inline {
 		
 		
 			// if the is a foreign_selector, handle it's uid like it's done for foreign_field
-		if ($foreign_selector && $rec['pid']) {
+		if ($foreign_selector) {
 			$out .= '<input type="hidden" name="'.$this->prependNaming .
 				(t3lib_div::testInt($rec[$foreign_selector]) ? '' : '[__ctrl][records]') .
 				$appendFormFieldNames.'['.$foreign_selector.']" value="'.$rec[$foreign_selector].'" />';
@@ -588,8 +591,9 @@ class t3lib_TCEforms_inline {
 					$styleAttrValue = $this->fObj->optionTagStyle($p[2]);
 				}
 				$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
-								' style="'.(in_array($p[1], $uniqueIds) ? 'display:none;' : '').
-								($styleAttrValue ? ' '.htmlspecialchars($styleAttrValue) : '').'">'.
+								(in_array($p[1], $uniqueIds) ? ' disabled="true"' : '').
+								' style="'.(in_array($p[1], $uniqueIds) ? '' : '').
+								($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue) : '').'">'.
 								htmlspecialchars($p[0]).'</option>';
 			}
 
@@ -599,10 +603,10 @@ class t3lib_TCEforms_inline {
 			$selector_itemListStyle = isset($config['itemListStyle']) ? ' style="'.htmlspecialchars($config['itemListStyle']).'"' : ' style="'.$this->fObj->defaultMultipleSelectorStyle.'"';
 			$size = intval($config['size']);
 			$size = $config['autoSizeMax'] ? t3lib_div::intInRange(count($itemArray)+1,t3lib_div::intInRange($size,1),$config['autoSizeMax']) : $size;
-			$sOnChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$config['foreign_table']."]', this.options[this.selectedIndex].value)";
+			$sOnChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$conf['foreign_table']."]', this.options[this.selectedIndex])";
 			// $sOnChange .= implode('',$PA['fieldChangeFunc']);
 			$itemsToSelect = '
-				<select id="'.$this->inlineNames['object'].'_selector"'.
+				<select id="'.$this->inlineNames['object'].'['.$conf['foreign_table'].']_selector"'.
 							$this->fObj->insertDefStyle('select').
 							($size ? ' size="'.$size.'"' : '').
 							' onchange="'.htmlspecialchars($sOnChange).'"'.
@@ -735,6 +739,10 @@ class t3lib_TCEforms_inline {
 			);
 		}
 
+			// if a selector is used and it's requested to care about uniqueness, just do it
+		if ($foreignUid && $config['foreign_unique'] && $config['foreign_selector'])
+			$jsonArray['scriptCall'][] = "inline.setUnique('$domObjectId','$foreignUid','".$record['uid']."');";
+			
 			// tell the browser to scroll to the newly created record
 		// $objResponse->addScriptCall('Element.scrollTo', $this->inlineNames['object'].'['.$current['table'].']['.$record['uid'].']_div');
 
@@ -747,28 +755,17 @@ class t3lib_TCEforms_inline {
 
 	/**
 	 * Creates recursively a JSON literal from a mulidimensional associative array.
+	 * Uses Services_JSON (http://mike.teczno.com/JSON/doc/)
 	 *
 	 * @param	array		$jsonArray: The array (or part of) to be transformed to JSON
 	 * @return	string		If $level>0: part of JSON literal; if $level==0: whole JSON literal wrapped with <script> tags
 	 */
 	function getSingleField_typeInline_getJSON($jsonArray) {
-		if (is_array($jsonArray)) {
-			$jsonArrayCnt = count($jsonArray);
-			$pointer = 0;
-
-			$json .= '{';
-			foreach ($jsonArray as $key => $value) {
-				$json .= "'".addslashes($key)."':";
-				$json .= is_array($value)
-					? $this->getSingleField_typeInline_getJSON($value)	// resurse down one level
-					: "'".addslashes(preg_replace("/\r|\n/", '', $value))."'";		// add the value directly
-					// if this is not the last element on this level, add a comma
-				if (++$pointer < $jsonArrayCnt) $json .= ',';
-			}
-			$json .= '}';
+		if (!$GLOBALS['JSON']) {
+			require_once('JSON.php');
+			$GLOBALS['JSON'] = t3lib_div::makeInstance('Services_JSON');
 		}
-
-		return $json;
+		return $GLOBALS['JSON']->encode($jsonArray);
 	}
 
 
@@ -891,7 +888,7 @@ class t3lib_TCEforms_inline {
 		$uniqueIds = array();
 		
 		if ($conf['foreign_unique'] && count($records)) {
-			foreach ($records as $rec) $uniqueIds[] = $rec[$conf['foreign_unique']];
+			foreach ($records as $rec) $uniqueIds[$rec['uid']] = $rec[$conf['foreign_unique']];
 		}
 		
 		return $uniqueIds;

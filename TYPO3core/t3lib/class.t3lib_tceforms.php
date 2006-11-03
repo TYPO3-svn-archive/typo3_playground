@@ -1384,7 +1384,14 @@ class t3lib_TCEforms	{
 	 * @see getSingleField_typeSelect()
 	 */
 	function getSingleField_typeSelect_single($table,$field,$row,&$PA,$config,$selItems,$nMV_label)	{
-
+			// check against inline uniqueness
+		$uniqueIds = array();
+		$parent = $this->inline->getSingleField_typeInline_getStructureLevel(-1);
+		if ($parent['config']['foreign_table'] == $table && $parent['config']['foreign_unique'] == $field) {
+			$uniqueIds = $this->inline->inlineData['unique'][$this->inline->inlineNames['object'].'['.$table.']']['used'];
+			$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['ctrlrecords']."','".$row['uid']."');";
+		}
+		
 			// Initialization:
 		$c = 0;
 		$sI = 0;
@@ -1425,7 +1432,7 @@ class t3lib_TCEforms	{
 
 				// Compiling the <option> tag:
 			$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
-						$sM.
+						$sM.($p[1] != $PA['itemFormElValue'] && is_array($uniqueIds) && in_array($p[1], $uniqueIds) ? ' disabled="true"' : '').
 						($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue).'"' : '').
 						(!strcmp($p[1],'--div--') ? ' class="c-divider"' : '').
 						'>'.t3lib_div::deHSCentities(htmlspecialchars($p[0])).'</option>';
@@ -4521,6 +4528,22 @@ class t3lib_TCEforms	{
 	 * @return	string		A <script></script> section with JavaScript.
 	 */
 	function JSbottom($formname='forms[0]')	{
+				// inline
+			if ($this->inline->inlineCount > 0) {
+				if (count($this->inline->inlineData))
+					$inlineData = 'inline.addToDataArray('.$this->inline->getSingleField_typeInline_getJSON($this->inline->inlineData).');';
+
+				$out .= $this->inline->getSingleField_typeInline_addJavaScript();
+				$out .= '
+				<script type="text/javascript">
+					/*<![CDATA[*/
+					inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
+					inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
+					'.$inlineData.'
+					/*]]>*/
+				</script>					
+				';
+			}
 
 				// required
 			$reqLines=array();

@@ -30,6 +30,11 @@
 	var inlineRelational = this;
 	var prependFormFieldNames = 'inline';
 	var noTitleString = '[No title]';
+	var data = new Array();
+	
+	this.addToDataArray = function(object) {
+		for (var i in object) data[i] = object[i];
+	}
 	
 	this.setPrependFormFieldNames = function(value) {
 		prependFormFieldNames = value;
@@ -52,7 +57,7 @@
 		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
 		var formObj = document.getElementsByName(objectName);
 
-		if (formObj) {
+		if (formObj.length) {
 				// the uid of the calling object (last part in objectId)
 			var callingUid = this.parseFormElementName('none', objectId, 1);
 			var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
@@ -78,7 +83,8 @@
 			var options = {
 				method:		'post',
 				parameters:	params,
-				onSuccess:	inlineRelational.processAjaxResponse
+				onSuccess:	inlineRelational.processAjaxResponse,
+				onFailure:	inlineRelational.showAjaxFailure
 			};
 			
 			new Ajax.Request(url, options);
@@ -89,10 +95,26 @@
 		var json = eval('('+xhr.responseText+')');
 		for (var i in json.scriptCall) eval(json.scriptCall[i]);
 	}
-	
-	this.importNewRecord = function(objectId, foreignUid) {
-		this.makeAjaxCall('createNewRecord', objectId, foreignUid);
+
+	this.showAjaxFailure = function(xhr) {
+		alert('Error: '+xhr.status+"\n"+xhr.statusText);
+	}
+		
+	this.importNewRecord = function(objectId, selectedOption) {
+		this.makeAjaxCall('createNewRecord', objectId, selectedOption.value);
 		return false;
+	}
+	
+	this.setUnique = function(objectId, selectedValue, recordUid) {
+		var selector = $(objectId+'_selector');
+		for (var i = 0; i < selector.options.length; i++) {
+			if (selector.options[i].value == selectedValue) {
+				selector.options[i].disabled = 'true';
+				selector.options[i].selected = false;
+				break;
+			}
+		}
+		data.unique[objectId]['used'][recordUid] = selectedValue;
 	}
 	
 	this.domAddNewRecord = function(method, objectId, htmlData) {
@@ -106,7 +128,7 @@
 		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
 		var formObj = document.getElementsByName(objectName);
 		
-		if (formObj) {
+		if (formObj.length) {
 				// the uid of the calling object (last part in objectId)
 			var callingUid = this.parseFormElementName('none', objectId, 1);
 			var records = formObj[0].value.split(',');
@@ -150,7 +172,7 @@
 			records = new Array();
 			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
 			var formObj = document.getElementsByName(objectName);
-			if (formObj) records = formObj[0].value.split(',');
+			if (formObj.length) records = formObj[0].value.split(',');
 		}
 		
 			// clone records from the section, in the new sorting order
@@ -183,7 +205,7 @@
 			records = new Array();
 			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
 			var formObj = document.getElementsByName(objectName);
-			if (formObj) records = formObj[0].value.split(',');
+			if (formObj.length) records = formObj[0].value.split(',');
 		}
 		
 		for (i = 0; i < records.length; i++) {
@@ -204,7 +226,7 @@
 		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
 		var formObj = document.getElementsByName(objectName);
 
-		if (formObj) {
+		if (formObj.length) {
 			var records = new Array();
 			if (formObj[0].value.length) records = formObj[0].value.split(',');
 			
@@ -226,16 +248,72 @@
 	
 	this.memorizeRemoveRecord = function(objectName, removeUid) {
 		var formObj = document.getElementsByName(objectName);
-		if (formObj) {
+		if (formObj.length) {
 			var parts = new Array();
-			var newParts = new Array();
 			if (formObj[0].value.length) parts = formObj[0].value.split(',');
-			
-			for (var i = 0; i < parts.length; i++) {
-				if (parts[i] != removeUid) newParts.push(parts[i]);
+			formObj[0].value = parts.without(removeUid).join(',');
+		}
+	}
+	
+	this.updateUnique = function(srcElement, objectId, formName, recordUid) {
+		var unique;
+		if (data.unique && data.unique[objectId]) unique = data.unique[objectId];
+		
+		var formObj = document.getElementsByName(formName);
+		if (unique && formObj.length) {
+			var oldValue = unique.used[recordUid];
+			var records = formObj[0].value.split(',');
+			var recordObj;
+			for (var i = 0; i < records.length; i++) {
+				recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
+				if (recordObj.length) {
+					for (var o = 0; o < recordObj[0].options.length; o++) {
+						if (srcElement.value == recordObj[0].options[o].value && srcElement != recordObj[0]) {
+							recordObj[0].options[o].disabled = 'true';
+						} else if(oldValue == recordObj[0].options[o].value) {
+							recordObj[0].options[o].disabled = '';
+						}
+					}
+				}
 			}
+		}
+	}
+	
+	
+	this.revertUnique = function(objectPrefix, elName, recordUid) {
+		var unique = data.unique[objectPrefix];
+		var fieldObj = document.getElementsByName(elName+'['+unique.field+']');
+
+		if (fieldObj.length) {
+			delete(data.unique[objectPrefix][recordUid]);
 			
-			formObj[0].value = newParts.join(',');
+			if (unique.selector) {
+				var selector = $(objectPrefix+'_selector');
+				for (var i = 0; i < selector.options.length; i++) {
+					if (fieldObj[0].value == selector.options[i].value) {
+						selector.options[i].disabled = '';
+						break;
+					}
+				}
+			} else {
+				var formName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+				var formObj = document.getElementsByName(formName);
+				if (formObj.length) {
+					var records = formObj[0].value.split(',');
+					var recordObj;
+					for (var i = 0; i < records.length; i++) {
+						recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
+						if (recordObj.length) {
+							for (var o = 0; o < recordObj[0].options.length; o++) {
+								if (fieldObj[0].value == recordObj[0].options[o].value) {
+									recordObj[0].options[o].disabled = '';
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -256,26 +334,26 @@
 	}
 	
 	this.deleteRecord = function(objectId) {
+		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
+		var elName = this.parseFormElementName('full', objectId, 2);
+		var recordUid = this.parseFormElementName('none', objectId, 1);
+		
+			// revert the unique settings if available
+		if (data.unique && data.unique[objectPrefix]) this.revertUnique(objectPrefix, elName, recordUid);
+		
 		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == '1') {
 			Element.remove(objectId+'_div');
 		} else {
-			var elName = this.parseFormElementName('full', objectId, 2);
 			document.getElementsByName(elName+'[__deleted]')[0].value = 'deleted';
 			Element.hide(objectId+'_div');
 		}
 
 		this.memorizeRemoveRecord(
 			prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2),
-			this.parseFormElementName('none', objectId, 1)
+			recordUid
 		);
 		
-		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
 		this.redrawSortingButtons(objectPrefix);
-		
-		return false;
-	}
-	
-	this.parseObjectId = function(objectId) {
 		
 		return false;
 	}
@@ -331,7 +409,7 @@
 	this.handleChangedField = function(formFieldName, objectId) {
 			// perhaps limit to a maximum of string length
 		var formObj = document.getElementsByName(formFieldName);
-		if (formObj) {
+		if (formObj.length) {
 			var value = formObj[0].value;
 			$(objectId+'_label').innerHTML = value ? value : noTitleString;
 		}
