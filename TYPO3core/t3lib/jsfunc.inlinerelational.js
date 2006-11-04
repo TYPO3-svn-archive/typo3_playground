@@ -161,6 +161,7 @@
 	
 	this.changeSorting = function(objectId, direction) {
 		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
+		var objectPrefix = this.parseFormElementName('full', objectId, 0, 1);
 		var formObj = document.getElementsByName(objectName);
 		
 		if (formObj.length) {
@@ -181,53 +182,20 @@
 				records[current] = records[current+1];
 				records[current+1] = callingUid;
 				changed = true;
-				
 			}
 			
 			if (changed) {
 				formObj[0].value = records.join(',');
-				this.redrawSection(objectId, records);
+				var cAdj = direction > 0 ? 1 : 0; // adjustment
+				$(objectId+'_div').parentNode.insertBefore(
+					$(objectPrefix+'['+records[current-cAdj]+']_div'),
+					$(objectPrefix+'['+records[current+1-cAdj]+']_div')
+				);
+				this.redrawSortingButtons(objectPrefix, records);
 			}
 		}
 		
 		return false;
-	}
-	
-	this.redrawSection = function(objectId, records) {
-		var i = 0;
-		var tempSectionObj = new Array();
-		var tempRecordObj;
-
-		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
-		var sectionId = this.parseFormElementName('full', objectId, 0 , 2);
-		var sectionObj = $(sectionId);
-		
-			// if no records were passed, fetch them from form field
-		if (typeof records == 'undefined') {
-			records = new Array();
-			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
-			var formObj = document.getElementsByName(objectName);
-			if (formObj.length) records = formObj[0].value.split(',');
-		}
-		
-			// clone records from the section, in the new sorting order
-		for (i = 0; i < records.length; i++) {
-			tempSectionObj.push(
-				$(objectPrefix+'['+records[i]+']_div').cloneNode(true)
-			);
-		}
-		
-			// remove records from the section
-		while (sectionObj.hasChildNodes()) {
-			sectionObj.removeChild(sectionObj.firstChild);
-		}
-		
-			// add the cloned records back to the section
-		for (i = 0; i < tempSectionObj.length; i++) {
-			sectionObj.appendChild(tempSectionObj[i]);
-		}
-		
-		this.redrawSortingButtons(objectPrefix, records);
 	}
 	
 	this.redrawSortingButtons = function(objectPrefix, records) {
@@ -320,7 +288,7 @@
 		var fieldObj = document.getElementsByName(elName+'['+unique.field+']');
 
 		if (fieldObj.length) {
-			delete(data.unique[objectPrefix][recordUid]);
+			delete(data.unique[objectPrefix].used[recordUid])
 			
 			if (unique.selector) {
 				var selector = $(objectPrefix+'_selector');

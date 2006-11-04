@@ -87,7 +87,7 @@ class t3lib_TCEforms_inline {
 	var $inlineNames = array();				// keys: form, object -> hold the name/id for each of them
 	var $inlineSkip = false;				// Attention: setting this variable, no inline type would be processed anymore
 	var $inlineData = array();				// inline data array used for JSON output
-	var $inlineCount = 0;
+	var $inlineCount = 0;					// count the number of inline types used
 	
 	var $prependNaming = 'inline';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 
@@ -345,11 +345,10 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$table
 	 * @param	array		$row
-	 * @param	string		$formFieldNames
 	 * @param	array		$config: (modified) TCA configuration of the field
 	 * @return	string		The HTML code with the control-icons
 	 */
-	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$formFieldNames,$config = array()) {
+	function getSingleField_typeInline_renderForeignRecordHeaderControl($table,$row,$config = array()) {
 		global $TCA, $LANG, $SOBE;
 
 			// Initialize:
@@ -360,10 +359,7 @@ class t3lib_TCEforms_inline {
 		$nameObjectFtId = $nameObjectFt.'['.$row['uid'].']';
 
 		$calcPerms = $GLOBALS['BE_USER']->calcPerms(
-			t3lib_BEfunc::readPageAccess(
-				$row['pid'],
-				$GLOBALS['BE_USER']->getPagePermsClause(1)
-			)
+			t3lib_BEfunc::readPageAccess($row['pid'], $GLOBALS['BE_USER']->getPagePermsClause(1))
 		);
 
 			// FIXME: Put these calls somewhere else... possibly they arn't needed here
@@ -850,10 +846,9 @@ class t3lib_TCEforms_inline {
 	 * @param 	string		$checkForConfField: For which field in the foreign_table the possible records should be fetched
 	 * @return	array		Array of possible record items
 	 */
-	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf,$checkForConfField='') {
+	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector') {
 			// Field configuration from TCA:
 		$foreign_table = $conf['foreign_table'];
-		if (!$checkForConfField) $checkForConfField = 'foreign_selector';
 		$foreign_check = $conf[$checkForConfField];
 
 		$PA = array();
