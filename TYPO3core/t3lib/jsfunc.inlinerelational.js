@@ -69,8 +69,18 @@
 		}
 	}
 	
-	this.createNewRecord = function(objectId) {
-		this.makeAjaxCall('createNewRecord', objectId);
+	this.createNewRecord = function(objectId,recordUid) {
+		var executeAjaxCall = true;
+
+		if (data.unique) {
+			var unique = data.unique[objectId];
+			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max > 0) {
+				executeAjaxCall = false;
+				alert('There are no more unique relations possible at this moment!');
+			}
+		}
+		
+		if (executeAjaxCall) this.makeAjaxCall('createNewRecord', objectId+(recordUid ? '['+recordUid+']' : ''));
 		return false;
 	}
 
@@ -105,16 +115,41 @@
 		return false;
 	}
 	
-	this.setUnique = function(objectId, selectedValue, recordUid) {
-		var selector = $(objectId+'_selector');
-		for (var i = 0; i < selector.options.length; i++) {
-			if (selector.options[i].value == selectedValue) {
-				selector.options[i].disabled = 'true';
-				selector.options[i].selected = false;
-				break;
+	this.setUnique = function(objectId, recordUid, selectedValue) {
+		if (data.unique && data.unique[objectId]) {
+			var unique = data.unique[objectId];
+			if (unique.selector) {
+				var selector = $(objectId+'_selector');
+				for (var i = 0; i < selector.options.length; i++) {
+					if (selector.options[i].value == selectedValue) {
+						selector.options[i].disabled = 'true';
+						selector.options[i].selected = false;
+						break;
+					}
+				}
+				data.unique[objectId]['used'][recordUid] = selectedValue;
+			} else {
+				var elName = this.parseFormElementName('full', objectId, 1)+'['+recordUid+']['+unique.field+']';
+				var formName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 1);
+
+				var fieldObj = document.getElementsByName(elName);
+				var values = $H(unique.used).values();
+				
+				if (fieldObj.length) {
+					var newSelectableId;
+					for (var i = 0; i < fieldObj[0].options.length; i++) {
+						if (values.indexOf(fieldObj[0].options[i].value) != -1) {
+							fieldObj[0].options[i].disabled = 'true';
+						} else if (!newSelectableId) {
+							fieldObj[0].options[i].selected = true;
+							newSelectableId = fieldObj[0].options[i].value;
+							this.updateUnique(fieldObj[0], objectId, formName, recordUid)							
+							data.unique[objectId].used[recordUid] = newSelectableId;
+						}
+					}
+				}
 			}
 		}
-		data.unique[objectId]['used'][recordUid] = selectedValue;
 	}
 	
 	this.domAddNewRecord = function(method, objectId, htmlData) {
@@ -414,6 +449,12 @@
 			$(objectId+'_label').innerHTML = value ? value : noTitleString;
 		}
 		return true;
+	}
+	
+	this.arrayAssocCount = function(array) {
+		var count = 0;
+		for (var i in array) count++;
+		return count;
 	}
 }
 

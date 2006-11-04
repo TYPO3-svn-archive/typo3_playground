@@ -156,19 +156,23 @@ class t3lib_TCEforms_inline {
 			// if relations are required to be unique, get the uids that have already been used on the foreign side of the relation
 		if ($config['foreign_unique']) {
 			$uniqueIds = $this->getSingleField_typeInline_getUniqueIds($recordList, $config);
+			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$config,'foreign_unique');
 			$this->inlineData['unique'][$nameObject.'['.$foreign_table.']'] = array(
+				'max' => $config['appearance']['useCombination'] ? -1 : count($possibleRecords),
 				'used' => $uniqueIds,
 				'table' => $config['foreign_table'],
 				'field' => $config['foreign_unique'],
 				'selector' => $config['foreign_selector'] ? true : false
 			);
-		} else {
-			$uniqueIds = array();
 		}
 
 			// if it's required to select from possible child records (reusable children), add a selector box
 		if ($config['foreign_selector']) {
-			$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$config);
+				// if not already set by the foreign_unique, set the possibleRecords here and the uniqueIds to an empty array
+			if (!$config['foreign_unique']) {
+				$possibleRecords = $this->getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$config);
+				$uniqueIds = array();
+			}
 			$selectorBox = $this->getSingleField_typeInline_renderPossibleRecordsSelector($possibleRecords,$config,$uniqueIds);
 			$item .= $selectorBox;
 		}
@@ -238,7 +242,7 @@ class t3lib_TCEforms_inline {
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
-		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $formFieldNames, $config);
+		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $config);
 		$combination = $this->getSingleField_typeInline_renderCombinationTable($rec, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 		$fields = $this->getSingleField_typeInline_wrapFormsSection($fields);
@@ -291,11 +295,10 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$foreign_table
 	 * @param	array		$row
-	 * @param	string		$formFieldNames: Append to prependFormFieldName to get a "namespace" for each form-field
 	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		The HTML code of the header
 	 */
-	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$formFieldNames,$config = array()) {
+	function getSingleField_typeInline_renderForeignRecordHeader($foreign_table,$row,$config = array()) {
 			// if an alternative label for the field we render is set, use it
 		$titleCol = $config['foreign_label']
 			? $config['foreign_label']
@@ -311,6 +314,7 @@ class t3lib_TCEforms_inline {
 			'title="'.htmlspecialchars($altText).'" class="absmiddle"'
 		);
 
+		$formFieldNames = $this->inlineNames['object'].'['.$foreign_table.']['.$row['uid'].']';
 		$expandSingle = $config['appearance']['expandSingle'] ? 1 : 0;
 		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
 		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
@@ -322,7 +326,7 @@ class t3lib_TCEforms_inline {
 			// $theData[$fCol]=$this->makeControl($table,$row);
 			// $theData[$fCol]=$this->makeClip($table,$row);
 
-		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$formFieldNames,$config);
+		$ctrl = $this->getSingleField_typeInline_renderForeignRecordHeaderControl($foreign_table,$row,$config);
 
 			// FIXME: Use the correct css-classes to fit with future skins etc.
 		$header =
@@ -349,9 +353,11 @@ class t3lib_TCEforms_inline {
 		global $TCA, $LANG, $SOBE;
 
 			// Initialize:
-		# t3lib_div::loadTCA($table);
 		$cells=array();
 		$isNewItem = substr($row['uid'], 0, 3) == 'NEW';
+
+		$nameObjectFt = $this->inlineNames['object'].'['.$table.']';
+		$nameObjectFtId = $nameObjectFt.'['.$row['uid'].']';
 
 		$calcPerms = $GLOBALS['BE_USER']->calcPerms(
 			t3lib_BEfunc::readPageAccess(
@@ -439,7 +445,7 @@ class t3lib_TCEforms_inline {
 						($table=='pages' && ($calcPerms&8))		// For pages, must have permission to create new pages here.
 						)	{
 						if ($showNewRecLink)	{
-							$onClick = "return inline.createNewRecord('".$formFieldNames."')";
+							$onClick = "return inline.createNewRecord('".$nameObjectFt."','".$row['uid']."')";
 							$params='&edit['.$table.']['.(-$row['uid']).']=new';
 							$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
 									'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($table=='pages'?'page':'el').'.gif','width="'.($table=='pages'?13:11).'" height="12"').' title="'.$LANG->getLL('new'.($table=='pages'?'Page':'Record'),1).'" alt="" />'.
@@ -450,13 +456,13 @@ class t3lib_TCEforms_inline {
 
 					// "Up/Down" links
 				if ($permsEdit && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
-					$onClick = "return inline.changeSorting('".$formFieldNames."', '1')";	// Up
+					$onClick = "return inline.changeSorting('".$nameObjectFtId."', '1')";	// Up
 					$style = $config['inline']['first'] == $row['uid'] ? 'style="visibility: hidden;"' : '';
 					$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="sortingUp" '.$style.'>'.
 							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_up.gif','width="11" height="10"').' title="'.$LANG->getLL('moveUp',1).'" alt="" />'.
 							'</a>';
 
-					$onClick = "return inline.changeSorting('".$formFieldNames."', '-1')";	// Down
+					$onClick = "return inline.changeSorting('".$nameObjectFtId."', '-1')";	// Down
 					$style = $config['inline']['last'] == $row['uid'] ? 'style="visibility: hidden;"' : '';
 					$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="sortingDown" '.$style.'>'.
 							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"').' title="'.$LANG->getLL('moveDown',1).'" alt="" />'.
@@ -466,16 +472,16 @@ class t3lib_TCEforms_inline {
 					// "Hide/Unhide" links:
 				$hiddenField = $TCA[$table]['ctrl']['enablecolumns']['disabled'];
 				if ($permsEdit && $hiddenField && $TCA[$table]['columns'][$hiddenField] && (!$TCA[$table]['columns'][$hiddenField]['exclude'] || $GLOBALS['BE_USER']->check('non_exclude_fields',$table.':'.$hiddenField)))	{
-					$onClick = "return inline.enableDisableRecord('".$formFieldNames."')";
+					$onClick = "return inline.enableDisableRecord('".$nameObjectFtId."')";
 					if ($row[$hiddenField])	{
 						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=0';
 						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$formFieldNames.'_disabled" />'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_unhide.gif','width="11" height="10"').' title="'.$LANG->getLL('unHide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$nameObjectFtId.'_disabled" />'.
 								'</a>';
 					} else {
 						$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=1';
 						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
-								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$formFieldNames.'_disabled" />'.
+								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_hide.gif','width="11" height="10"').' title="'.$LANG->getLL('hide'.($table=='pages'?'Page':''),1).'" alt="" id="'.$nameObjectFtId.'_disabled" />'.
 								'</a>';
 					}
 				}
@@ -484,7 +490,7 @@ class t3lib_TCEforms_inline {
 				if (
 					($table=='pages' && ($localCalcPerms&4)) || ($table!='pages' && ($calcPerms&16))
 					)	{
-					$onClick = "inline.deleteRecord('".$formFieldNames."');";
+					$onClick = "inline.deleteRecord('".$nameObjectFtId."');";
 					$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$LANG->JScharCode($LANG->getLL('deleteWarning').t3lib_BEfunc::referenceCount($table,$row['uid'],' (There are %s reference(s) to this record!)')).')) {	'.$onClick.' } return false;').'">'.
 							'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/garbage.gif','width="11" height="12"').' title="'.$LANG->getLL('delete',1).'" alt="" />'.
 							'</a>';
@@ -740,8 +746,13 @@ class t3lib_TCEforms_inline {
 		}
 
 			// if a selector is used and it's requested to care about uniqueness, just do it
-		if ($foreignUid && $config['foreign_unique'] && $config['foreign_selector'])
-			$jsonArray['scriptCall'][] = "inline.setUnique('$domObjectId','$foreignUid','".$record['uid']."');";
+		if ($config['foreign_unique']) {
+			if ($config['foreign_selector'] && $foreignUid)
+				$jsonArray['scriptCall'][] = "inline.setUnique('$objectPrefix','".$record['uid']."','$foreignUid');";
+			else
+				$jsonArray['scriptCall'][] = "inline.setUnique('$objectPrefix','".$record['uid']."');";
+		}
+			
 			
 			// tell the browser to scroll to the newly created record
 		// $objResponse->addScriptCall('Element.scrollTo', $this->inlineNames['object'].'['.$current['table'].']['.$record['uid'].']_div');
@@ -836,17 +847,19 @@ class t3lib_TCEforms_inline {
 	 * @param	string		The field name which this element is supposed to edit
 	 * @param	array		The record data array where the value(s) for the field can be found
 	 * @param	array		An array with additional configuration options.
+	 * @param 	string		$checkForConfField: For which field in the foreign_table the possible records should be fetched
 	 * @return	array		Array of possible record items
 	 */
-	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf) {
+	function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf,$checkForConfField='') {
 			// Field configuration from TCA:
 		$foreign_table = $conf['foreign_table'];
-		$foreign_selector = $conf['foreign_selector'];
+		if (!$checkForConfField) $checkForConfField = 'foreign_selector';
+		$foreign_check = $conf[$checkForConfField];
 
 		$PA = array();
-		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector];
+		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_check];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
-		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_selector);
+		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_check);
 		$config = $PA['fieldConf']['config'];
 
 			// Getting the selector box items from the system
