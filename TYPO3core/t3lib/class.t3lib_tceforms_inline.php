@@ -49,31 +49,31 @@
  *
  *              SECTION: Handling of AJAX calls
  *  672:     function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0)
- *  757:     function getSingleField_typeInline_getJSON($jsonArray)
+ *  759:     function getSingleField_typeInline_getJSON($jsonArray)
  *
  *              SECTION: Get data from database and handle relations
- *  783:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
- *  825:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
- *  871:     function getSingleField_typeInline_getUniqueIds($records, $conf=array())
- *  891:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
- *  929:     function getSingleField_typeInline_getNewRecord($pid, $table)
+ *  785:     function getSingleField_typeInline_getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  827:     function getSingleField_typeInline_getPossiblyRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
+ *  873:     function getSingleField_typeInline_getUniqueIds($records, $conf=array())
+ *  893:     function getSingleField_typeInline_getRecord($pid, $table, $uid, $cmd='')
+ *  931:     function getSingleField_typeInline_getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- * 1036:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
- * 1052:     function getSingleField_typeInline_popStructure()
- * 1069:     function getSingleField_typeInline_updateStructureNames()
- * 1086:     function getSingleField_typeInline_getStructureItemName($levelData)
- * 1101:     function getSingleField_typeInline_getStructureLevel($level)
- * 1114:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
- * 1139:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
+ * 1038:     function getSingleField_typeInline_pushStructure($table, $uid, $field = '', $config = array())
+ * 1054:     function getSingleField_typeInline_popStructure()
+ * 1071:     function getSingleField_typeInline_updateStructureNames()
+ * 1088:     function getSingleField_typeInline_getStructureItemName($levelData)
+ * 1103:     function getSingleField_typeInline_getStructureLevel($level)
+ * 1116:     function getSingleField_typeInline_getStructurePath($structureDepth = -1)
+ * 1141:     function getSingleField_typeInline_parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1182:     function getSingleField_typeInline_compareStructureConfiguration($compare)
- * 1196:     function getSingleField_typeInline_normalizeUid($string)
- * 1210:     function getSingleField_typeInline_wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
- * 1239:     function getSingleField_typeInline_isInlineChildAndLabelField($table, $field)
- * 1251:     function getSingleField_typeInline_getStructureDepth()
- * 1287:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1184:     function getSingleField_typeInline_compareStructureConfiguration($compare)
+ * 1198:     function getSingleField_typeInline_normalizeUid($string)
+ * 1212:     function getSingleField_typeInline_wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
+ * 1241:     function getSingleField_typeInline_isInlineChildAndLabelField($table, $field)
+ * 1253:     function getSingleField_typeInline_getStructureDepth()
+ * 1289:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
  *
  * TOTAL FUNCTIONS: 29
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -739,6 +739,8 @@ class t3lib_TCEforms_inline {
 
 			// tell the browser to scroll to the newly created record
 		$jsonArray['scriptCall'][] = "Element.scrollTo('".$objectPrefix.'['.$record['uid']."]_div');";
+			// fade out and fade in the new record in the browser view to catch the user's eye
+		$jsonArray['scriptCall'][] = "inline.fadeOutFadeIn('".$objectPrefix.'['.$record['uid']."]_div');";
 
 			// set the TCEforms prependFormFieldNames value back to its initial value
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;

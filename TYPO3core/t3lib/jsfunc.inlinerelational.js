@@ -424,6 +424,13 @@
 		for (var i in array) count++;
 		return count;
 	}
+	
+	this.fadeOutFadeIn = function(objectId) {
+		var optIn = { duration:0.5, transition:Effect.Transitions.linear, from:0.50, to:1.00 };
+		var optOut = { duration:0.5, transition:Effect.Transitions.linear, from:1.00, to:0.50 };
+		optOut.afterFinish = function() { new Effect.Opacity(objectId, optIn); };
+		new Effect.Opacity(objectId, optOut);
+	}
 }
 
 var inline = new inlineRelational();
