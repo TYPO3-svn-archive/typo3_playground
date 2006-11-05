@@ -947,7 +947,7 @@ class SC_alt_doc {
 
 		$formContent.='
 				<tr>
-					<td colspan="2"><div id="typo3-altdoc-header-info-options">'.$pagePath.$langSelector.'<div></td>
+					<td colspan="2"><div id="typo3-altdoc-header-info-options">'.$pagePath.$langSelector.'</div></td>
 				</tr>
 			</table>
 

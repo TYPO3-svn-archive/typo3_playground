@@ -175,8 +175,7 @@ class t3lib_TCEforms_inline {
 		if (count($recordList) < $maxitems) {
 			$onClick = "return inline.createNewRecord('".$nameObject."[$foreign_table]')";
 			$item .= '
-					<!-- Link for creating a new record: -->
-					<div id="typo3-newRecordLink">
+					<div class="typo3-newRecordLink">
 						<a href="#" onClick="'.$onClick.'">'.
 						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
 						$this->fObj->getLL('l_new',1).
@@ -256,7 +255,8 @@ class t3lib_TCEforms_inline {
 		if (is_array($config['appearance']) && count($config['appearance']))
 			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'"';
 
-		$out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" style="cursor:move;">';
+			// $out .= '<div id="'.$formFieldNames.'_div" isnewrecord="'.$isNewRecord.'" style="cursor:move;">';
+		$out .= '<div id="'.$formFieldNames.'_div"'.($isNewRecord ? ' isnewrecord="true"' : '').'>';
 		$out .= '<div id="'.$formFieldNames.'_header" class="sortableHandle">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
 
@@ -1212,7 +1212,7 @@ class t3lib_TCEforms_inline {
 	function getSingleField_typeInline_wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array()) {
 		if (!$styleAttrs['margin-right']) $styleAttrs['margin-right'] = '5px';
 
-		foreach ($styleAttrs as $key => $value) $style .= $key.': '.htmlspecialchars($value).'; ';
+		foreach ($styleAttrs as $key => $value) $style .= ($style?' ':'').$key.': '.htmlspecialchars($value).'; ';
 		if ($style) $style = ' style="'.$style.'"';
 
 		if (!$tableAttrs['background'] && $this->fObj->borderStyle[2]) $tableAttrs['background'] = $this->backPath.$this->borderStyle[2];
@@ -1222,9 +1222,9 @@ class t3lib_TCEforms_inline {
 		if (!$tableAttrs['width']) $tableAttrs['width'] = '100%';
 		if (!$tableAttrs['class'] && $this->borderStyle[3]) $tableAttrs['class'] = $this->borderStyle[3];
 
-		foreach ($tableAttrs as $key => $value) $table .= $key.'="'.htmlspecialchars($value).'"';
+		foreach ($tableAttrs as $key => $value) $table .= ($table?' ':'').$key.'="'.htmlspecialchars($value).'"';
 
-		$out = '<table '.$table.$style.'>'.$section.'</table';
+		$out = '<table '.$table.$style.'>'.$section.'</table>';
 		return $out;
 	}
 

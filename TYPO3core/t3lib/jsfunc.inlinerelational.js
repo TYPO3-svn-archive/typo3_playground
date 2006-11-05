@@ -344,7 +344,7 @@
 			// revert the unique settings if available
 		if (data.unique && data.unique[objectPrefix]) this.revertUnique(objectPrefix, elName, recordUid);
 		
-		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == '1') {
+		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == 'true') {
 			Element.remove(objectId+'_div');
 		} else {
 			document.getElementsByName(elName+'[__deleted]')[0].value = 'deleted';
