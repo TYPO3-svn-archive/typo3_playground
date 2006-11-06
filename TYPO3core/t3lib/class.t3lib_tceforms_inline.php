@@ -148,7 +148,7 @@ class t3lib_TCEforms_inline {
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
 			// tell the browser what we have
-		$this->inlineData['config'][$nameObject.'['.$foreign_table.']'] = array('min' => $minitems,	'max' => $maxitems);
+		$this->inlineData['config'][$nameObject.'['.$foreign_table.']'] = array('min' => $minitems, 'max' => $maxitems);
 		
 			// if relations are required to be unique, get the uids that have already been used on the foreign side of the relation
 		if ($config['foreign_unique']) {
