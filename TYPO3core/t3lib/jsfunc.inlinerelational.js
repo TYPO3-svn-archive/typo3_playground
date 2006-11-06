@@ -70,17 +70,8 @@ function inlineRelational() {
 	}
 	
 	this.createNewRecord = function(objectId,recordUid) {
-		var executeAjaxCall = true;
-
-		if (data.unique) {
-			var unique = data.unique[objectId];
-			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max > 0) {
-				executeAjaxCall = false;
-				alert('There are no more unique relations possible at this moment!');
-			}
-		}
-		
-		if (executeAjaxCall) this.makeAjaxCall('createNewRecord', objectId+(recordUid ? '['+recordUid+']' : ''));
+		if (this.isBelowUniqueMax(objectId)) this.makeAjaxCall('createNewRecord', objectId+(recordUid ? '['+recordUid+']' : ''));
+		else alert('There are no more unique relations possible at this moment!');			
 		return false;
 	}
 
@@ -138,17 +129,20 @@ function inlineRelational() {
 					var newSelectableId = fieldObj[0].options[0].value;
 					fieldObj[0].options[0].selected = true;
 					this.updateUnique(fieldObj[0], objectId, formName, recordUid);
+					this.handleChangedField(fieldObj[0], objectId+'['+recordUid+']');
 					data.unique[objectId].used[recordUid] = newSelectableId;
 				}
 			}
 		}
 	}
 	
-	this.domAddNewRecord = function(method, objectId, htmlData) {
-		if (method == 'bottom')
-			new Insertion.Bottom(objectId, htmlData);
-		else if (method == 'after')
-			new Insertion.After(objectId, htmlData);
+	this.domAddNewRecord = function(method, insertObject, objectPrefix, htmlData) {
+		if (this.isBelowUniqueMax(objectPrefix)) {
+			if (method == 'bottom')
+				new Insertion.Bottom(insertObject, htmlData);
+			else if (method == 'after')
+				new Insertion.After(insertObject, htmlData);
+		}
 	}
 	
 	this.changeSorting = function(objectId, direction) {
@@ -218,27 +212,29 @@ function inlineRelational() {
 	}
 	
 	this.memorizeAddRecord = function(objectPrefix, newUid, afterUid) {
-		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
-		var formObj = document.getElementsByName(objectName);
-
-		if (formObj.length) {
-			var records = new Array();
-			if (formObj[0].value.length) records = formObj[0].value.split(',');
-			
-			if (afterUid) {
-				var newRecords = new Array();
-				for (var i = 0; i < records.length; i++) {
-					if (records[i].length) newRecords.push(records[i]);
-					if (afterUid == records[i]) newRecords.push(newUid);
+		if (this.isBelowUniqueMax(objectPrefix)) {
+			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+			var formObj = document.getElementsByName(objectName);
+	
+			if (formObj.length) {
+				var records = new Array();
+				if (formObj[0].value.length) records = formObj[0].value.split(',');
+				
+				if (afterUid) {
+					var newRecords = new Array();
+					for (var i = 0; i < records.length; i++) {
+						if (records[i].length) newRecords.push(records[i]);
+						if (afterUid == records[i]) newRecords.push(newUid);
+					}
+					records = newRecords;
+				} else {
+					records.push(newUid);
 				}
-				records = newRecords;
-			} else {
-				records.push(newUid);
+				formObj[0].value = records.join(',');
 			}
-			formObj[0].value = records.join(',');
+	
+			this.redrawSortingButtons(objectPrefix, records);
 		}
-
-		this.redrawSortingButtons(objectPrefix, records);
 	}
 	
 	this.memorizeRemoveRecord = function(objectName, removeUid) {
@@ -380,12 +376,20 @@ function inlineRelational() {
 		return elReturn;
 	}
 	
-	this.handleChangedField = function(formFieldName, objectId) {
-			// perhaps limit to a maximum of string length
-		var formObj = document.getElementsByName(formFieldName);
-		if (formObj.length) {
-			var value = formObj[0].value;
-			$(objectId+'_label').innerHTML = value ? value : noTitleString;
+	this.handleChangedField = function(formField, objectId) {
+		var formObj;
+		if (typeof formField == 'object') {
+			formObj = formField;
+		} else {
+			formObj = document.getElementsByName(formField);
+			if (formObj.length) formObj = formObj[0];
+		}
+			
+		if (formObj != undefined) {
+			var value;
+			if (formObj.nodeName == 'SELECT') value = formObj.options[formObj.selectedIndex].text;
+			else value = formObj.value;
+			$(objectId+'_label').innerHTML = value != undefined ? value : noTitleString;
 		}
 		return true;
 	}
@@ -394,6 +398,15 @@ function inlineRelational() {
 		var count = 0;
 		for (var i in array) count++;
 		return count;
+	}
+	
+	this.isBelowUniqueMax = function(objectPrefix) {
+		var isBelowUniqueMax = true;
+		if (data.unique) {
+			var unique = data.unique[objectPrefix];
+			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max > 0) isBelowUniqueMax = false;
+		}
+		return isBelowUniqueMax;
 	}
 	
 	this.getOptionsHash = function(selectObj) {

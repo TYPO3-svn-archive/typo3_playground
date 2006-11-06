@@ -709,13 +709,14 @@ class t3lib_TCEforms_inline {
 
 			// the HTML-object-id's prefix of the dynamically created record
 		$objectPrefix = $this->inlineNames['object'].'['.$current['table'].']';
+		$objectId = $objectPrefix.'['.$record['uid'].']';
 
 			// append the HTML data at the bottom of the container
 		if (!$current['uid']) {
 			$jsonArray = array(
 				'data'	=> $item,
 				'scriptCall' => array(
-					"inline.domAddNewRecord('bottom','".$this->inlineNames['object']."',json.data);",
+					"inline.domAddNewRecord('bottom','".$this->inlineNames['object']."','$objectPrefix',json.data);",
 					"inline.memorizeAddRecord('".$objectPrefix."','".$record['uid']."',null);"
 				)
 			);
@@ -725,7 +726,7 @@ class t3lib_TCEforms_inline {
 			$jsonArray = array(
 				'data'	=> $item,
 				'scriptCall' => array(
-					"inline.domAddNewRecord('after','".$domObjectId.'_div'."',json.data);",
+					"inline.domAddNewRecord('after','".$domObjectId.'_div'."','$objectPrefix',json.data);",
 					"inline.memorizeAddRecord('".$objectPrefix."','".$record['uid']."','".$current['uid']."');"
 				)
 			);
@@ -740,9 +741,9 @@ class t3lib_TCEforms_inline {
 		}
 
 			// tell the browser to scroll to the newly created record
-		$jsonArray['scriptCall'][] = "Element.scrollTo('".$objectPrefix.'['.$record['uid']."]_div');";
+		$jsonArray['scriptCall'][] = "Element.scrollTo('".$objectId."_div');";
 			// fade out and fade in the new record in the browser view to catch the user's eye
-		$jsonArray['scriptCall'][] = "inline.fadeOutFadeIn('".$objectPrefix.'['.$record['uid']."]_div');";
+		$jsonArray['scriptCall'][] = "inline.fadeOutFadeIn('".$objectId."_div');";
 
 			// set the TCEforms prependFormFieldNames value back to its initial value
 		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
@@ -1242,7 +1243,10 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_isInlineChildAndLabelField($table, $field) {
 		$level = $this->getSingleField_typeInline_getStructureLevel(-1);
-		$label = $GLOBALS['TCA'][$table]['ctrl']['label'];
+		if ($level['config']['foreign_label'])
+			$label = $level['config']['foreign_label'];
+		else
+			$label = $GLOBALS['TCA'][$table]['ctrl']['label'];
 		return $level['config']['foreign_table'] === $table && $label == $field ? true : false;
 	}
 
