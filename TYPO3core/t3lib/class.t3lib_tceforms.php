@@ -1431,11 +1431,13 @@ class t3lib_TCEforms	{
 			}
 
 				// Compiling the <option> tag:
-			$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
-						$sM.($p[1] != $PA['itemFormElValue'] && is_array($uniqueIds) && in_array($p[1], $uniqueIds) ? ' disabled="true"' : '').
-						($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue).'"' : '').
-						(!strcmp($p[1],'--div--') ? ' class="c-divider"' : '').
-						'>'.t3lib_div::deHSCentities(htmlspecialchars($p[0])).'</option>';
+			if (!($p[1] != $PA['itemFormElValue'] && is_array($uniqueIds) && in_array($p[1], $uniqueIds))) {
+				$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
+							$sM.
+							($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue).'"' : '').
+							(!strcmp($p[1],'--div--') ? ' class="c-divider"' : '').
+							'>'.t3lib_div::deHSCentities(htmlspecialchars($p[0])).'</option>';
+			}
 
 				// If there is an icon for the selector box (rendered in table under)...:
 			if ($p[2] && !$suppressIcons && (!$onlySelectedIconShown || $sM))	{

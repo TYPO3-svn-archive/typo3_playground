@@ -26,7 +26,7 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
- function inlineRelational() {
+function inlineRelational() {
 	var inlineRelational = this;
 	var prependFormFieldNames = 'inline';
 	var noTitleString = '[No title]';
@@ -115,18 +115,14 @@
 		return false;
 	}
 	
+		// this function is applied to a newly inserted record by AJAX
+		// it removes the used select items, that should be unique
 	this.setUnique = function(objectId, recordUid, selectedValue) {
 		if (data.unique && data.unique[objectId]) {
 			var unique = data.unique[objectId];
 			if (unique.selector) {
 				var selector = $(objectId+'_selector');
-				for (var i = 0; i < selector.options.length; i++) {
-					if (selector.options[i].value == selectedValue) {
-						selector.options[i].disabled = 'true';
-						selector.options[i].selected = false;
-						break;
-					}
-				}
+				this.removeSelectOption(selector, selectedValue);
 				data.unique[objectId]['used'][recordUid] = selectedValue;
 			} else {
 				var elName = this.parseFormElementName('full', objectId, 1)+'['+recordUid+']['+unique.field+']';
@@ -136,17 +132,13 @@
 				var values = $H(unique.used).values();
 				
 				if (fieldObj.length) {
-					var newSelectableId;
-					for (var i = 0; i < fieldObj[0].options.length; i++) {
-						if (values.indexOf(fieldObj[0].options[i].value) != -1) {
-							fieldObj[0].options[i].disabled = 'true';
-						} else if (!newSelectableId) {
-							fieldObj[0].options[i].selected = true;
-							newSelectableId = fieldObj[0].options[i].value;
-							this.updateUnique(fieldObj[0], objectId, formName, recordUid)							
-							data.unique[objectId].used[recordUid] = newSelectableId;
-						}
-					}
+						// remove all before used items from the new select-item
+					for (var i = 0; i < values.length; i++) this.removeSelectOption(fieldObj[0], values[i]);
+						// set the selected item automatically to the first of the remaining items
+					var newSelectableId = fieldObj[0].options[0].value;
+					fieldObj[0].options[0].selected = true;
+					this.updateUnique(fieldObj[0], objectId, formName, recordUid);
+					data.unique[objectId].used[recordUid] = newSelectableId;
 				}
 			}
 		}
@@ -269,19 +261,13 @@
 			var recordObj;
 			for (var i = 0; i < records.length; i++) {
 				recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
-				if (recordObj.length) {
-					for (var o = 0; o < recordObj[0].options.length; o++) {
-						if (srcElement.value == recordObj[0].options[o].value && srcElement != recordObj[0]) {
-							recordObj[0].options[o].disabled = 'true';
-						} else if(oldValue == recordObj[0].options[o].value) {
-							recordObj[0].options[o].disabled = '';
-						}
-					}
+				if (recordObj.length && recordObj[0] != srcElement) {
+					this.removeSelectOption(recordObj[0], srcElement.value);
+					if (oldValue != undefined) this.readdSelectOption(recordObj[0], oldValue, unique);
 				}
 			}
 		}
 	}
-	
 	
 	this.revertUnique = function(objectPrefix, elName, recordUid) {
 		var unique = data.unique[objectPrefix];
@@ -292,28 +278,17 @@
 			
 			if (unique.selector) {
 				var selector = $(objectPrefix+'_selector');
-				for (var i = 0; i < selector.options.length; i++) {
-					if (fieldObj[0].value == selector.options[i].value) {
-						selector.options[i].disabled = '';
-						break;
-					}
-				}
+				this.readdSelectOption(selector, fieldObj[0].value, unique);
 			} else {
 				var formName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
 				var formObj = document.getElementsByName(formName);
 				if (formObj.length) {
 					var records = formObj[0].value.split(',');
 					var recordObj;
+						// walk through all inline records on that level and get the select field
 					for (var i = 0; i < records.length; i++) {
 						recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
-						if (recordObj.length) {
-							for (var o = 0; o < recordObj[0].options.length; o++) {
-								if (fieldObj[0].value == recordObj[0].options[o].value) {
-									recordObj[0].options[o].disabled = '';
-									break;
-								}
-							}
-						}
+						if (recordObj.length) this.readdSelectOption(recordObj[0], fieldObj[0].value, unique);
 					}
 				}
 			}
@@ -405,10 +380,6 @@
 		return elReturn;
 	}
 	
-	this.initSortable = function() {
-		
-	}
-	
 	this.handleChangedField = function(formFieldName, objectId) {
 			// perhaps limit to a maximum of string length
 		var formObj = document.getElementsByName(formFieldName);
@@ -423,6 +394,37 @@
 		var count = 0;
 		for (var i in array) count++;
 		return count;
+	}
+	
+	this.getOptionsHash = function(selectObj) {
+		var optionsHash = {};
+		for (var i = 0; i < selectObj.options.length; i++) optionsHash[selectObj.options[i].value] = i;
+		return optionsHash;
+	}
+	
+	this.removeSelectOption = function(selectObj, value) {
+		var optionsHash = this.getOptionsHash(selectObj);
+		if (optionsHash[value] != undefined) selectObj.options[optionsHash[value]] = null;
+	}
+	
+	this.readdSelectOption = function(selectObj, value, unique) {
+		var index = null;
+		var optionsHash = this.getOptionsHash(selectObj);
+		var possibleValues = $H(unique.possible).keys();
+
+		for (var possibleValue in unique.possible) {
+			if (possibleValue == value) break;
+			if (optionsHash[possibleValue] != undefined) index = optionsHash[possibleValue];
+		}
+		
+		if (index == null) index = 0;
+		else if (index < selectObj.options.length) index++;
+			// recreate the <option> tag
+		var readdOption = document.createElement('option');
+		readdOption.text = unique.possible[value];
+		readdOption.value = value;
+			// add the <option> at the right position
+		selectObj.add(readdOption, document.all ? index : selectObj.options[index]);
 	}
 	
 	this.fadeOutFadeIn = function(objectId) {

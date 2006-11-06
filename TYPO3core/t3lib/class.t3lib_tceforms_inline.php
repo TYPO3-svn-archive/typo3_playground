@@ -156,7 +156,8 @@ class t3lib_TCEforms_inline {
 				'used' => $uniqueIds,
 				'table' => $config['foreign_table'],
 				'field' => $config['foreign_unique'],
-				'selector' => $config['foreign_selector'] ? true : false
+				'selector' => $config['foreign_selector'] ? true : false,
+				'possible' => $this->getSingleField_typeInline_getPossibleRecordsFlat($possibleRecords)
 			);
 		}
 
@@ -583,11 +584,12 @@ class t3lib_TCEforms_inline {
 				if ($config['iconsInOptionTags'])	{
 					$styleAttrValue = $this->fObj->optionTagStyle($p[2]);
 				}
-				$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
-								(in_array($p[1], $uniqueIds) ? ' disabled="true"' : '').
-								' style="'.(in_array($p[1], $uniqueIds) ? '' : '').
-								($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue) : '').'">'.
-								htmlspecialchars($p[0]).'</option>';
+				if (!in_array($p[1], $uniqueIds)) {
+					$opt[]= '<option value="'.htmlspecialchars($p[1]).'"'.
+									' style="'.(in_array($p[1], $uniqueIds) ? '' : '').
+									($styleAttrValue ? ' style="'.htmlspecialchars($styleAttrValue) : '').'">'.
+									htmlspecialchars($p[0]).'</option>';
+				}
 			}
 
 				// Put together the selector box:
@@ -1244,6 +1246,7 @@ class t3lib_TCEforms_inline {
 		return $level['config']['foreign_table'] === $table && $label == $field ? true : false;
 	}
 
+	
 	/**
 	 * Get the depth of the stable structure stack.
 	 * (count($this->inlineStructure['stable'])
@@ -1254,6 +1257,7 @@ class t3lib_TCEforms_inline {
 		return count($this->inlineStructure['stable']);
 	}
 
+	
 	/**
 	 * Handles complex comparison requests on an array.
 	 * A request could look like the following:
@@ -1327,6 +1331,22 @@ class t3lib_TCEforms_inline {
 
 			// return the result for '%AND' (if nothing was checked, true is returned)
 		return $localEntries == $localMatches ? true : false;
+	}
+
+	
+	/**
+	 * Makes a flat array from the $possibleRecords array.
+	 * The key of the flat array is the value of the record,
+	 * the value of the flat array is the label of the record.
+	 *
+	 * @param	array		$possibleRecords: The possibleRecords array (for select fields)
+	 * @return	array		A flat array with key=uid, value=label
+	 */
+	function getSingleField_typeInline_getPossibleRecordsFlat($possibleRecords) {
+		$flat = array();
+		if (is_array($possibleRecords))
+			foreach ($possibleRecords as $record) $flat[$record[1]] = $record[0];
+		return $flat;
 	}
 }
 ?>
