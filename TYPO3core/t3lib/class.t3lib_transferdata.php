@@ -592,10 +592,10 @@ class t3lib_transferData {
 				// Getting the data
 				$dataIds = $this->getDataIdList($elements, $fieldConfig, $row, $table);
 
-				if (!count($dataIds))	$dataIds = array(0);
+				if (!count($dataIds))	$dataIds = array('');
 				$dataAcc[]=$dataIds[0];
 			} else {
-				$dataAcc[]=$elements[0];
+				$dataAcc[]='';
 			}
 		}
 

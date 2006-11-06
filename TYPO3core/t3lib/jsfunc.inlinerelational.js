@@ -70,8 +70,8 @@ function inlineRelational() {
 	}
 	
 	this.createNewRecord = function(objectId,recordUid) {
-		if (this.isBelowUniqueMax(objectId)) this.makeAjaxCall('createNewRecord', objectId+(recordUid ? '['+recordUid+']' : ''));
-		else alert('There are no more unique relations possible at this moment!');			
+		if (this.isBelowMax(objectId)) this.makeAjaxCall('createNewRecord', objectId+(recordUid ? '['+recordUid+']' : ''));
+		else alert('There are no more relations possible at this moment!');
 		return false;
 	}
 
@@ -137,7 +137,7 @@ function inlineRelational() {
 	}
 	
 	this.domAddNewRecord = function(method, insertObject, objectPrefix, htmlData) {
-		if (this.isBelowUniqueMax(objectPrefix)) {
+		if (this.isBelowMax(objectPrefix)) {
 			if (method == 'bottom')
 				new Insertion.Bottom(insertObject, htmlData);
 			else if (method == 'after')
@@ -212,7 +212,7 @@ function inlineRelational() {
 	}
 	
 	this.memorizeAddRecord = function(objectPrefix, newUid, afterUid) {
-		if (this.isBelowUniqueMax(objectPrefix)) {
+		if (this.isBelowMax(objectPrefix)) {
 			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
 			var formObj = document.getElementsByName(objectName);
 	
@@ -400,13 +400,20 @@ function inlineRelational() {
 		return count;
 	}
 	
-	this.isBelowUniqueMax = function(objectPrefix) {
-		var isBelowUniqueMax = true;
-		if (data.unique) {
-			var unique = data.unique[objectPrefix];
-			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max > 0) isBelowUniqueMax = false;
+	this.isBelowMax = function(objectPrefix) {
+		var isBelowMax = true;
+		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+		var formObj = document.getElementsByName(objectName);
+		
+		if (data.config && formObj.length) {
+			var recordCount = formObj[0].value.split(',').length;
+			if (recordCount >= data.config[objectPrefix].max) isBelowMax = false;
 		}
-		return isBelowUniqueMax;
+		if (isBelowMax && data.unique) {
+			var unique = data.unique[objectPrefix];
+			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max > 0) isBelowMax = false;
+		}
+		return isBelowMax;
 	}
 	
 	this.getOptionsHash = function(selectObj) {
