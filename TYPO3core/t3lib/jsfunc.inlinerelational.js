@@ -394,9 +394,10 @@ function inlineRelational() {
 		return true;
 	}
 	
-	this.arrayAssocCount = function(array) {
+	this.arrayAssocCount = function(object) {
 		var count = 0;
-		for (var i in array) count++;
+		if (typeof object.length != 'undefined') count = object.length;
+		else for (var i in object) count++;
 		return count;
 	}
 	
@@ -411,7 +412,7 @@ function inlineRelational() {
 		}
 		if (isBelowMax && data.unique) {
 			var unique = data.unique[objectPrefix];
-			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max > 0) isBelowMax = false;
+			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max >= 0) isBelowMax = false;
 		}
 		return isBelowMax;
 	}
