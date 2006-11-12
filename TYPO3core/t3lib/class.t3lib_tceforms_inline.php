@@ -260,7 +260,7 @@ class t3lib_TCEforms_inline {
 		if ($isNewRecord) {
 			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
 		} else {
-			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[__deleted]" value="0" />';
+			$fields .= '<input type="hidden" name="'.$this->fObj->prependCmdFieldNames.$appendFormFieldNames.'[delete]" value="1" disabled="disabled" />';
 		}
 
 			// set the appearance style of the records of this table
@@ -997,91 +997,6 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_getNewRecord($pid, $table) {
 		return $this->getSingleField_typeInline_getRecord($pid, $table, '', 'new');
-	}
-
-
-	/*******************************************************
-	 *
-	 * Handle relations to store data back to database - STATIC
-	 *
-	 *******************************************************/
-
-
-	/**
-	 * Handle relations and replace NEW... uids by their proper database uids.
-	 * Finally the records are pushed to TCEmain and saved, deleted, moved, etc.
-	 * This function is normally called from alt_doc.php.
-	 *
-	 * @param	array	$inline: Reference to the incomming data array of inline records
-	 * @param	object	$tec: Reference to a copy of the TCEmain object instance
-	 */
-	static function getSingleField_typeInline_processData(&$inline, &$tce) {
-			// get the fields that hold inline affected data
-		$ctrl = $inline['__ctrl'];
-		unset($inline['__ctrl']);
-
-		$data = array();
-		$cmd = array();
-
-			// find records that should be deleted
-		foreach ($inline as $table => $records) {
-			foreach ($records as $uid => $fieldData) {
-				if ($fieldData['__deleted'] == 'deleted') {
-						// put the item to the cmd array if it's marked to be deleted
-					$cmd[$table][$uid]['delete'] = 1;
-						// remove the whole record from the data to be saved again by TCEmain
-					unset($inline[$table][$uid]);
-				} elseif (isset($fieldData['__deleted'])) {
-					unset($inline[$table][$uid]['__deleted']);
-				}
-			}
-		}
-
-			// find records that were used in symmetric context and the field swapped for viewing
-		if (is_array($ctrl['symmetric'])) {
-			foreach ($ctrl['symmetric'] as $table => $records) {
-				foreach ($records as $uid => $value) {
-						// parts[0]: foreign_field, parts[1]: symmetric_field
-					$parts = explode('|', $value);
-					$inline[$table][$uid][$parts[0]] = $inline[$table][$uid][$parts[1]];
-					unset($inline[$table][$uid][$parts[1]]);
-				}
-			}
-		}
-
-			// save the inline data without the relations
-		$tce->start($inline, array());
-		$tce->process_datamap();
-
-			// now process values like '13,NEWabc384823,45' and replace NEW... by proper uids from TCEmain
-		foreach ($ctrl['records'] as $table => $uidData) {
-			foreach ($uidData as $uid => $fieldData) {
-					// FIXME: perhaps this could be removed depending on bug-tracker item 4384
-					// if this is an annotation to a recently processed record, substitute to proper uid
-				//if (!t3lib_div::testInt($uid) && isset($tce->substNEWwithIDs[$uid]))
-				//	$uid = $tce->substNEWwithIDs[$uid];
-
-					// iterate through fields and substitute NEW... uids by proper uids
-				foreach ($fieldData as $field => $value) {
-					if (strlen($value) && strpos($value, 'NEW')!==false) {
-						$parts = explode(',', $value);
-						$partsCnt = count($parts);
-						for ($i = 0; $i < $partsCnt; $i++) {
-							if (!t3lib_div::testInt($parts[$i])) {
-								$parts[$i] = $tce->substNEWwithIDs[$parts[$i]];
-							}
-						}
-						$value = implode(',', $parts);
-					}
-					$data[$table][$uid][$field] = $value;
-				}
-			}
-		}
-
-			// finally save the relations, and perform deletion of records
-		$tce->start($data, $cmd);
-		$tce->process_datamap();
-		$tce->process_cmdmap();
 	}
 
 

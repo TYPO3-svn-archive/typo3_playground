@@ -484,10 +484,13 @@ class t3lib_loadDBGroup	{
 					// update to a foreign_field/symmetric_field pointer is requested, normally used on record copies
 					// only update the fields, if the old uid is found somewhere - for select fields, TCEmain is doing this already!
 				} else {
-					if ($symmetric_field && $row[$symmetric_field] == $parentUid)
+					// @TODO: Needed for symmetric relations
+					/*if ($symmetric_field && $row[$symmetric_field] == $parentUid)
 						$updateValues[$symmetric_field] = $updateToUid;
-					elseif ($row[$foreign_field] == $parentUid)
+					else*/
+					if ($row[$foreign_field] == $parentUid) {
 						$updateValues[$foreign_field] = $updateToUid;
+					}
 				}
 
 				if (count($updateValues)) {

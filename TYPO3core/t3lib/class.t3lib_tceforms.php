@@ -821,8 +821,9 @@ class t3lib_TCEforms	{
 					$PA['fieldChangeFunc']['TBE_EDITOR_fieldChanged'] = "TBE_EDITOR_fieldChanged('".$table."','".$row['uid']."','".$field."','".$PA['itemFormElName']."');";
 					$PA['fieldChangeFunc']['alert']=$alertMsgOnChange;
 						// if this is the child of an inline type and it is the field creating the label
-					if ($this->inline->getSingleField_typeInline_isInlineChildAndLabelField($table, $field))
+					if ($this->inline->getSingleField_typeInline_isInlineChildAndLabelField($table, $field)) {
 						$PA['fieldChangeFunc']['inline'] = "inline.handleChangedField('".$PA['itemFormElName']."','".$this->inline->inlineNames['object']."[$table][".$row['uid']."]');";
+					}
 
 						// Based on the type of the item, call a render function:
 					$item = $this->getSingleField_SW($table,$field,$row,$PA);
@@ -1356,14 +1357,14 @@ class t3lib_TCEforms	{
 	 */
 	function getSingleField_typeSelect_single($table,$field,$row,&$PA,$config,$selItems,$nMV_label)	{
 			// check against inline uniqueness
-		$uniqueIds = array();
-		$parent = $this->inline->getSingleField_typeInline_getStructureLevel(-1);
-		if(is_array($parent) && $parent['uid']) {
-			if ($parent['config']['foreign_table'] == $table && $parent['config']['foreign_unique'] == $field) {
+		$inlineParent = $this->inline->getSingleField_typeInline_getStructureLevel(-1);
+		if(is_array($inlineParent) && $inlineParent['uid']) {
+			if ($inlineParent['config']['foreign_table'] == $table && $inlineParent['config']['foreign_unique'] == $field) {
 				$uniqueIds = $this->inline->inlineData['unique'][$this->inline->inlineNames['object'].'['.$table.']']['used'];
-				$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['ctrlrecords']."','".$row['uid']."');";
+				$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['form']."','".$row['uid']."');";
 			}
-			$uniqueIds[] = $parent['uid'];
+				// @TODO: Useful only for symmetric mm relations: 
+			//$uniqueIds[] = $inlineParent['uid'];
 		}
 
 			// Initialization:
@@ -4201,7 +4202,7 @@ class t3lib_TCEforms	{
 						$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.new',1).
 						'</span>';
 
-				#t3lib_BEfunc::fixVersioningPid($table,$rec);	// Kasper: Should not be used here because NEW records are not offline workspace versions...
+			#t3lib_BEfunc::fixVersioningPid($table,$rec);	// Kasper: Should not be used here because NEW records are not offline workspace versions...
 			$truePid = t3lib_BEfunc::getTSconfig_pidValue($table,$rec['uid'],$rec['pid']);
 			$prec = t3lib_BEfunc::getRecordWSOL('pages',$truePid,'title');
 			$rLabel = '<em>[PID: '.$truePid.'] '.htmlspecialchars(trim(t3lib_div::fixed_lgd_cs(t3lib_BEfunc::getRecordTitle('pages',$prec),40))).'</em>';
@@ -4210,9 +4211,7 @@ class t3lib_TCEforms	{
 			$rLabel  = htmlspecialchars(trim(t3lib_div::fixed_lgd_cs(t3lib_BEfunc::getRecordTitle($table,$rec),40)));
 		}
 
-		reset($arr);
-		while(list($k,$v)=each($arr))	{
-
+		foreach ($arr as $k => $v)	{
 				// Make substitutions:
 			$arr[$k] = str_replace('###ID_NEW_INDICATOR###', $newLabel, $arr[$k]);
 			$arr[$k] = str_replace('###RECORD_LABEL###',$rLabel,$arr[$k]);
@@ -4504,21 +4503,18 @@ class t3lib_TCEforms	{
 	 * @return	string		A <script></script> section with JavaScript.
 	 */
 	function JSbottom($formname='forms[0]')	{
-				// inline
+				// add JS needed for inline fields
 			if ($this->inline->inlineCount > 0) {
-				if (count($this->inline->inlineData))
+				if (count($this->inline->inlineData)) {
 					$inlineData = 'inline.addToDataArray('.$this->inline->getSingleField_typeInline_getJSON($this->inline->inlineData).');';
+				}
 
 				$out .= $this->inline->getSingleField_typeInline_addJavaScript();
-				$out .= '
-				<script type="text/javascript">
-					/*<![CDATA[*/
+				$out .= t3lib_div::wrapJS('
 					inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
 					inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
-					'.$inlineData.'
-					/*]]>*/
-				</script>					
-				';
+					'.$inlineData.'				
+				');
 			}
 
 				// required

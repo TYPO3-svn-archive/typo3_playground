@@ -31,11 +31,13 @@ function inlineRelational() {
 	var prependFormFieldNames = 'data';
 	var noTitleString = '[No title]';
 	var data = new Array();
-	
+
 	this.addToDataArray = function(object) {
-		for (var i in object) data[i] = object[i];
+		for (var i in object) {
+			data[i] = object[i];
+		}
 	}
-	
+
 	this.setPrependFormFieldNames = function(value) {
 		prependFormFieldNames = value;
 	}
@@ -130,7 +132,8 @@ function inlineRelational() {
 					fieldObj[0].options[0].selected = true;
 					this.updateUnique(fieldObj[0], objectId, formName, recordUid);
 					this.handleChangedField(fieldObj[0], objectId+'['+recordUid+']');
-					data.unique[objectId].used[recordUid] = newSelectableId;
+					if (typeof data.unique[objectId]['used'].length != 'undefined') data.unique[objectId]['used'] = {};
+					data.unique[objectId]['used'][recordUid] = newSelectableId;
 				}
 			}
 		}
@@ -259,9 +262,10 @@ function inlineRelational() {
 				recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
 				if (recordObj.length && recordObj[0] != srcElement) {
 					this.removeSelectOption(recordObj[0], srcElement.value);
-					if (oldValue != undefined) this.readdSelectOption(recordObj[0], oldValue, unique);
+					if (typeof oldValue != 'undefined') this.readdSelectOption(recordObj[0], oldValue, unique);
 				}
 			}
+			data.unique[objectId].used[recordUid] = srcElement.value;
 		}
 	}
 	
@@ -397,8 +401,11 @@ function inlineRelational() {
 	
 	this.arrayAssocCount = function(object) {
 		var count = 0;
-		if (typeof object.length != 'undefined') count = object.length;
-		else for (var i in object) count++;
+		if (typeof object.length != 'undefined') {
+			count = object.length;
+		} else {
+			for (var i in object) count++;
+		}
 		return count;
 	}
 	

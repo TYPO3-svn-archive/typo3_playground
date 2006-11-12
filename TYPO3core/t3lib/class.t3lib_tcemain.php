@@ -580,12 +580,6 @@ class t3lib_TCEmain	{
 						$resetRejected = FALSE;
 						$this->autoVersioningUpdate = FALSE;
 
-						if (!t3lib_div::testInt($id)) {
-								// check if it's really a new record or just a pointer to an existing
-								// record that was created within this session - if so, correct uid
-							if (isset($this->substNEWwithIDs[$id])) $id = $this->substNEWwithIDs[$id];
-						}
-
 						if (!t3lib_div::testInt($id)) {               // Is it a new record? (Then Id is a string)
 							$fieldArray = $this->newFieldArray($table);	// Get a fieldArray with default values
 							if (isset($incomingFieldArray['pid']))	{	// A pid must be set for new records.
@@ -594,7 +588,7 @@ class t3lib_TCEmain	{
 
 									// Checking and finding numerical pid, it may be a string-reference to another value
 								$OK = 1;
-								if (preg_match('/^-?NEW/', $pid_value))	{	// If a NEW... id
+								if (strstr($pid_value,'NEW'))	{	// If a NEW... id
 									if (substr($pid_value,0,1)=='-') {$negFlag=-1;$pid_value=substr($pid_value,1);} else {$negFlag=1;}
 									if (isset($this->substNEWwithIDs[$pid_value]))	{	// Trying to find the correct numerical value as it should be mapped by earlier processing of another new record.
 										$old_pid_value = $pid_value;
@@ -822,6 +816,8 @@ class t3lib_TCEmain	{
 				if(strpos($id, 'NEW') !== false) {
 					$id = $this->substNEWwithIDs[$id];
 				}
+
+					// Replace relations to NEW...-IDs in values
 				if(is_array($valueArray)) {
 					foreach($valueArray as $key => $value) {
 						if(strpos($value, 'NEW') !== false) {
@@ -829,10 +825,10 @@ class t3lib_TCEmain	{
 						}
 					}
 				}
-	
-				$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,$fieldType, $table);
-				$newVal = $this->checkValue_inline_checkMinMax($tcaFieldConf, $valueArray);
 
+				$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,$fieldType, $table);
+				$newVal = $this->checkValue_inline_checkMax($tcaFieldConf, $valueArray);
+					// @TODO: Add option to disable count-field
 				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
 			}
 		}
@@ -894,7 +890,7 @@ class t3lib_TCEmain	{
 		$diffStorageFlag = FALSE;
 
 			// Setting 'currentRecord' and 'checkValueRecord':
-		if (preg_match('/NEW/', $id))	{
+		if (strstr($id,'NEW'))	{
 			$currentRecord = $checkValueRecord = $fieldArray;	// must have the 'current' array - not the values after processing below...
 
 				// IF $incomingFieldArray is an array, overlay it.
@@ -1056,7 +1052,7 @@ class t3lib_TCEmain	{
 					t3lib_div::writeFile($eFile['editFile'],$SW_fileNewContent);
 
 						// Write status:
-					if (!preg_match('/NEW/', $id) && $eFile['statusField'])	{
+					if (!strstr($id,'NEW') && $eFile['statusField'])	{
 						$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
 							$table,
 							'uid='.intval($id),
@@ -1186,8 +1182,10 @@ class t3lib_TCEmain	{
 			break;
 			case 'group':
 			case 'select':
+				$res = $this->checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);	
+			break;
 			case 'inline':
-				$res = $this->checkValue_inline($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);
+				$res = $this->checkValue_inline($res,$value,$tcaFieldConf,$PP,$field);
 			break;
 			case 'flex':
 				if ($field)	{	// FlexForms are only allowed for real fields.
@@ -1724,35 +1722,25 @@ class t3lib_TCEmain	{
 	 * @param	string		The value to set.
 	 * @param	array		Field configuration from TCA
 	 * @param	array		Additional parameters in a numeric array: $table,$id,$curValue,$status,$realPid,$recFID
-	 * @param	[type]		$uploadedFiles: ...
 	 * @param	string		Field name
 	 * @return	array		Modified $res array
 	 */
-	function checkValue_inline($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)	{
+	function checkValue_inline($res,$value,$tcaFieldConf,$PP,$field)	{
 		list($table,$id,$curValue,$status,$realPid,$recFID) = $PP;
 
 		if (!$tcaFieldConf['foreign_table'])	{
-			return false; // Fatal error, inline fields should always have a foreign_table defined
+			return false;	// Fatal error, inline fields should always have a foreign_table defined
 		}
-		
-		
-			// Detecting if value sent is an array and if so, implode it around a comma:
-		/*
-		if (is_array($value))	{
-			$value = implode(',',$value);
-		}
-		*/
 
 			// When values are sent they come as comma-separated values which are exploded by this function:
-		$valueArray = explode(',', $value);
+		$valueArray = t3lib_div::trimExplode(',', $value);
 		
-			// If not multiple is set, then remove duplicates:
-		if (!$tcaFieldConf['multiple'])	{
-			$valueArray = array_unique($valueArray);
-		}
-
-		// tx_inlinetestcase_hotel[NEW4555fdeee78ce][offers] = 45,NEW4555fdf59d154,12,123
-
+			// Remove duplicates: (should not be needed)
+		$valueArray = array_unique($valueArray);
+	
+			// Example for received data:
+			// $value = 45,NEW4555fdf59d154,12,123
+			// We need to decide whether we use the stack or can save the relation directly.
 		if(strpos($value, 'NEW') !== false || !t3lib_div::testInt($id)) {
 			$this->remapStack[] = array($valueArray,$tcaFieldConf,$id,$status,'inline', $table, $field);
 		} elseif(!$value && !t3lib_div::testInt($id)) {
@@ -1761,36 +1749,22 @@ class t3lib_TCEmain	{
 			}
 		} else {
 			$newValueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
-		}
 
-		/*
-		@TODO: Possibly the following suggestions would be the right condition for the above ugly stuff :-)
-		if(strpos($value, 'NEW') === false && t3lib_div::testInt($id)) { // Nothing is NEW...
-			$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
-		} elseif(t3lib_div::testInt($id) || !t3lib_div::testInt($id) && $value) {
-			$this->remapStack[] = array($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
-		}
-		*/
-
-// BTW, checking for min and max items here does NOT make any sense when MM is used because the above function calls will just return an array with a single item (the count) if MM is used... Why didn't I perform the check before? Probably because we could not evaluate the validity of record uids etc... Hmm...
-
-			// Checking the number of items, that it is correct.
-			// If files, there MUST NOT be too many files in the list at this point, so check that prior to this code.
-		if($newValueArray) {
-			$newVal = $this->checkValue_inline_checkMinMax($tcaFieldConf, $newValueArray);
+				// Checking that the number of items is correct
+			$newVal = $this->checkValue_inline_checkMax($tcaFieldConf, $newValueArray);
 			$res['value'] = implode(',',$newVal);
-		} else {
+		}
+
+		if(!$newValueArray) {
 			unset($res['value']);
 		}
 
 		return $res;
 	}
 	
-	function checkValue_inline_checkMinMax($tcaFieldConf, $valueArray) {
+	function checkValue_inline_checkMax($tcaFieldConf, $valueArray) {
 		$valueArrayC = count($valueArray);
-		$minI = isset($tcaFieldConf['minitems']) ? intval($tcaFieldConf['minitems']):0;
 
-			// NOTE to the comment: It's not really possible to check for too few items, because you must then determine first, if the field is actual used regarding the CType.
 		$maxI = isset($tcaFieldConf['maxitems']) ? intval($tcaFieldConf['maxitems']):1;
 		if ($valueArrayC > $maxI)	{$valueArrayC=$maxI;}	// Checking for not too many elements
 
@@ -1910,11 +1884,11 @@ class t3lib_TCEmain	{
 				break;
 				case 'upper':
 					$value = strtoupper($value);
-#					$value = strtr($value, '���������������', '���������������');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
+#					$value = strtr($value, '', '');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
 				break;
 				case 'lower':
 					$value = strtolower($value);
-#					$value = strtr($value, '���������������', '���������������');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
+#					$value = strtr($value, '', '');	// WILL make trouble with other charsets than ISO-8859-1, so what do we do here? PHP-function which can handle this for other charsets? Currently the browsers JavaScript will fix it.
 				break;
 				case 'required':
 					if (!$value)	{$set=0;}
@@ -1995,10 +1969,10 @@ class t3lib_TCEmain	{
 			} else {
 				$valueArray = $dbAnalysis->getValueArray($prep);
 				if ($prep) {
+						// @TODO: Do we want to support relations to multiple tables in Comma Separated Lists?
 					$valueArray = $dbAnalysis->convertPosNeg($valueArray,$tcaFieldConf['foreign_table'],$tcaFieldConf['neg_foreign_table']);
 				}
 			}
-
 		} else {
 			$valueArray = $dbAnalysis->getValueArray($prep);
 			if ($type=='select' && $prep)	{
@@ -2734,12 +2708,10 @@ class t3lib_TCEmain	{
 				$this->registerDBList[$table][$uid][$field] = $value;
 			}
 
-			// if another inline subtype is used (foreing_field, mm with attributes or simply item list)
+			// if another inline subtype is used (foreign_field, mm with attributes or simply item list)
 		} elseif ($inlineSubType !== false) {
-			$allowedTables = $conf['foreign_table'].','.$conf['neg_foreign_table'];
-			$prependName = $conf['neg_foreign_table'];
 			$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
-			$dbAnalysis->start($value, $allowedTables, $conf['MM'], $uid, $table, $conf);
+			$dbAnalysis->start($value, $conf['foreign_table'], $conf['MM'], $uid, $table, $conf);
 
 				// walk through the items, copy them and remember the new id
 			foreach ($dbAnalysis->itemArray as $k => $v) {
@@ -2748,7 +2720,7 @@ class t3lib_TCEmain	{
 			}
 
 				// store the new values, we will set up the uids for the subtype later on
-			$value = implode(',',$dbAnalysis->getValueArray($prependName));
+			$value = implode(',',$dbAnalysis->getValueArray());
 			$this->registerDBList[$table][$uid][$field] = $value;
 		}
 
@@ -3443,29 +3415,24 @@ class t3lib_TCEmain	{
 	 * @see 	deleteRecord()
 	 */
 	function deleteRecord_procBasedOnFieldType($table, $uid, $field, $value, $conf, $undeleteRecord = false) {
-		$foreign_table = $conf['foreign_table'];
+		if ($conf['type'] == 'inline')	{
+			$foreign_table = $conf['foreign_table'];
 
-		if ($foreign_table) {
-			$inlineType = $this->getInlineFieldType($conf);
+			if ($foreign_table) {
+				$inlineType = $this->getInlineFieldType($conf);
+				if ($inlineType == 'list' || $inlineType == 'field') {
+					$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
+					$dbAnalysis->start($value, $conf['foreign_table'], $conf['MM'], $uid, $table, $conf);
+					$dbAnalysis->undeleteRecord = true;
 
-				// process type select/group
-			if ($conf['type'] == 'select' || $conf['type'] == 'group') {
-				// if ($conf['MM'] { }
-
-				// process type inline
-			} elseif ($conf['type'] == 'inline' && ($inlineType == 'list' || $inlineType == 'field')) {
-				$allowedTables = $conf['foreign_table'].','.$conf['neg_foreign_table'];
-				$prependName = $conf['neg_foreign_table'];
-				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
-				$dbAnalysis->start($value, $allowedTables, $conf['MM'], $uid, $table, $conf);
-				$dbAnalysis->undeleteRecord = true;
-
-					// walk through the items and remove them
-				foreach ($dbAnalysis->itemArray as $v) {
-					if (!$undeleteRecord)
-						$this->deleteAction($v['table'], $v['id']);
-					else
-						$this->undeleteRecord($v['table'], $v['id']);
+						// walk through the items and remove them
+					foreach ($dbAnalysis->itemArray as $v) {
+						if (!$undeleteRecord)	{
+							$this->deleteAction($v['table'], $v['id']);
+						} else {
+							$this->undeleteRecord($v['table'], $v['id']);
+						}
+					}
 				}
 			}
 		}
@@ -3939,9 +3906,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 								}
 							break;
 							case 'inline':
-								$newValue = $this->remapListedDBRecords_procInline($conf, $value, $uid, $table);
-								if (isset($newValue)) $newData[$fieldName] = $newValue;
-								// echo "$fieldName:".$value.'->'.$newData[$fieldName].', ';
+								$this->remapListedDBRecords_procInline($conf, $value, $uid, $table);
 							break;
 							default:
 								debug('Field type should not appear here: '. $conf['type']);
@@ -4047,25 +4012,15 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 		if ($conf['foreign_table']) {
 			$inlineType = $this->getInlineFieldType($conf);
 
-			if ($inlineType == 'list') {
-				$newValue = $value;
-
-			} elseif ($inlineType == 'field') {
-				$allowedTables = $conf['foreign_table'].','.$conf['neg_foreign_table'];
-
+			if ($inlineType == 'field') {
 				$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
-				$dbAnalysis->start($value, $allowedTables, $conf['MM'], 0, $table, $conf);
+				$dbAnalysis->start($value, $conf['foreign_table'], $conf['MM'], 0, $table, $conf);
 
 				$dbAnalysis->writeForeignField($conf, $uid, $theUidToUpdate);
-				$newValue = $dbAnalysis->countItems(false);
-
 			} elseif ($inlineType == 'mm') {
 				$vArray = $this->remapListedDBRecords_procDBRefs($conf, $value, $theUidToUpdate, $table);
-				if (is_array($vArray)) $newValue = implode(',',$vArray);
 			}
 		}
-
-		return $newValue;
 	}
 
 
@@ -5377,7 +5332,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 			elseif ($conf['MM'])
 				return 'mm';		// regular MM intermediate table is used to store data
 			else
-				return 'list';		// a item list (separated by comma) is stored (like select type is doing)
+				return 'list';		// an item list (separated by comma) is stored (like select type is doing)
 		}
 		return false;
 	}

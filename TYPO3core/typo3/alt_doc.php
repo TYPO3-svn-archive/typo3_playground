@@ -114,7 +114,6 @@ class SC_alt_doc {
 	var $doSave;			// Quite simply, if this variable is set, then the processing of incoming data will be performed - as if a save-button is pressed. Used in the forms as a hidden field which can be set through JavaScript if the form is somehow submitted by JavaScript).
 
 	var $data;				// GPvar (for processing only) : The data array from which the data comes...
-	var $inline;			// GPvar (for processing only) : The data array from which the data comes... (Inline-Relational-Record-Editing)
 	var $mirror;			// GPvar (for processing only) : ?
 	var $cacheCmd;			// GPvar (for processing only) : Clear-cache cmd.
 	var $redirect;			// GPvar (for processing only) : Redirect (not used???)
@@ -255,7 +254,6 @@ class SC_alt_doc {
 			// GPvars specifically for processing:
 		$this->data = t3lib_div::_GP('data');
 		$this->cmd = t3lib_div::_GP('cmd');
-		$this->inline = t3lib_div::_GP('inline');
 		$this->mirror = t3lib_div::_GP('mirror');
 		$this->cacheCmd = t3lib_div::_GP('cacheCmd');
 		$this->redirect = t3lib_div::_GP('redirect');
@@ -288,6 +286,7 @@ class SC_alt_doc {
 			t3lib_BEfunc::getSetUpdateSignal('updatePageTree');
 		}
 
+
 			// Checking referer / executing
 		$refInfo=parse_url(t3lib_div::getIndpEnv('HTTP_REFERER'));
 		$httpHost = t3lib_div::getIndpEnv('TYPO3_HOST_ONLY');
@@ -315,7 +314,7 @@ class SC_alt_doc {
 							}
 							$newEditConf[$tableName][$editId] = 'edit';
 	
-							// Traverse all new records and forge the content of ->editconf so we can continue to EDIT these records!
+								// Traverse all new records and forge the content of ->editconf so we can continue to EDIT these records!
 							if ($tableName=='pages' && $this->retUrl!='dummy.php' && $this->returnNewPageId)	{
 								$this->retUrl.='&id='.$tce->substNEWwithIDs[$key];
 							}
@@ -338,12 +337,6 @@ class SC_alt_doc {
 				$this->compileStoreDat();
 			}
 
-				// Process the data from Inline-Relational-Record-Editing
-				// Do it here, because we want not to be redirect to some of the new records
-			if (0&&is_array($this->inline) && count($this->inline) && $this->inline['__ctrl']) {
-				t3lib_TCEforms_inline::getSingleField_typeInline_processData($this->inline, $tce);
-			}
-			
 				// See if any records was auto-created as new versions?
 			if (count($tce->autoVersionIdMap))	{
 				$this->fixWSversioningInEditConf($tce->autoVersionIdMap);
@@ -956,7 +949,7 @@ class SC_alt_doc {
 
 		$formContent.='
 				<tr>
-					<td colspan="2"><div id="typo3-altdoc-header-info-options">'.$pagePath.$langSelector.'</div></td>
+					<td colspan="2"><div id="typo3-altdoc-header-info-options">'.$pagePath.$langSelector.'<div></td>
 				</tr>
 			</table>
 
