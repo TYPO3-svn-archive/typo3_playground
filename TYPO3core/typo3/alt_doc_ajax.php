@@ -50,6 +50,7 @@ require('init.php');
 require('template.php');
 $LANG->includeLLFile('EXT:lang/locallang_alt_doc.xml');
 require_once (PATH_t3lib.'class.t3lib_tceforms.php');
+	// @TODO: Do we really need this here?
 require_once (PATH_t3lib.'class.t3lib_clipboard.php');
 
 require_once (PATH_t3lib.'class.t3lib_tcemain.php');
@@ -77,23 +78,11 @@ class SC_alt_doc_ajax {
 			// get AJAX parameters
 		$this->ajax = t3lib_div::_GP('ajax');
 
-	/*
-			// Setting return URL
-		$this->retUrl = $this->returnUrl ? $this->returnUrl : 'dummy.php';
-
-			// Make R_URL (request url) based on input GETvars:
-		$this->R_URL_parts = parse_url(t3lib_div::getIndpEnv('REQUEST_URI'));
-		$this->R_URL_getvars = t3lib_div::_GET();
-
-			// Set other internal variables:
-		$this->R_URL_getvars['returnUrl']=$this->retUrl;
-		$this->R_URI = $this->R_URL_parts['path'].'?'.t3lib_div::implodeArrayForUrl('',$this->R_URL_getvars);
-	*/
-
 			// MENU-ITEMS:
 			// If array, then it's a selector box menu
 			// If empty string it's just a variable, that'll be saved.
 			// Values NOT in this array will not be saved in the settings-array for the module.
+			// @TODO: showPalettes etc. should be stored on client side and submitted via each ajax call
 		$this->MOD_MENU = array(
 			'showPalettes' => '',
 			'showDescriptions' => '',
@@ -104,13 +93,8 @@ class SC_alt_doc_ajax {
 			// CLEANSE SETTINGS
 		$this->MOD_SETTINGS = t3lib_BEfunc::getModuleData($this->MOD_MENU, t3lib_div::_GP('SET'), $this->MCONF['name']);
 
-		$this->localizationMode = t3lib_div::_GP('localizationMode');
-
 		$this->tceforms = t3lib_div::makeInstance('t3lib_TCEforms');
 		$this->tceforms->initDefaultBEMode();
-		$this->tceforms->doSaveFieldName = 'doSave';
-		$this->tceforms->localizationMode = t3lib_div::inList('text,media',$this->localizationMode) ? $this->localizationMode : '';	// text,media is keywords defined in TYPO3 Core API..., see "l10n_cat"
-		$this->tceforms->returnUrl = $this->R_URI;
 		$this->tceforms->palettesCollapsed = !$this->MOD_SETTINGS['showPalettes'];
 		$this->tceforms->disableRTE = $this->MOD_SETTINGS['disableRTE'];
 		$this->tceforms->enableClickMenu = TRUE;
@@ -141,7 +125,12 @@ class SC_alt_doc_ajax {
 				// the first argument is the method that should handle the AJAX call
 			$method = array_shift($this->ajax);
 
-				// FIXME: check if it's really a method name and no other code
+
+				// Security check
+			if(!in_array($method, array('createNewRecord'))) {
+				return false;
+			}
+
 			$this->content = call_user_func_array(
 				array(&$this->tceforms->inline, 'getSingleField_typeInline_'.$method),
 				$this->ajax

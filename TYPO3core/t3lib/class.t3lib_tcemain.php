@@ -581,8 +581,8 @@ class t3lib_TCEmain	{
 						$this->autoVersioningUpdate = FALSE;
 
 						if (!t3lib_div::testInt($id)) {
-								// check if it's really a new record or just an annotation to an existing
-								// record that was created withing this session - if so, correct uid
+								// check if it's really a new record or just a pointer to an existing
+								// record that was created within this session - if so, correct uid
 							if (isset($this->substNEWwithIDs[$id])) $id = $this->substNEWwithIDs[$id];
 						}
 
@@ -812,6 +812,31 @@ class t3lib_TCEmain	{
 				}
 			}
 		}
+
+			// Process the stack of relations to remap/correct
+		if(is_array($this->remapStack)) {
+			foreach($this->remapStack as $functionParams) {
+				list($valueArray,$tcaFieldConf,$id,$status,$fieldType, $table, $field) = $functionParams;
+
+					// Replace NEW... IDs with real uids.
+				if(strpos($id, 'NEW') !== false) {
+					$id = $this->substNEWwithIDs[$id];
+				}
+				if(is_array($valueArray)) {
+					foreach($valueArray as $key => $value) {
+						if(strpos($value, 'NEW') !== false) {
+							$valueArray[$key] = $this->substNEWwithIDs[$value];
+						}
+					}
+				}
+	
+				$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,$fieldType, $table);
+				$newVal = $this->checkValue_inline_checkMinMax($tcaFieldConf, $valueArray);
+
+				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
+			}
+		}
+
 		$this->dbAnalysisStoreExec();
 		$this->removeRegisteredFiles();
 	}
@@ -1704,54 +1729,64 @@ class t3lib_TCEmain	{
 	 * @return	array		Modified $res array
 	 */
 	function checkValue_inline($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)	{
-
 		list($table,$id,$curValue,$status,$realPid,$recFID) = $PP;
 
+		if (!$tcaFieldConf['foreign_table'])	{
+			return false; // Fatal error, inline fields should always have a foreign_table defined
+		}
+		
+		
 			// Detecting if value sent is an array and if so, implode it around a comma:
+		/*
 		if (is_array($value))	{
 			$value = implode(',',$value);
 		}
+		*/
 
-			// This converts all occurencies of '&#123;' to the byte 123 in the string - this is needed in very rare cases where filenames with special characters (like ???, umlaud etc) gets sent to the server as HTML entities instead of bytes. The error is done only by MSIE, not Mozilla and Opera.
-			// Anyways, this should NOT disturb anything else:
-		$value = $this->convNumEntityToByteValue($value);
-
-			// When values are sent as group or select they come as comma-separated values which are exploded by this function:
-		$valueArray = $this->checkValue_group_select_explodeSelectGroupValue($value);
-
+			// When values are sent they come as comma-separated values which are exploded by this function:
+		$valueArray = explode(',', $value);
+		
 			// If not multiple is set, then remove duplicates:
 		if (!$tcaFieldConf['multiple'])	{
 			$valueArray = array_unique($valueArray);
 		}
 
-		// This could be a good spot for parsing the array through a validation-function which checks if the values are alright (except that database references are not in their final form - but that is the point, isn't it?)
-		// NOTE!!! Must check max-items of files before the later check because that check would just leave out filenames if there are too many!!
+		// tx_inlinetestcase_hotel[NEW4555fdeee78ce][offers] = 45,NEW4555fdf59d154,12,123
 
-			// Checking for inline / authMode, removing elements from $valueArray if any of them is not allowed!
-		if ($tcaFieldConf['authMode'])	{
-			$preCount = count($valueArray);
-			foreach($valueArray as $kk => $vv)	{
-				if (!$this->BE_USER->checkAuthMode($table,$field,$vv,$tcaFieldConf['authMode']))	{
-					unset($valueArray[$kk]);
-				}
+		if(strpos($value, 'NEW') !== false || !t3lib_div::testInt($id)) {
+			$this->remapStack[] = array($valueArray,$tcaFieldConf,$id,$status,'inline', $table, $field);
+		} elseif(!$value && !t3lib_div::testInt($id)) {
+			if(t3lib_extMgm::isLoaded('nothing')) {
+				// do nothing
 			}
-
-				// During the check it turns out that the value / all values were removed - we respond by simply returning an empty array so nothing is written to DB for this field.
-			if ($preCount && !count($valueArray))	{
-				return array();
-			}
+		} else {
+			$newValueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
 		}
 
-			// For select types which has a foreign table attached:
-			// FIXME: Normally every inline type has a foreign-table!
-		if ($tcaFieldConf['foreign_table'])	{
+		/*
+		@TODO: Possibly the following suggestions would be the right condition for the above ugly stuff :-)
+		if(strpos($value, 'NEW') === false && t3lib_div::testInt($id)) { // Nothing is NEW...
 			$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
+		} elseif(t3lib_div::testInt($id) || !t3lib_div::testInt($id) && $value) {
+			$this->remapStack[] = array($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
 		}
+		*/
 
 // BTW, checking for min and max items here does NOT make any sense when MM is used because the above function calls will just return an array with a single item (the count) if MM is used... Why didn't I perform the check before? Probably because we could not evaluate the validity of record uids etc... Hmm...
 
 			// Checking the number of items, that it is correct.
 			// If files, there MUST NOT be too many files in the list at this point, so check that prior to this code.
+		if($newValueArray) {
+			$newVal = $this->checkValue_inline_checkMinMax($tcaFieldConf, $newValueArray);
+			$res['value'] = implode(',',$newVal);
+		} else {
+			unset($res['value']);
+		}
+
+		return $res;
+	}
+	
+	function checkValue_inline_checkMinMax($tcaFieldConf, $valueArray) {
 		$valueArrayC = count($valueArray);
 		$minI = isset($tcaFieldConf['minitems']) ? intval($tcaFieldConf['minitems']):0;
 
@@ -1766,9 +1801,8 @@ class t3lib_TCEmain	{
 			$valueArrayC--;
 			$newVal[]=$nextVal;
 		}
-		$res['value'] = implode(',',$newVal);
-
-		return $res;
+		
+		return $newVal;
 	}
 
 
@@ -1956,7 +1990,7 @@ class t3lib_TCEmain	{
 		} elseif ($type == 'inline') {
 			if ($tcaFieldConf['foreign_field']) {
 					// update sorting
-				$valueArray = $dbAnalysis->writeForeignField($tcaFieldConf, $id);
+				$dbAnalysis->writeForeignField($tcaFieldConf, $id);
 				$valueArray = $dbAnalysis->countItems();
 			} else {
 				$valueArray = $dbAnalysis->getValueArray($prep);

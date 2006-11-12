@@ -282,7 +282,7 @@ class t3lib_loadDBGroup	{
 			$uidLocal_field = 'uid_local';
 			$uidForeign_field = 'uid_foreign';
 			$sorting_field = 'sorting';
-		}	// TODO: SORTING!
+		}
 
 			// If there are tables...
 		$tableC = count($this->tableArray);
@@ -442,7 +442,7 @@ class t3lib_loadDBGroup	{
 				// if updateToUid is not a positive integer, set it to '0', so it will be ignored
 			if (!(t3lib_div::testInt($updateToUid) && $updateToUid > 0)) $updateToUid = 0;
 			$fields = $foreign_field.($symmetric_field ? ','.$symmetric_field : '');
-			
+
 				// update all items
 			foreach ($this->itemArray as $val) {
 				$uid = $val['id'];
@@ -450,22 +450,31 @@ class t3lib_loadDBGroup	{
 
 					// fetch the current (not overwritten) relation record if we handle symmetric relations
 				$row = t3lib_BEfunc::getRecord($table,$uid,$fields,'',false);
-				
+
 				$updateValues = array();
 
 					// no update to a foreign_field/symmetric_field pointer is requested -> just sorting
 				if (!$updateToUid) {
+						// Always add the pointer to the parent uid
+					//
+
+					if ($symmetric_field && $row[$symmetric_field] == $parentUid) {
+						// do nothing
+						$updateValues[$foreign_field] = $parentUid;
+					} else {
+						$updateValues[$foreign_field] = $parentUid;
+					}
+
 						// specific sortby for data handled by this field
-					if ($conf['foreign_sortby'])
+					if ($conf['foreign_sortby']) {
 						$sortby = $conf['foreign_sortby'];
-						// specific sortby for all table records
-					elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])
+					} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby']) { // specific sortby for all table records
 						$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
-			
+					}
 						// strip a possible "ORDER BY" in front of the $sortby value
 					$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
 					$symSortby = $conf['symmetric_sortby'];
-					
+
 						// set the sorting on the right side, it depends on who created the relation, so what uid is in the symmetric_field
 					if ($symmetric_field && $row[$symmetric_field] == $parentUid && $symSortby)
 						$updateValues[$symSortby] = ++$c;
@@ -481,7 +490,9 @@ class t3lib_loadDBGroup	{
 						$updateValues[$foreign_field] = $updateToUid;
 				}
 
-				if (count($updateValues)) $GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'", $updateValues);
+				if (count($updateValues)) {
+					$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'", $updateValues);
+				}
 			}
 		}
 	}

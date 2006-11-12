@@ -241,6 +241,7 @@ class t3lib_TCEforms	{
 
 		// INTERNAL, static
 	var $prependFormFieldNames = 'data';		// The string to prepend formfield names with.
+	var $prependCmdFieldNames = 'cmd';			// The string to prepend commands for tcemain::process_cmdmap with.
 	var $prependFormFieldNames_file = 'data_files';		// The string to prepend FILE form field names with.
 	var $formName = 'editform';					// The name attribute of the form.
 
@@ -749,37 +750,7 @@ class t3lib_TCEforms	{
 		$PA['fieldConf'] = $TCA[$table]['columns'][$field];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
 
-			// check, if a field should be rendered, that was defined to be handled as foreign_field or foreign_sortby of
-			// the parent record of the "inline"-type - if so, we have to skip this field - the rendering is done via "inline" as hidden field
-		if ($this->inline->getSingleField_typeInline_getStructureDepth()) {
-			$searchArray = array(
-				'%OR' => array(
-					'%AND.0' => array(
-						'config' => array(
-							'foreign_table' => $table,
-							'%OR' => array(
-								'foreign_field' => $field,
-								'foreign_sortby' => $field,
-								'%AND' => array(
-									'appearance' => array('useCombination' => 1),
-									'foreign_selector' => $field,
-								),
-								'MM' => $PA['fieldConf']['config']['MM']
-							)
-						)
-					),
-					'%AND.1' => array(
-						'config' => array(
-							'foreign_table' => $PA['fieldConf']['config']['foreign_table'],
-							'foreign_selector' => $PA['fieldConf']['config']['foreign_field']
-						),
-					)
-				)
-			);
-
-				// if the test on the configuration was successful, skip this field
-			$skipThisField = $this->inline->getSingleField_typeInline_compareStructureConfiguration($searchArray, true);
-		}
+		$skipThisField = $this->inline->getSingleField_typeInline_skipField($table, $field, $PA['fieldConf']['config']);
 
 			// Now, check if this field is configured and editable (according to excludefields + other configuration)
 		if (	is_array($PA['fieldConf']) &&
@@ -849,7 +820,7 @@ class t3lib_TCEforms	{
 					$PA['fieldChangeFunc']=array();
 					$PA['fieldChangeFunc']['TBE_EDITOR_fieldChanged'] = "TBE_EDITOR_fieldChanged('".$table."','".$row['uid']."','".$field."','".$PA['itemFormElName']."');";
 					$PA['fieldChangeFunc']['alert']=$alertMsgOnChange;
-						// if this is the child of a inline type and it is the field creating the label
+						// if this is the child of an inline type and it is the field creating the label
 					if ($this->inline->getSingleField_typeInline_isInlineChildAndLabelField($table, $field))
 						$PA['fieldChangeFunc']['inline'] = "inline.handleChangedField('".$PA['itemFormElName']."','".$this->inline->inlineNames['object']."[$table][".$row['uid']."]');";
 
@@ -1387,11 +1358,14 @@ class t3lib_TCEforms	{
 			// check against inline uniqueness
 		$uniqueIds = array();
 		$parent = $this->inline->getSingleField_typeInline_getStructureLevel(-1);
-		if ($parent['config']['foreign_table'] == $table && $parent['config']['foreign_unique'] == $field) {
-			$uniqueIds = $this->inline->inlineData['unique'][$this->inline->inlineNames['object'].'['.$table.']']['used'];
-			$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['ctrlrecords']."','".$row['uid']."');";
+		if(is_array($parent) && $parent['uid']) {
+			if ($parent['config']['foreign_table'] == $table && $parent['config']['foreign_unique'] == $field) {
+				$uniqueIds = $this->inline->inlineData['unique'][$this->inline->inlineNames['object'].'['.$table.']']['used'];
+				$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['ctrlrecords']."','".$row['uid']."');";
+			}
+			$uniqueIds[] = $parent['uid'];
 		}
-		
+
 			// Initialization:
 		$c = 0;
 		$sI = 0;

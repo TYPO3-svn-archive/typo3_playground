@@ -28,7 +28,7 @@
 
 function inlineRelational() {
 	var inlineRelational = this;
-	var prependFormFieldNames = 'inline';
+	var prependFormFieldNames = 'data';
 	var noTitleString = '[No title]';
 	var data = new Array();
 	
@@ -54,7 +54,7 @@ function inlineRelational() {
 	
 	this.collapseAllRecords = function(objectId) {
 			// get the form field, where all records are stored
-		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
+		var objectName = prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 2);
 		var formObj = document.getElementsByName(objectName);
 
 		if (formObj.length) {
@@ -69,8 +69,8 @@ function inlineRelational() {
 		}
 	}
 	
-	this.createNewRecord = function(objectId,recordUid) {
-		if (this.isBelowMax(objectId)) this.makeAjaxCall('createNewRecord', objectId+(recordUid ? '['+recordUid+']' : ''));
+	this.createNewRecord = function(objectId,prevRecordUid) {
+		if (this.isBelowMax(objectId)) this.makeAjaxCall('createNewRecord', objectId+(prevRecordUid ? '['+prevRecordUid+']' : ''));
 		else alert('There are no more relations possible at this moment!');
 		return false;
 	}
@@ -117,7 +117,7 @@ function inlineRelational() {
 				data.unique[objectId]['used'][recordUid] = selectedValue;
 			} else {
 				var elName = this.parseFormElementName('full', objectId, 1)+'['+recordUid+']['+unique.field+']';
-				var formName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 1);
+				var formName = prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 1);
 
 				var fieldObj = document.getElementsByName(elName);
 				var values = $H(unique.used).values();
@@ -146,7 +146,7 @@ function inlineRelational() {
 	}
 	
 	this.changeSorting = function(objectId, direction) {
-		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2);
+		var objectName = prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 2);
 		var objectPrefix = this.parseFormElementName('full', objectId, 0, 1);
 		var formObj = document.getElementsByName(objectName);
 		
@@ -192,7 +192,7 @@ function inlineRelational() {
 			// if no records were passed, fetch them from form field
 		if (typeof records == 'undefined') {
 			records = new Array();
-			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+			var objectName = prependFormFieldNames+this.parseFormElementName('parts', objectPrefix, 3, 1);
 			var formObj = document.getElementsByName(objectName);
 			if (formObj.length) records = formObj[0].value.split(',');
 		}
@@ -213,7 +213,7 @@ function inlineRelational() {
 	
 	this.memorizeAddRecord = function(objectPrefix, newUid, afterUid) {
 		if (this.isBelowMax(objectPrefix)) {
-			var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+			var objectName = prependFormFieldNames+this.parseFormElementName('parts', objectPrefix, 3, 1);
 			var formObj = document.getElementsByName(objectName);
 	
 			if (formObj.length) {
@@ -276,7 +276,7 @@ function inlineRelational() {
 				var selector = $(objectPrefix+'_selector');
 				this.readdSelectOption(selector, fieldObj[0].value, unique);
 			} else {
-				var formName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+				var formName = prependFormFieldNames+this.parseFormElementName('parts', objectPrefix, 3, 1);
 				var formObj = document.getElementsByName(formName);
 				if (formObj.length) {
 					var records = formObj[0].value.split(',');
@@ -310,25 +310,26 @@ function inlineRelational() {
 	this.deleteRecord = function(objectId) {
 		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
 		var elName = this.parseFormElementName('full', objectId, 2);
+		var shortName = this.parseFormElementName('parts', objectId, 2);
 		var recordUid = this.parseFormElementName('none', objectId, 1);
 		
 			// revert the unique settings if available
 		if (data.unique && data.unique[objectPrefix]) this.revertUnique(objectPrefix, elName, recordUid);
-		
+
 		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == 'true') {
 			Element.remove(objectId+'_div');
 		} else {
-			document.getElementsByName(elName+'[__deleted]')[0].value = 'deleted';
+			document.getElementsByName('cmd'+shortName+'[delete]')[0].disabled = false;
 			Element.hide(objectId+'_div');
 		}
 
 		this.memorizeRemoveRecord(
-			prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectId, 3, 2),
+			prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 2),
 			recordUid
 		);
-		
+
 		this.redrawSortingButtons(objectPrefix);
-		
+
 		return false;
 	}
 	
@@ -347,7 +348,7 @@ function inlineRelational() {
 	}
 	
 	this.parseFormElementName = function(wrap, objectId, rightCount, skipRight) {
-			// remove left and right side "inline[...|...]" -> '...|...'
+			// remove left and right side "data[...|...]" -> '...|...'
 		objectId = objectId.substr(0, objectId.lastIndexOf(']')).substr(objectId.indexOf('[')+1);
 		
 		if (!wrap) wrap = 'full';
@@ -403,10 +404,10 @@ function inlineRelational() {
 	
 	this.isBelowMax = function(objectPrefix) {
 		var isBelowMax = true;
-		var objectName = prependFormFieldNames+'[__ctrl][records]'+this.parseFormElementName('parts', objectPrefix, 3, 1);
+		var objectName = prependFormFieldNames+this.parseFormElementName('parts', objectPrefix, 3, 1);
 		var formObj = document.getElementsByName(objectName);
-		
-		if (data.config && formObj.length) {
+
+		if (data.config && data.config[objectPrefix] && formObj.length) {
 			var recordCount = formObj[0].value.split(',').length;
 			if (recordCount >= data.config[objectPrefix].max) isBelowMax = false;
 		}

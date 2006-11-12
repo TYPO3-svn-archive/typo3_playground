@@ -254,6 +254,7 @@ class SC_alt_doc {
 
 			// GPvars specifically for processing:
 		$this->data = t3lib_div::_GP('data');
+		$this->cmd = t3lib_div::_GP('cmd');
 		$this->inline = t3lib_div::_GP('inline');
 		$this->mirror = t3lib_div::_GP('mirror');
 		$this->cacheCmd = t3lib_div::_GP('cacheCmd');
@@ -279,14 +280,13 @@ class SC_alt_doc {
 		$tce->disableRTE = $this->disableRTE;
 
 			// Loading TCEmain with data:
-		$tce->start($this->data,array());
+		$tce->start($this->data,$this->cmd);
 		if (is_array($this->mirror))	{	$tce->setMirror($this->mirror);	}
 
 			// If pages are being edited, we set an instruction about updating the page tree after this operation.
 		if (isset($this->data['pages']))	{
 			t3lib_BEfunc::getSetUpdateSignal('updatePageTree');
 		}
-
 
 			// Checking referer / executing
 		$refInfo=parse_url(t3lib_div::getIndpEnv('HTTP_REFERER'));
@@ -299,26 +299,34 @@ class SC_alt_doc {
 				// Perform the saving operation with TCEmain:
 			$tce->process_uploads($_FILES);
 			$tce->process_datamap();
-			
+			$tce->process_cmdmap();
+
 				// If there was saved any new items, load them:
 			if (count($tce->substNEWwithIDs_table))	{
 
-					// Resetting editconf:
-				$this->editconf = array();
-
-					// Traverse all new records and forge the content of ->editconf so we can continue to EDIT these records!
-				foreach($tce->substNEWwithIDs_table as $nKey => $nTable)	{
-					$editId = $tce->substNEWwithIDs[$nKey];
-						// translate new id to the workspace version:
-					if ($versionRec = t3lib_BEfunc::getWorkspaceVersionOfRecord($GLOBALS['BE_USER']->workspace, $nTable, $editId,'uid'))	{
-						$editId = $versionRec['uid'];
-					}
-
-					$this->editconf[$nTable][$editId]='edit';
-					if ($nTable=='pages' && $this->retUrl!='dummy.php' && $this->returnNewPageId)	{
-						$this->retUrl.='&id='.$tce->substNEWwithIDs[$nKey];
+				foreach($this->editconf as $tableName => $tableCmds) {
+					$keys = array_keys($tce->substNEWwithIDs_table, $tableName);
+					if(count($keys) > 0) {
+						foreach($keys as $key) {
+							$editId = $tce->substNEWwithIDs[$key];
+								// translate new id to the workspace version:
+							if ($versionRec = t3lib_BEfunc::getWorkspaceVersionOfRecord($GLOBALS['BE_USER']->workspace, $nTable, $editId,'uid'))	{
+								$editId = $versionRec['uid'];
+							}
+							$newEditConf[$tableName][$editId] = 'edit';
+	
+							// Traverse all new records and forge the content of ->editconf so we can continue to EDIT these records!
+							if ($tableName=='pages' && $this->retUrl!='dummy.php' && $this->returnNewPageId)	{
+								$this->retUrl.='&id='.$tce->substNEWwithIDs[$key];
+							}
+						}
+					} else {
+						$newEditConf[$tableName] = $tableCmds;
 					}
 				}
+
+					// Resetting editconf:
+				$this->editconf = $newEditConf;
 
 					// Finally, set the editconf array in the "getvars" so they will be passed along in URLs as needed.
 				$this->R_URL_getvars['edit']=$this->editconf;
@@ -332,8 +340,9 @@ class SC_alt_doc {
 
 				// Process the data from Inline-Relational-Record-Editing
 				// Do it here, because we want not to be redirect to some of the new records
-			if (count($this->inline) && $this->inline['__ctrl'])
+			if (0&&is_array($this->inline) && count($this->inline) && $this->inline['__ctrl']) {
 				t3lib_TCEforms_inline::getSingleField_typeInline_processData($this->inline, $tce);
+			}
 			
 				// See if any records was auto-created as new versions?
 			if (count($tce->autoVersionIdMap))	{
