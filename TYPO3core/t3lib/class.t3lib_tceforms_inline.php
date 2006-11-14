@@ -158,8 +158,9 @@ class t3lib_TCEforms_inline {
 		if ($config['foreign_unique']) {
 			$uniqueIds = $this->getSingleField_typeInline_getUniqueIds($recordList, $config);
 			$possibleRecords = $this->getSingleField_typeInline_getPossibleRecords($table,$field,$row,$config,'foreign_unique');
+			$uniqueMax = $config['appearance']['useCombination'] ? -1 : count($possibleRecords);
 			$this->inlineData['unique'][$nameObject.'['.$foreign_table.']'] = array(
-				'max' => $config['appearance']['useCombination'] ? -1 : count($possibleRecords),
+				'max' => $uniqueMax,
 				'used' => $uniqueIds,
 				'table' => $config['foreign_table'],
 				'field' => $config['foreign_unique'],
@@ -183,16 +184,17 @@ class t3lib_TCEforms_inline {
 		$item .= '<div id="'.$nameObject.'">';
 		
 			// add the "Create new record" link if there are less than maxitems
-		if (count($recordList) < $maxitems) {
-			$onClick = "return inline.createNewRecord('".$nameObject."[$foreign_table]')";
-			$item .= '
-					<div class="typo3-newRecordLink">
-						<a href="#" onClick="'.$onClick.'" class="inlineNewButton">'.
-						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
-						$this->fObj->getLL('l_new',1).
-						'</a>
-					</div>';
-		}
+		if (count($recordList) >= $maxitems || ($uniqueMax > 0 && count($recordList) >= $uniqueMax))
+			$config['inline']['inlineNewButtonStyle'] = ' style="display: none;"';
+
+		$onClick = "return inline.createNewRecord('".$nameObject."[$foreign_table]')";
+		$item .= '
+				<div class="typo3-newRecordLink">
+					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$config['inline']['inlineNewButtonStyle'].'>'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
+					$this->fObj->getLL('l_new',1).
+					'</a>
+				</div>';
 
 		$relationList = array();
 		if (count($recordList)) {
@@ -279,15 +281,6 @@ class t3lib_TCEforms_inline {
 			$out .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][symmetric]' .
 				$appendFormFieldNames.'" value="'.htmlspecialchars($rec['__symmetric']).'" />';
 		}
-
-		/*
-			// if there is a foreign_selector, handle it's uid like it's done for foreign_field
-		if ($foreign_selector) {
-			$out .= '<input type="hidden" name="'.$this->prependNaming .
-				(t3lib_div::testInt($rec[$foreign_selector]) ? '' : '[__ctrl][records]') .
-				$appendFormFieldNames.'['.$foreign_selector.']" value="'.$rec[$foreign_selector].'" />';
-		}
-		*/
 
 			// @TODO: Don't add attribute isnewrecord="true" (instead use class names and check with $(id).hasClassName())
 		$out = '<div id="'.$formFieldNames.'_div"'.($isNewRecord ? ' class="inlineIsNewRecord"' : '').'>' . $out . '</div>';
@@ -503,7 +496,7 @@ class t3lib_TCEforms_inline {
 					if ($showNewRecLink)	{
 						$onClick = "return inline.createNewRecord('".$nameObjectFt."','".$row['uid']."')";
 						$params='&edit['.$table.']['.(-$row['uid']).']=new';
-						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="inlineNewButton">'.
+						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="inlineNewButton"'.$config['inline']['inlineNewButtonStyle'].'>'.
 								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($table=='pages'?'page':'el').'.gif','width="'.($table=='pages'?13:11).'" height="12"').' title="'.$LANG->getLL('new'.($table=='pages'?'Page':'Record'),1).'" alt="" />'.
 								'</a>';
 					}
@@ -612,9 +605,12 @@ class t3lib_TCEforms_inline {
 			if ($isNewRecord) {
 				$comboFormFieldName = $this->prependFormFieldNames.'['.$comboConfig['foreign_table'].']['.$comboRecord['uid'].'][pid]';
 				$out .= '<input type="hidden" name="'.$comboFormFieldName.'" value="'.$this->inlineFirstPid.'"/>';
-
+			}
+			
+				// if the foreign_selector field is also responsible for uniqueness, tell the browser the uid of the "other" side of the relation
+			if ($isNewRecord || $config['foreign_unique'] == $foreign_selector) {
 				$parentFormFieldName = $this->prependFormFieldNames.$appendFormFieldNames.'['.$foreign_selector.']';
-				$out .= '<input type="hidden" name="'.$parentFormFieldName.'" value="'.$comboRecord['uid'].'" />';
+				$out .= '<input type="text" name="'.$parentFormFieldName.'" value="'.$comboRecord['uid'].'" />';
 			}
 		}
 
@@ -784,7 +780,7 @@ class t3lib_TCEforms_inline {
 				'data'	=> $item,
 				'scriptCall' => array(
 					"inline.domAddNewRecord('bottom','".$this->inlineNames['object']."','$objectPrefix',json.data);",
-					"inline.memorizeAddRecord('".$objectPrefix."','".$record['uid']."',null);"
+					"inline.memorizeAddRecord('$objectPrefix','".$record['uid']."',null,'$foreignUid');"
 				)
 			);
 
@@ -794,17 +790,9 @@ class t3lib_TCEforms_inline {
 				'data'	=> $item,
 				'scriptCall' => array(
 					"inline.domAddNewRecord('after','".$domObjectId.'_div'."','$objectPrefix',json.data);",
-					"inline.memorizeAddRecord('".$objectPrefix."','".$record['uid']."','".$current['uid']."');"
+					"inline.memorizeAddRecord('$objectPrefix','".$record['uid']."','".$current['uid']."','$foreignUid');"
 				)
 			);
-		}
-
-			// if a selector is used and it's requested to care about uniqueness, just do it
-		if ($config['foreign_unique']) {
-			if ($config['foreign_selector'] && $foreignUid)
-				$jsonArray['scriptCall'][] = "inline.setUnique('$objectPrefix','".$record['uid']."','$foreignUid');";
-			else
-				$jsonArray['scriptCall'][] = "inline.setUnique('$objectPrefix','".$record['uid']."');";
 		}
 
 			// if a new level of child records (child of children) was created, send the JSON array

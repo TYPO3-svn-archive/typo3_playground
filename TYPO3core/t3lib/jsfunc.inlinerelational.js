@@ -219,7 +219,7 @@ function inlineRelational() {
 		}
 	}
 	
-	this.memorizeAddRecord = function(objectPrefix, newUid, afterUid) {
+	this.memorizeAddRecord = function(objectPrefix, newUid, afterUid, selectedValue) {
 		if (this.isBelowMax(objectPrefix)) {
 			var objectName = prependFormFieldNames+this.parseFormElementName('parts', objectPrefix, 3, 1);
 			var formObj = document.getElementsByName(objectName);
@@ -242,6 +242,11 @@ function inlineRelational() {
 			}
 	
 			this.redrawSortingButtons(objectPrefix, records);
+			
+			if (data.unique && data.unique[objectPrefix]) {
+				var unique = data.unique[objectPrefix];
+				this.setUnique(objectPrefix, newUid, selectedValue);
+			}
 		}
 		
 			// if we reached the maximum off possible records after this action, hide the new buttons
@@ -295,8 +300,10 @@ function inlineRelational() {
 			delete(data.unique[objectPrefix].used[recordUid])
 			
 			if (unique.selector) {
-				var selector = $(objectPrefix+'_selector');
-				this.readdSelectOption(selector, fieldObj[0].value, unique);
+				if (!isNaN(fieldObj[0].value)) {
+					var selector = $(objectPrefix+'_selector');
+					this.readdSelectOption(selector, fieldObj[0].value, unique);
+				}
 			}
 			
 			if (!(unique.selector && unique.max == -1)) {
