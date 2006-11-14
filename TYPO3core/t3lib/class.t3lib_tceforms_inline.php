@@ -86,12 +86,13 @@ class t3lib_TCEforms_inline {
 	var $inlineStructure = array();			// the structure/hierarchy where working in, e.g. cascading inline tables
 	var $inlineFirstPid;					// the first call of an inline type appeared on this page (pid of record)
 	var $inlineNames = array();				// keys: form, object -> hold the name/id for each of them
-	var $inlineSkip = false;				// Attention: setting this variable, no inline type would be processed anymore
 	var $inlineData = array();				// inline data array used for JSON output
 	var $inlineCount = 0;					// count the number of inline types used
 
 	var $prependNaming = 'data';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
-
+	var $prependFormFieldNames;				// reference to $this->fObj->prependFormFieldNames
+	var $prependCmdFieldNames;				// reference to $this->fObj->prependCmdFieldNames
+	
 
 	/**
 	 * Intialize an instance of t3lib_TCEforms_inline
@@ -100,8 +101,10 @@ class t3lib_TCEforms_inline {
 	 * @return	void
 	 */
 	function init(&$tceForms) {
-		$this->fObj = $tceForms;
+		$this->fObj =& $tceForms;
 		$this->backPath =& $tceForms->backPath;
+		$this->prependFormFieldNames =& $this->fObj->prependFormFieldNames;
+		$this->prependCmdFieldNames =& $this->fObj->prependCmdFieldNames;
 	}
 
 
@@ -116,8 +119,6 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code for the TCEform field
 	 */
 	function getSingleField_typeInline($table,$field,$row,&$PA) {
-			// if inline elements should not be processed, break here
-		if ($this->inlineSkip === true) return '';
 			// count the number of processed inline elements
 		$this->inlineCount++;
 
@@ -125,7 +126,7 @@ class t3lib_TCEforms_inline {
 		$config = $PA['fieldConf']['config'];
 		$foreign_table = $config['foreign_table'];
 		
-		// @TODO: Minitems müssen unterstüzt werden und intInRange mit maxitems immer mindestens minItems
+		// @TODO: Minitems mÃ¼ssen unterstÃ¼zt werden und intInRange mit maxitems immer mindestens minItems
 		$minitems = t3lib_div::intInRange($config['minitems'],0);
 		$maxitems = t3lib_div::intInRange($config['maxitems'],0);
 		if (!$maxitems)	$maxitems=100000;
@@ -134,8 +135,6 @@ class t3lib_TCEforms_inline {
 			// we need that pid for ajax calls, so that they would know where the action takes place on the page structure
 		if (!isset($this->inlineFirstPid)) {
 			$this->inlineFirstPid = $row['pid'];
-			$prependFormFieldNames = $this->fObj->prependFormFieldNames;
-			$this->fObj->prependFormFieldNames = $this->prependNaming;
 		}
 			// add the current inline job to the structure stack
 		$this->getSingleField_typeInline_pushStructure($table, $row['uid'], $field, $config);
@@ -150,7 +149,10 @@ class t3lib_TCEforms_inline {
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
 			// tell the browser what we have (using JSON later)
-		$this->inlineData['config'][$nameObject.'['.$foreign_table.']'] = array('min' => $minitems, 'max' => $maxitems);
+		$this->inlineData['config'][$nameObject.'['.$foreign_table.']'] = array(
+			'min' => $minitems,
+			'max' => $maxitems,
+		);
 		
 			// if relations are required to be unique, get the uids that have already been used on the foreign side of the relation
 		if ($config['foreign_unique']) {
@@ -177,20 +179,21 @@ class t3lib_TCEforms_inline {
 			$item .= $selectorBox;
 		}
 
+			// wrap all inline fields of a record with a <div> (like a container)
+		$item .= '<div id="'.$nameObject.'">';
+		
 			// add the "Create new record" link if there are less than maxitems
 		if (count($recordList) < $maxitems) {
 			$onClick = "return inline.createNewRecord('".$nameObject."[$foreign_table]')";
 			$item .= '
 					<div class="typo3-newRecordLink">
-						<a href="#" onClick="'.$onClick.'">'.
+						<a href="#" onClick="'.$onClick.'" class="inlineNewButton">'.
 						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
 						$this->fObj->getLL('l_new',1).
 						'</a>
 					</div>';
 		}
 
-			// wrap all inline fields of a record with a <div> (like a container)
-		$item .= '<div id="'.$nameObject.'">';
 		$relationList = array();
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
@@ -198,6 +201,7 @@ class t3lib_TCEforms_inline {
 				$relationList[] = $rec['uid'];
 			}
 		}
+			// close the wrap for all inline fields (container)
 		$item .= '</div>';
 			// add Drag&Drop functions for sorting
 		// $item .= $this->getSingleField_typeInline_addJavaScriptSortable($nameObject);
@@ -207,9 +211,8 @@ class t3lib_TCEforms_inline {
 		$this->getSingleField_typeInline_popStructure();
 
 			// if this was the first call to the inline type, restore the values
-		if ($prependFormFieldNames) {
+		if (!$this->getSingleField_typeInline_getStructureDepth()) {
 			unset($this->inlineFirstPid);
-			$this->fObj->prependFormFieldNames = $prependFormFieldNames;
 		}
 
 		return $item;
@@ -253,16 +256,16 @@ class t3lib_TCEforms_inline {
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
 		$header = $this->getSingleField_typeInline_renderForeignRecordHeader($foreign_table, $rec, $config);
-		$combination = $this->getSingleField_typeInline_renderCombinationTable($rec, $config);
+		$combination = $this->getSingleField_typeInline_renderCombinationTable($rec, $appendFormFieldNames, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 		$fields = $this->getSingleField_typeInline_wrapFormsSection($fields);
 
 		if ($isNewRecord) {
-			$fields .= '<input type="hidden" name="'.$this->fObj->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
+			$fields .= '<input type="hidden" name="'.$this->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
 		} else {
-			$fields .= '<input type="hidden" name="'.$this->fObj->prependCmdFieldNames.$appendFormFieldNames.'[delete]" value="1" disabled="disabled" />';
+			$fields .= '<input type="hidden" name="'.$this->prependCmdFieldNames.$appendFormFieldNames.'[delete]" value="1" disabled="disabled" />';
 		}
-
+		
 			// set the appearance style of the records of this table
 		if (is_array($config['appearance']) && count($config['appearance']))
 			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'"';
@@ -270,14 +273,9 @@ class t3lib_TCEforms_inline {
 		$out = '<div id="'.$formFieldNames.'_header" class="sortableHandle">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
 
-			// if inline records are related by a "foreign_field"
-			// we do only have to store the foreign_field pointer, if it IS a new record
-		if ($foreign_field && $isNewRecord) {
-				// if the parent record is new, put the relation information into [__ctrl], this is processed last
-			//$out .= '<input type="hidden" name="'.$this->prependNaming . $appendFormFieldNames.'['.$foreign_field.']" value="'.$parentUid.'" />';
 			// if the fields for symmetric relations were swapped, send information about the keys (foreign_field|symmetric_fields)
 			// on saving the record, this information is swapped back for storing via TCEmain
-		} elseif ($rec['__symmetric']) {
+		if ($rec['__symmetric']) {
 			$out .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][symmetric]' .
 				$appendFormFieldNames.'" value="'.htmlspecialchars($rec['__symmetric']).'" />';
 		}
@@ -291,8 +289,8 @@ class t3lib_TCEforms_inline {
 		}
 		*/
 
-		// @TODO: Don't add attribute isnewrecord="true" (instead use class names and check with $(id).hasClassName())
-		$out = '<div id="'.$formFieldNames.'_div"'.($isNewRecord ? ' isnewrecord="true"' : '').'>' . $out . '</div>';
+			// @TODO: Don't add attribute isnewrecord="true" (instead use class names and check with $(id).hasClassName())
+		$out = '<div id="'.$formFieldNames.'_div"'.($isNewRecord ? ' class="inlineIsNewRecord"' : '').'>' . $out . '</div>';
 
 		return $out;
 	}
@@ -505,7 +503,7 @@ class t3lib_TCEforms_inline {
 					if ($showNewRecLink)	{
 						$onClick = "return inline.createNewRecord('".$nameObjectFt."','".$row['uid']."')";
 						$params='&edit['.$table.']['.(-$row['uid']).']=new';
-						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
+						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="inlineNewButton">'.
 								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($table=='pages'?'page':'el').'.gif','width="'.($table=='pages'?13:11).'" height="12"').' title="'.$LANG->getLL('new'.($table=='pages'?'Page':'Record'),1).'" alt="" />'.
 								'</a>';
 					}
@@ -574,10 +572,11 @@ class t3lib_TCEforms_inline {
 	 * -> This is a direct embedding over two levels!
 	 *
 	 * @param	array		$rec: The table record of the child/embedded table (normaly post-processed by t3lib_transferData)
+	 * @param	string		$appendFormFieldNames: The [<table>][<uid>] of the parent record (the intermediate table)
 	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		A HTML string with <table> tag around.
 	 */
-	function getSingleField_typeInline_renderCombinationTable(&$rec, $config = array()) {
+	function getSingleField_typeInline_renderCombinationTable(&$rec, $appendFormFieldNames, $config = array()) {
 		$foreign_table = $config['foreign_table'];
 		$foreign_selector = $config['foreign_selector'];
 
@@ -600,26 +599,23 @@ class t3lib_TCEforms_inline {
 					$this->inlineFirstPid,
 					$comboConfig['foreign_table']
 				);
-					// tell the parent, that we have a uid (NEW...)
-				$rec[$foreign_selector] = $comboRecord['uid'];
+					// tell our parent (intermediate table), that we have a uid (NEW...)
+				// $rec[$foreign_selector] = $comboRecord['uid'];
 				$isNewRecord = true;
 			}
-
-				// prevent from using inline types on intermediate tables to prevent endless recursions
-			$this->inlineSkip = true;
 
 				// get the TCEforms interpretation of the TCA of the child table
 			$out = $this->fObj->getMainFields($comboConfig['foreign_table'], $comboRecord);
 			$out = $this->getSingleField_typeInline_wrapFormsSection($out, array(), array('class' => 'wrapperAttention'));
 
-				// if it is a new record, add a pid value to store this record
+				// if this is a new record, add a pid value to store this record and the pointer value for the intermediate table
 			if ($isNewRecord) {
-				$formFieldName = $this->fObj->prependFormFieldNames.'['.$comboConfig['foreign_table'].']['.$comboRecord['uid'].'][pid]';
-				$out .= '<input type="hidden" name="'.$formFieldName.'" value="'.$this->inlineFirstPid.'"/>';
-			}
+				$comboFormFieldName = $this->prependFormFieldNames.'['.$comboConfig['foreign_table'].']['.$comboRecord['uid'].'][pid]';
+				$out .= '<input type="hidden" name="'.$comboFormFieldName.'" value="'.$this->inlineFirstPid.'"/>';
 
-				// revert things
-			$this->inlineSkip = false;
+				$parentFormFieldName = $this->prependFormFieldNames.$appendFormFieldNames.'['.$foreign_selector.']';
+				$out .= '<input type="hidden" name="'.$parentFormFieldName.'" value="'.$comboRecord['uid'].'" />';
+			}
 		}
 
 		return $out;
@@ -693,7 +689,7 @@ class t3lib_TCEforms_inline {
 		$jsCode = array(
 			'<script src="prototype.js" type="text/javascript"></script>',
 			'<script src="scriptaculous/scriptaculous.js" type="text/javascript"></script>',
-			'<script src="/t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
+			'<script src="../t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
 		);
 
 		return implode("\n", $jsCode);
@@ -741,10 +737,6 @@ class t3lib_TCEforms_inline {
 	 */
 	function getSingleField_typeInline_createNewRecord($domObjectId, $foreignUid = 0) {
 		global $TCA;
-
-			// set the TCEforms prependFormFieldNames
-		$prependFormFieldNames = $this->fObj->prependFormFieldNames;
-		$this->fObj->prependFormFieldNames = $this->prependNaming;
 
 			// parse the DOM identifier (string), add the levels to the structure stack (array) and load the TCA config
 		$this->getSingleField_typeInline_parseStructureString($domObjectId, true);
@@ -815,13 +807,14 @@ class t3lib_TCEforms_inline {
 				$jsonArray['scriptCall'][] = "inline.setUnique('$objectPrefix','".$record['uid']."');";
 		}
 
+			// if a new level of child records (child of children) was created, send the JSON array
+		if (count($this->inlineData))
+			$jsonArray['scriptCall'][] = 'inline.addToDataArray('.$this->getSingleField_typeInline_getJSON($this->inlineData).');';
 			// tell the browser to scroll to the newly created record
 		$jsonArray['scriptCall'][] = "Element.scrollTo('".$objectId."_div');";
 			// fade out and fade in the new record in the browser view to catch the user's eye
 		$jsonArray['scriptCall'][] = "inline.fadeOutFadeIn('".$objectId."_div');";
 
-			// set the TCEforms prependFormFieldNames value back to its initial value
-		$this->fObj->prependFormFieldNames = $prependFormFieldNames;
 			// return the JSON string
 		return $this->getSingleField_typeInline_getJSON($jsonArray);
 	}
@@ -969,9 +962,12 @@ class t3lib_TCEforms_inline {
 		reset($trData->regTableItems_data);
 		$rec = current($trData->regTableItems_data);
 
-			// FIXME: Experiments on bidirectional symmetric record handling with attributes
+			// Check, if we have to swap fields for the case that the parent uid is responsible
+			// for the pointer value on the *other* side - this is the case if an other parent
+			// built the relation and were looking at it now.
+			// This is only relevant on relation records, that were already saved.
 		$level = $this->getSingleField_typeInline_getStructureLevel(-1);
-		if ($level['config']['symmetric_field']) {
+		if (t3lib_div::testInt($rec['uid']) && $level['config']['symmetric_field']) {
 				// if our current relation was defined from the "other side", swap the value pairs
 			if ($level['uid'] == $rec[$level['config']['symmetric_field']]) {
 				$temp = $rec[$level['config']['foreign_field']];
@@ -1054,7 +1050,7 @@ class t3lib_TCEforms_inline {
 		$current = $this->getSingleField_typeInline_getStructureLevel(-1);
 		$lastItemName = $this->getSingleField_typeInline_getStructureItemName($current);
 		$this->inlineNames = array(
-			'form' => $this->fObj->prependFormFieldNames.$lastItemName,
+			'form' => $this->prependFormFieldNames.$lastItemName,
 			'object' => $this->prependNaming.'['.$this->inlineFirstPid.']'.$this->getSingleField_typeInline_getStructurePath(),
 		);
 	}

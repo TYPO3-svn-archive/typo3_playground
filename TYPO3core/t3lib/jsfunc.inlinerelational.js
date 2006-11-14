@@ -34,7 +34,7 @@ function inlineRelational() {
 
 	this.addToDataArray = function(object) {
 		for (var i in object) {
-			data[i] = object[i];
+			data[i] = $H(data[i]).merge(object[i]);
 		}
 	}
 
@@ -113,11 +113,9 @@ function inlineRelational() {
 	this.setUnique = function(objectId, recordUid, selectedValue) {
 		if (data.unique && data.unique[objectId]) {
 			var unique = data.unique[objectId];
-			if (unique.selector) {
-				var selector = $(objectId+'_selector');
-				this.removeSelectOption(selector, selectedValue);
-				data.unique[objectId]['used'][recordUid] = selectedValue;
-			} else {
+
+				// remove used items from each select-field of the child records
+			if (!(unique.selector && unique.max == -1)) {
 				var elName = this.parseFormElementName('full', objectId, 1)+'['+recordUid+']['+unique.field+']';
 				var formName = prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 1);
 
@@ -128,13 +126,20 @@ function inlineRelational() {
 						// remove all before used items from the new select-item
 					for (var i = 0; i < values.length; i++) this.removeSelectOption(fieldObj[0], values[i]);
 						// set the selected item automatically to the first of the remaining items
-					var newSelectableId = fieldObj[0].options[0].value;
+					selectedValue = fieldObj[0].options[0].value;
 					fieldObj[0].options[0].selected = true;
 					this.updateUnique(fieldObj[0], objectId, formName, recordUid);
 					this.handleChangedField(fieldObj[0], objectId+'['+recordUid+']');
 					if (typeof data.unique[objectId]['used'].length != 'undefined') data.unique[objectId]['used'] = {};
-					data.unique[objectId]['used'][recordUid] = newSelectableId;
+					data.unique[objectId]['used'][recordUid] = selectedValue;
 				}
+			}
+			
+				// remove used items from a selector-box
+			if (unique.selector && selectedValue) {
+				var selector = $(objectId+'_selector');
+				this.removeSelectOption(selector, selectedValue);
+				data.unique[objectId]['used'][recordUid] = selectedValue;
 			}
 		}
 	}
@@ -238,6 +243,10 @@ function inlineRelational() {
 	
 			this.redrawSortingButtons(objectPrefix, records);
 		}
+		
+			// if we reached the maximum off possible records after this action, hide the new buttons
+		if (!this.isBelowMax(objectPrefix))
+			this.hideElementsWithClassName('inlineNewButton',  this.parseFormElementName('full', objectPrefix, 0 , 1));
 	}
 	
 	this.memorizeRemoveRecord = function(objectName, removeUid) {
@@ -249,23 +258,32 @@ function inlineRelational() {
 		}
 	}
 	
-	this.updateUnique = function(srcElement, objectId, formName, recordUid) {
-		var unique;
-		if (data.unique && data.unique[objectId]) unique = data.unique[objectId];
-		
-		var formObj = document.getElementsByName(formName);
-		if (unique && formObj.length) {
+	this.updateUnique = function(srcElement, objectPrefix, formName, recordUid) {
+		if (data.unique && data.unique[objectPrefix]) {
+			var unique = data.unique[objectPrefix];
 			var oldValue = unique.used[recordUid];
-			var records = formObj[0].value.split(',');
-			var recordObj;
-			for (var i = 0; i < records.length; i++) {
-				recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
-				if (recordObj.length && recordObj[0] != srcElement) {
-					this.removeSelectOption(recordObj[0], srcElement.value);
-					if (typeof oldValue != 'undefined') this.readdSelectOption(recordObj[0], oldValue, unique);
+
+			if (unique.selector) {
+				var selector = $(objectPrefix+'_selector');
+				this.removeSelectOption(selector, srcElement.value);
+				if (typeof oldValue != 'undefined') this.readdSelectOption(selector, oldValue, unique);
+			}
+			
+			if (!(unique.selector && unique.max == -1)) {
+				var formObj = document.getElementsByName(formName);
+				if (unique && formObj.length) {
+					var records = formObj[0].value.split(',');
+					var recordObj;
+					for (var i = 0; i < records.length; i++) {
+						recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
+						if (recordObj.length && recordObj[0] != srcElement) {
+							this.removeSelectOption(recordObj[0], srcElement.value);
+							if (typeof oldValue != 'undefined') this.readdSelectOption(recordObj[0], oldValue, unique);
+						}
+					}
+					data.unique[objectPrefix].used[recordUid] = srcElement.value;
 				}
 			}
-			data.unique[objectId].used[recordUid] = srcElement.value;
 		}
 	}
 	
@@ -279,7 +297,9 @@ function inlineRelational() {
 			if (unique.selector) {
 				var selector = $(objectPrefix+'_selector');
 				this.readdSelectOption(selector, fieldObj[0].value, unique);
-			} else {
+			}
+			
+			if (!(unique.selector && unique.max == -1)) {
 				var formName = prependFormFieldNames+this.parseFormElementName('parts', objectPrefix, 3, 1);
 				var formObj = document.getElementsByName(formName);
 				if (formObj.length) {
@@ -316,12 +336,15 @@ function inlineRelational() {
 		var elName = this.parseFormElementName('full', objectId, 2);
 		var shortName = this.parseFormElementName('parts', objectId, 2);
 		var recordUid = this.parseFormElementName('none', objectId, 1);
+		var beforeDeleteIsBelowMax = this.isBelowMax(objectPrefix);
 		
 			// revert the unique settings if available
 		if (data.unique && data.unique[objectPrefix]) this.revertUnique(objectPrefix, elName, recordUid);
 
-		if ($(objectId+'_div') && $(objectId+'_div').getAttribute('isnewrecord') == 'true') {
+			// if the record is new and was never saved before, just remove it from DOM
+		if ($(objectId+'_div') && $(objectId+'_div').hasClassName('inlineIsNewRecord')) {
 			Element.remove(objectId+'_div');
+			// if the record already exists in storage, mark it to be deleted on clicking the save button
 		} else {
 			document.getElementsByName('cmd'+shortName+'[delete]')[0].disabled = false;
 			Element.hide(objectId+'_div');
@@ -333,6 +356,10 @@ function inlineRelational() {
 		);
 
 		this.redrawSortingButtons(objectPrefix);
+		
+			// if the NEW-button was hidden and now we can add again new children, show the button
+		if (!beforeDeleteIsBelowMax && this.isBelowMax(objectPrefix))
+			this.showElementsWithClassName('inlineNewButton', this.parseFormElementName('full', objectPrefix, 0 , 1));
 
 		return false;
 	}
@@ -418,7 +445,7 @@ function inlineRelational() {
 			var recordCount = formObj[0].value.split(',').length;
 			if (recordCount >= data.config[objectPrefix].max) isBelowMax = false;
 		}
-		if (isBelowMax && data.unique) {
+		if (isBelowMax && data.unique && data.unique[objectPrefix]) {
 			var unique = data.unique[objectPrefix];
 			if (this.arrayAssocCount(unique.used) >= unique.max && unique.max >= 0) isBelowMax = false;
 		}
@@ -454,6 +481,24 @@ function inlineRelational() {
 		readdOption.value = value;
 			// add the <option> at the right position
 		selectObj.add(readdOption, document.all ? index : selectObj.options[index]);
+	}
+	
+	this.hideElementsWithClassName = function(className, parentElement) {
+		this.setVisibilityOfElementsWithClassName('hide', className, parentElement);
+	}
+	
+	this.showElementsWithClassName = function(className, parentElement) {
+		this.setVisibilityOfElementsWithClassName('show', className, parentElement);
+	}
+	
+	this.setVisibilityOfElementsWithClassName = function(action, className, parentElement) {
+		var domObjects = document.getElementsByClassName(className, parentElement);
+		for (var i = 0; i < domObjects.length; i++) {
+			if (action == 'hide')
+				new Effect.Fade(domObjects[i]);
+			else if (action = 'show')
+				new Effect.Appear(domObjects[i]);
+		}
 	}
 	
 	this.fadeOutFadeIn = function(objectId) {

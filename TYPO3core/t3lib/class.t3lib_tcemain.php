@@ -323,7 +323,8 @@ class t3lib_TCEmain	{
 	var $uploadedFileArray = array();			// Uploaded files, set by process_uploads()
 	var $registerDBList=array();				// Used for tracking references that might need correction after operations
 	var $copyMappingArray = Array();			// Used by the copy action to track the ids of new pages so subpages are correctly inserted! THIS is internally cleared for each executed copy operation! DO NOT USE THIS FROM OUTSIDE! Read from copyMappingArray_merged instead which is accumulating this information.
-
+	var $remapStack = array();					// array used for remapping uids and values at the end of process_datamap
+	
 		// Various
 	var $fileFunc;								// For "singleTon" file-manipulation object
 	var $checkValue_currentRecord=array();		// Set to "currentRecord" during checking of values.
@@ -807,14 +808,25 @@ class t3lib_TCEmain	{
 			}
 		}
 
+		// call_user_func_array
+		
 			// Process the stack of relations to remap/correct
 		if(is_array($this->remapStack)) {
-			foreach($this->remapStack as $functionParams) {
-				list($valueArray,$tcaFieldConf,$id,$status,$fieldType, $table, $field) = $functionParams;
+			foreach($this->remapStack as $remapAction) {
+					// if no position index for the arguments was set, skip this remap action
+				if (!is_array($remapAction['pos'])) continue;
+				
+					// load values from the argument array in remapAction
+				$field = $remapAction['field'];
+				$id = $remapAction['args'][$remapAction['pos']['id']];
+				$table = $remapAction['args'][$remapAction['pos']['table']];
+				$valueArray = $remapAction['args'][$remapAction['pos']['valueArray']];
+				$tcaFieldConf = $remapAction['args'][$remapAction['pos']['tcaFieldConf']];
 
 					// Replace NEW... IDs with real uids.
 				if(strpos($id, 'NEW') !== false) {
 					$id = $this->substNEWwithIDs[$id];
+					$remapAction['args'][$remapAction['pos']['id']] = $id;
 				}
 
 					// Replace relations to NEW...-IDs in values
@@ -824,11 +836,17 @@ class t3lib_TCEmain	{
 							$valueArray[$key] = $this->substNEWwithIDs[$value];
 						}
 					}
+					$remapAction['args'][$remapAction['pos']['valueArray']] = $valueArray;
 				}
 
-				$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,$fieldType, $table);
-				$newVal = $this->checkValue_inline_checkMax($tcaFieldConf, $valueArray);
+					// process the arguments with the defined function
+				$remapAction['args'][$remapAction['pos']['valueArray']] = call_user_func_array(
+					array($this, $remapAction['func']),
+					$remapAction['args']
+				);
+				
 					// @TODO: Add option to disable count-field
+				$newVal = $this->checkValue_checkMax($tcaFieldConf, $remapAction['args'][$remapAction['pos']['valueArray']]);
 				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
 			}
 		}
@@ -1369,28 +1387,26 @@ class t3lib_TCEmain	{
 		}
 			// For select types which has a foreign table attached:
 		if ($tcaFieldConf['type']=='select' && $tcaFieldConf['foreign_table'])	{
-			$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'select', $table);
+				// check, if there is a NEW... id in the value, that should be substituded later
+			if (strpos($value, 'NEW') !== false) {
+				$this->remapStack[] = array(
+					'func' => 'checkValue_group_select_processDBdata',
+					'args' => array($valueArray,$tcaFieldConf,$id,$status,'select',$table),
+					'pos' => array('valueArray' => 0, 'tcaFieldConf' => 1, 'id' => 2, 'table' => 5),
+					'field' => $field
+				);
+				$unsetResult = true;
+			} else {
+				$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'select', $table);
+			}
 		}
 
-// BTW, checking for min and max items here does NOT make any sense when MM is used because the above function calls will just return an array with a single item (the count) if MM is used... Why didn't I perform the check before? Probably because we could not evaluate the validity of record uids etc... Hmm...
-
-			// Checking the number of items, that it is correct.
-			// If files, there MUST NOT be too many files in the list at this point, so check that prior to this code.
-		$valueArrayC = count($valueArray);
-		$minI = isset($tcaFieldConf['minitems']) ? intval($tcaFieldConf['minitems']):0;
-
-			// NOTE to the comment: It's not really possible to check for too few items, because you must then determine first, if the field is actual used regarding the CType.
-		$maxI = isset($tcaFieldConf['maxitems']) ? intval($tcaFieldConf['maxitems']):1;
-		if ($valueArrayC > $maxI)	{$valueArrayC=$maxI;}	// Checking for not too many elements
-
-			// Dumping array to list
-		$newVal=array();
-		foreach($valueArray as $nextVal)	{
-			if ($valueArrayC==0)	{break;}
-			$valueArrayC--;
-			$newVal[]=$nextVal;
+		if (!$unsetResult) {
+			$newVal=$this->checkValue_checkMax($tcaFieldConf, $valueArray);
+			$res['value'] = implode(',',$newVal);
+		} else {
+			unset($res['value']);
 		}
-		$res['value'] = implode(',',$newVal);
 
 		return $res;
 	}
@@ -1742,29 +1758,30 @@ class t3lib_TCEmain	{
 			// $value = 45,NEW4555fdf59d154,12,123
 			// We need to decide whether we use the stack or can save the relation directly.
 		if(strpos($value, 'NEW') !== false || !t3lib_div::testInt($id)) {
-			$this->remapStack[] = array($valueArray,$tcaFieldConf,$id,$status,'inline', $table, $field);
-		} elseif(!$value && !t3lib_div::testInt($id)) {
-			if(t3lib_extMgm::isLoaded('nothing')) {
-				// do nothing
-			}
-		} else {
+			$this->remapStack[] = array(
+				'func' => 'checkValue_group_select_processDBdata',
+				'args' => array($valueArray,$tcaFieldConf,$id,$status,'inline',$table),
+				'pos' => array('valueArray' => 0, 'tcaFieldConf' => 1, 'id' => 2, 'table' => 5),
+				'field' => $field
+			);
+			unset($res['value']);
+		} elseif($value || t3lib_div::testInt($id)) {
 			$newValueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
 
 				// Checking that the number of items is correct
-			$newVal = $this->checkValue_inline_checkMax($tcaFieldConf, $newValueArray);
+			$newVal = $this->checkValue_checkMax($tcaFieldConf, $newValueArray);
 			$res['value'] = implode(',',$newVal);
-		}
-
-		if(!$newValueArray) {
-			unset($res['value']);
 		}
 
 		return $res;
 	}
 	
-	function checkValue_inline_checkMax($tcaFieldConf, $valueArray) {
+	function checkValue_checkMax($tcaFieldConf, $valueArray) {
+		// BTW, checking for min and max items here does NOT make any sense when MM is used because the above function calls will just return an array with a single item (the count) if MM is used... Why didn't I perform the check before? Probably because we could not evaluate the validity of record uids etc... Hmm...
+
 		$valueArrayC = count($valueArray);
 
+			// NOTE to the comment: It's not really possible to check for too few items, because you must then determine first, if the field is actual used regarding the CType.
 		$maxI = isset($tcaFieldConf['maxitems']) ? intval($tcaFieldConf['maxitems']):1;
 		if ($valueArrayC > $maxI)	{$valueArrayC=$maxI;}	// Checking for not too many elements
 

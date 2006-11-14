@@ -125,7 +125,6 @@ class SC_alt_doc_ajax {
 				// the first argument is the method that should handle the AJAX call
 			$method = array_shift($this->ajax);
 
-
 				// Security check
 			if(!in_array($method, array('createNewRecord'))) {
 				return false;
