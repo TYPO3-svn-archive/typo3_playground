@@ -350,11 +350,11 @@ function inlineRelational() {
 
 			// if the record is new and was never saved before, just remove it from DOM
 		if ($(objectId+'_div') && $(objectId+'_div').hasClassName('inlineIsNewRecord')) {
-			Element.remove(objectId+'_div');
+			new Effect.Fade(objectId+'_div', { afterFinish: function() { Element.remove(objectId+'_div'); }	});
 			// if the record already exists in storage, mark it to be deleted on clicking the save button
 		} else {
 			document.getElementsByName('cmd'+shortName+'[delete]')[0].disabled = false;
-			Element.hide(objectId+'_div');
+			new Effect.Fade(objectId+'_div');
 		}
 
 		this.memorizeRemoveRecord(
