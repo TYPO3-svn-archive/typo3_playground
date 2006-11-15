@@ -1487,7 +1487,7 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 		global $TSFE, $LANG, $TYPO3_CONF_VARS;
 		
 		$linebreak = $TYPO3_CONF_VARS['EXTCONF'][$this->ID]['enableCompressedScripts'] ? '' : chr(10);
-		$JSLanguageArray .= 'var HTMLArea_langArray = new Array();' . $linebreak;
+		$JSLanguageArray .= 'var HTMLArea_langArray = new Object();' . $linebreak;
 		$JSLanguageArray .= 'HTMLArea_langArray = { ' . $linebreak;
 		if(is_object($TSFE)) {
 			$JSLanguageArray = $TSFE->csConvObj->conv($JSLanguageArray, 'iso-8859-1', $this->OutputCharset);
@@ -1705,7 +1705,7 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 			$LOCAL_LANG[$this->language] = $LOCAL_LANG['default'];
 		}
 		
-		$JSLanguageArray .= 'var ' . $plugin . '_langArray = new Array();' . $linebreak;
+		$JSLanguageArray .= 'var ' . $plugin . '_langArray = new Object();' . $linebreak;
 		$JSLanguageArray .= $plugin . '_langArray = {' . $linebreak;
 		if(is_object($TSFE)) {
 			$JSLanguageArray = $TSFE->csConvObj->conv($JSLanguageArray, 'iso-8859-1', $this->OutputCharset);

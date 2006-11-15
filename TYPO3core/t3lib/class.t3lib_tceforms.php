@@ -328,7 +328,6 @@ class t3lib_TCEforms	{
 		$this->defClassScheme = $this->classScheme;
 
 		$this->inline = t3lib_div::makeInstance('t3lib_TCEforms_inline');
-		$this->inline->init($this);
 	}
 
 	/**
@@ -346,6 +345,8 @@ class t3lib_TCEforms	{
 
 		$this->edit_docModuleUpload = $BE_USER->uc['edit_docModuleUpload'];
 		$this->titleLen = $BE_USER->uc['titleLen'];
+
+		$this->inline->init($this);
 	}
 
 
