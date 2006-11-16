@@ -495,6 +495,7 @@ class t3lib_loadDBGroup	{
 
 				if (count($updateValues)) {
 					$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, "uid='$uid'", $updateValues);
+					$this->updateRefIndex($table, $uid);
 				}
 			}
 		}
@@ -621,6 +622,20 @@ class t3lib_loadDBGroup	{
 		$count = count($this->itemArray);
 		if ($returnAsArray) $count = array($count);
 		return $count;
+	}
+	
+	/**
+	 * Update Reference Index (sys_refindex) for a record
+	 * Should be called any almost any update to a record which could affect references inside the record.
+	 * (copied from TCEmain)
+	 *
+	 * @param	string		Table name
+	 * @param	integer		Record UID
+	 * @return	void
+	 */
+	function updateRefIndex($table,$id)	{
+		$refIndexObj = t3lib_div::makeInstance('t3lib_refindex');
+		$result = $refIndexObj->updateRefIndexTable($table,$id);
 	}
 }
 

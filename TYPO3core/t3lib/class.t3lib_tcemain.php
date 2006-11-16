@@ -324,6 +324,7 @@ class t3lib_TCEmain	{
 	var $registerDBList=array();				// Used for tracking references that might need correction after operations
 	var $copyMappingArray = Array();			// Used by the copy action to track the ids of new pages so subpages are correctly inserted! THIS is internally cleared for each executed copy operation! DO NOT USE THIS FROM OUTSIDE! Read from copyMappingArray_merged instead which is accumulating this information.
 	var $remapStack = array();					// array used for remapping uids and values at the end of process_datamap
+	var $updateRefIndexStack = array();			// array used for additional calls to $this->updateRefIndex
 	
 		// Various
 	var $fileFunc;								// For "singleTon" file-manipulation object
@@ -3366,6 +3367,15 @@ class t3lib_TCEmain	{
 					// Update reference index:
 				$this->updateRefIndex($table,$uid);
 
+					// if there are entries in the updateRefIndexStack
+				if (is_array($this->updateRefIndexStack[$table]) && is_array($this->updateRefIndexStack[$table][$uid])) {
+					while ($args = array_pop($this->updateRefIndexStack[$table][$uid])) {
+							// $args[0]: table, $args[1]: uid
+						$this->updateRefIndex($args[0], $args[1]);
+					}
+					unset($this->updateRefIndexStack[$table][$uid]);
+				}
+				
 			} else $this->log($table,$uid,3,0,1,'Attempt to delete record without delete-permissions');
 		}
 	}
@@ -3518,6 +3528,18 @@ class t3lib_TCEmain	{
 						}
 					}
 				}
+			}
+			
+			// no delete action but calls to updateRefIndex *AFTER* this record was deleted
+		} elseif ($this->isReferenceField($conf)) {
+			$allowedTables = $conf['type']=='group' ? $conf['allowed'] : $conf['foreign_table'].','.$conf['neg_foreign_table'];
+			$prependName = $conf['type']=='group' ? $conf['prepend_tname'] : $conf['neg_foreign_table'];
+
+			$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
+			$dbAnalysis->start($value, $allowedTables, $conf['MM'], $uid, $table, $conf);
+
+			foreach ($dbAnalysis->itemArray as $v) {
+				$this->updateRefIndexStack[$table][$uid][] = array($v['table'], $v['id']);
 			}
 		}
 	}
