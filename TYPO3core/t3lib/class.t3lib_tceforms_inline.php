@@ -192,7 +192,7 @@ class t3lib_TCEforms_inline {
 			
 			// add the "Create new record" link before all child records
 		if ($config['appearance']['newRecordLinkPosition'] != 'bottom') {
-			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config['inline']['inlineNewButtonStyle']);
+			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
 		}
 			
 		$relationList = array();
@@ -205,7 +205,7 @@ class t3lib_TCEforms_inline {
 			
 			// add the "Create new record" link after all child records
 		if ($config['appearance']['newRecordLinkPosition'] != 'top') {
-			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config['inline']['inlineNewButtonStyle']);
+			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
 		}
 		
 			// close the wrap for all inline fields (container)
@@ -623,7 +623,7 @@ class t3lib_TCEforms_inline {
 			$selector_itemListStyle = isset($config['itemListStyle']) ? ' style="'.htmlspecialchars($config['itemListStyle']).'"' : ' style="'.$this->fObj->defaultMultipleSelectorStyle.'"';
 			$size = intval($config['size']);
 			$size = $config['autoSizeMax'] ? t3lib_div::intInRange(count($itemArray)+1,t3lib_div::intInRange($size,1),$config['autoSizeMax']) : $size;
-			$sOnChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$conf['foreign_table']."]', this.options[this.selectedIndex])";
+			$sOnChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$conf['foreign_table']."]')";
 			$itemsToSelect = '
 				<select id="'.$this->inlineNames['object'].'['.$conf['foreign_table'].']_selector"'.
 							$this->fObj->insertDefStyle('select').
@@ -635,6 +635,16 @@ class t3lib_TCEforms_inline {
 					'.implode('
 					',$opt).'
 				</select>';
+
+				// add a "Create new relation" link for the case that the selector has a size of one item
+				// so the onChange event could not be used in this case
+			if ($config['size'] == 1) {
+				$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
+				$itemsToSelect .= ' 
+					<a href="#" onclick="'.htmlspecialchars($sOnChange).'">'.
+						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' title="'.$createNewRelationText.'" alt="" /> '.$createNewRelationText.
+					'</a>';
+			}
 		}
 
 		return $itemsToSelect;
@@ -765,6 +775,9 @@ class t3lib_TCEforms_inline {
 			// if a new level of child records (child of children) was created, send the JSON array
 		if (count($this->inlineData))
 			$jsonArray['scriptCall'][] = 'inline.addToDataArray('.$this->getSingleField_typeInline_getJSON($this->inlineData).');';
+			// if TCEforms has some JavaScript code to be executed, just do it
+		if ($this->fObj->extJSCODE)
+			$jsonArray['scriptCall'][] = $this->fObj->extJSCODE;
 			// tell the browser to scroll to the newly created record
 		$jsonArray['scriptCall'][] = "Element.scrollTo('".$objectId."_div');";
 			// fade out and fade in the new record in the browser view to catch the user's eye
@@ -797,14 +810,20 @@ class t3lib_TCEforms_inline {
 	 * @param	string		$style: If a style should be added to the link (e.g. 'display: none;')
 	 * @return	string		The HTML code for the new record link
 	 */
-	function getNewRecordLink($objectPrefix, $style = '') {
-		if ($style) $style = ' style="'.$style.'"';
+	function getNewRecordLink($objectPrefix, $conf = array()) {
+		if ($conf['inline']['inlineNewButtonStyle']) $style = ' style="'.$style.'"';
+
 		$onClick = "return inline.createNewRecord('$objectPrefix')";
+		$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createnew',1);
+		
+		if ($conf['appearance']['addTableTitleToHeader'])
+			$title .= ' '.$GLOBALS['LANG']->sL($GLOBALS['TCA'][$conf['foreign_table']]['ctrl']['title'],1);
+		
 		$out = '
 				<div class="typo3-newRecordLink">
-					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$style.'>'.
-					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$this->fObj->getLL('l_new',1).'" />'.
-					$this->fObj->getLL('l_new',1).
+					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$style.' title="'.$title.'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$title.'" />'.
+					t3lib_div::fixed_lgd_cs($title, $this->fObj->titleLen).
 					'</a>
 				</div>';
 		return $out;

@@ -1776,6 +1776,14 @@ class t3lib_TCEmain	{
 		return $res;
 	}
 	
+	/**
+	 * Checks if a fields has more items than defined via TCA in maxitems.
+	 * If there are more items than allowd, the item list is truncated to the defined number.
+	 *
+	 * @param	array		$tcaFieldConf: Field configuration from TCA
+	 * @param	array		$valueArray: Current value array of items
+	 * @return	array		The truncated value array of items
+	 */
 	function checkValue_checkMax($tcaFieldConf, $valueArray) {
 		// BTW, checking for min and max items here does NOT make any sense when MM is used because the above function calls will just return an array with a single item (the count) if MM is used... Why didn't I perform the check before? Probably because we could not evaluate the validity of record uids etc... Hmm...
 

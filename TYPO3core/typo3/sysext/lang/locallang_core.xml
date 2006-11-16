@@ -182,6 +182,7 @@ Would you like to save now in order to refresh the display?</label>
 			<label index="cm.movePage_after">Move page after</label>
 			<label index="cm.copyFolder_into">Copy folder into</label>
 			<label index="cm.moveFolder_into">Move folder into</label>
+			<label index="cm.createNewRelation">Create new relation</label>
 		</languageKey>
 	</data>
 </T3locallang>

@@ -104,7 +104,9 @@ function inlineRelational() {
 	}
 		
 	this.importNewRecord = function(objectId, selectedOption) {
-		this.makeAjaxCall('createNewRecord', objectId, selectedOption.value);
+		var selector = $(objectId+'_selector');
+		var selectedValue = selector.options[selector.selectedIndex].value;
+		this.makeAjaxCall('createNewRecord', objectId, selectedValue);
 		return false;
 	}
 	
