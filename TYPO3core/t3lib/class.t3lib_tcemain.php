@@ -98,7 +98,7 @@
  * 3319:     function deleteSpecificPage($uid,$forceHardDelete=FALSE)
  * 3342:     function canDeletePage($uid)
  * 3369:     function cannotDeleteRecord($table,$id)
- * 3388:     function deleteRecord_procRecord($table, $uid, $undeleteRecord = false)
+ * 3388:     function deleteRecord_procFields($table, $uid, $undeleteRecord = false)
  * 3411:     function deleteRecord_procBasedOnFieldType($table, $uid, $field, $value, $conf, $undeleteRecord = false)
  *
  *              SECTION: Cmd: Versioning
@@ -2963,6 +2963,9 @@ class t3lib_TCEmain	{
 									$sortNumber = $this->getSortNumber($table,$uid,$destPid);
 									$updateFields[$sortRow] = $sortNumber;
 								}
+								
+									// check for child records that have also to be moved
+								$this->moveRecord_procFields($table,$uid,$destPid);
 									// Create query for update:
 								$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, 'uid='.intval($uid), $updateFields);
 
@@ -3005,6 +3008,10 @@ class t3lib_TCEmain	{
 											// We now update the pid and sortnumber
 										$updateFields['pid'] = $destPid;
 										$updateFields[$sortRow] = $sortInfo['sortNumber'];
+
+											// check for child records that have also to be moved
+										$this->moveRecord_procFields($table,$uid,$destPid);
+											// Create query for update:
 										$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, 'uid='.intval($uid), $updateFields);
 
 											// Call post processing hooks:
@@ -3052,6 +3059,58 @@ class t3lib_TCEmain	{
 		}
 	}
 
+	/**
+	 * Walk through all fields of the moved record and look for children of e.g. the inline type.
+	 * If child records are found, they are also move to the new $destPid.
+	 *
+	 * @param	string		$table: Record Table
+	 * @param	string		$uid: Record UID
+	 * @param	string		$destPid: Position to move to
+	 */
+	function moveRecord_procFields($table,$uid,$destPid) {
+		t3lib_div::loadTCA($table);
+		$conf = $GLOBALS['TCA'][$table]['columns'];
+		$row = t3lib_BEfunc::getRecordWSOL($table,$uid);
+		foreach ($row as $field => $value) {
+			$this->moveRecord_procBasedOnFieldType($table,$uid,$destPid,$field,$value,$conf[$field]['config']);
+		}
+	}
+
+	/**
+	 * Move child records depending on the field type of the parent record.
+	 *
+	 * @param	string		$table: Record Table
+	 * @param	string		$uid: Record UID
+	 * @param	string		$destPid: Position to move to
+	 * @param	string		$field: Record field
+	 * @param	string		$value: Record field value
+	 * @param	array		$conf: TCA configuration on current field
+	 */
+	function moveRecord_procBasedOnFieldType($table,$uid,$destPid,$field,$value,$conf) {
+		$moveTable = '';
+		$moveIds = array();
+		
+		if ($conf['type'] == 'inline')	{
+			$foreign_table = $conf['foreign_table'];
+
+			if ($foreign_table) {
+				$inlineType = $this->getInlineFieldType($conf);
+				if ($inlineType == 'list' || $inlineType == 'field') {
+					$moveTable = $foreign_table;
+					$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
+					$dbAnalysis->start($value, $conf['foreign_table'], '', $uid, $table, $conf);
+				}
+			}
+		}
+		
+			// move the records
+		if (isset($dbAnalysis)) {
+			foreach ($dbAnalysis->itemArray as $v) {
+				$this->moveRecord($v['table'],$v['id'],$destPid);
+			}
+		}
+	}
+		
 	/**
 	 * Localizes a record to another system language
 	 *
@@ -3251,7 +3310,7 @@ class t3lib_TCEmain	{
 					}
 
 						// before (un-)deleting this record, check for child records or references
-					$this->deleteRecord_procRecord($table, $uid, $undeleteRecord);
+					$this->deleteRecord_procFields($table, $uid, $undeleteRecord);
 					$GLOBALS['TYPO3_DB']->exec_UPDATEquery($table, 'uid='.intval($uid), $updateFields);
 				} else {
 
@@ -3408,7 +3467,7 @@ class t3lib_TCEmain	{
 	 * @return	void
 	 * @see 	deleteRecord()
 	 */
-	function deleteRecord_procRecord($table, $uid, $undeleteRecord = false) {
+	function deleteRecord_procFields($table, $uid, $undeleteRecord = false) {
 		t3lib_div::loadTCA($table);
 		$conf = $GLOBALS['TCA'][$table]['columns'];
 		$row = t3lib_BEfunc::getRecord($table, $uid, '*', '', false);
@@ -3439,7 +3498,7 @@ class t3lib_TCEmain	{
 				$inlineType = $this->getInlineFieldType($conf);
 				if ($inlineType == 'list' || $inlineType == 'field') {
 					$dbAnalysis = t3lib_div::makeInstance('t3lib_loadDBGroup');
-					$dbAnalysis->start($value, $conf['foreign_table'], $conf['MM'], $uid, $table, $conf);
+					$dbAnalysis->start($value, $conf['foreign_table'], '', $uid, $table, $conf);
 					$dbAnalysis->undeleteRecord = true;
 
 						// walk through the items and remove them
