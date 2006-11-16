@@ -34,10 +34,10 @@
  *
  *
  *
- *   64: class SC_alt_doc_ajax
- *   74:     function init()
- *  132:     function main()
- *  157:     function printContent()
+ *   65: class SC_alt_doc_ajax
+ *   75:     function init()
+ *  118:     function main()
+ *  145:     function printContent()
  *
  * TOTAL FUNCTIONS: 3
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -109,9 +109,11 @@ class SC_alt_doc_ajax {
 	}
 
 	/**
-	 * [Describe function...]
+	 * The main function for the AJAX call.
+	 * Checks if the requested function call is valid and forwards the request to t3lib_TCEforms_inline.
+	 * The out is written to $this->content
 	 *
-	 * @return	[type]		...
+	 * @return	void
 	 */
 	function main() {
 		header('Expires: Fri, 27 Nov 1981 09:43:00 GMT');
@@ -126,21 +128,19 @@ class SC_alt_doc_ajax {
 			$method = array_shift($this->ajax);
 
 				// Security check
-			if(!in_array($method, array('createNewRecord'))) {
-				return false;
-			}
+			if(!in_array($method, array('createNewRecord'))) return false;
 
 			$this->content = call_user_func_array(
-				array(&$this->tceforms->inline, 'getSingleField_typeInline_'.$method),
+				array(&$this->tceforms->inline, $method),
 				$this->ajax
 			);
 		}
 	}
 
 	/**
-	 * [Describe function...]
+	 * Performs the output of $this->content.
 	 *
-	 * @return	[type]		...
+	 * @return	void
 	 */
 	function printContent() {
 		echo $this->content;

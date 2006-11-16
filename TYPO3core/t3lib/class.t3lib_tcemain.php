@@ -37,159 +37,162 @@
  *
  *
  *
- *  234: class t3lib_TCEmain
- *  353:     function start($data,$cmd,$altUserObject='')
- *  392:     function setMirror($mirror)
- *  417:     function setDefaultsFromUserTS($userTS)
- *  440:     function process_uploads($postFiles)
- *  478:     function process_uploads_traverseArray(&$outputArr,$inputArr,$keyToSet)
+ *  237: class t3lib_TCEmain
+ *  358:     function start($data,$cmd,$altUserObject='')
+ *  397:     function setMirror($mirror)
+ *  422:     function setDefaultsFromUserTS($userTS)
+ *  445:     function process_uploads($postFiles)
+ *  483:     function process_uploads_traverseArray(&$outputArr,$inputArr,$keyToSet)
  *
  *              SECTION: PROCESSING DATA
- *  514:     function process_datamap()
- *  826:     function placeholderShadowing($table,$id)
- *  862:     function fillInFieldArray($table,$id,$fieldArray,$incomingFieldArray,$realPid,$status,$tscPID)
+ *  519:     function process_datamap()
+ *  869:     function placeholderShadowing($table,$id)
+ *  905:     function fillInFieldArray($table,$id,$fieldArray,$incomingFieldArray,$realPid,$status,$tscPID)
  *
  *              SECTION: Evaluation of input values
- * 1083:     function checkValue($table,$field,$value,$id,$status,$realPid,$tscPID)
- * 1143:     function checkValue_SW($res,$value,$tcaFieldConf,$table,$id,$curValue,$status,$realPid,$recFID,$field,$uploadedFiles,$tscPID)
- * 1190:     function checkValue_input($res,$value,$tcaFieldConf,$PP,$field='')
- * 1228:     function checkValue_check($res,$value,$tcaFieldConf,$PP)
- * 1251:     function checkValue_radio($res,$value,$tcaFieldConf,$PP)
- * 1277:     function checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)
- * 1389:     function checkValue_group_select_file($valueArray,$tcaFieldConf,$curValue,$uploadedFileArray,$status,$table,$id,$recFID)
- * 1558:     function checkValue_flex($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)
- * 1631:     function checkValue_flexArray2Xml($array, $addPrologue=FALSE)
- * 1643:     function _DELETE_FLEX_FORMdata(&$valueArrayToRemoveFrom,$deleteCMDS)
- * 1665:     function _MOVE_FLEX_FORMdata(&$valueArrayToMoveIn, $moveCMDS, $direction)
- * 1706:     function checkValue_inline($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)
+ * 1126:     function checkValue($table,$field,$value,$id,$status,$realPid,$tscPID)
+ * 1186:     function checkValue_SW($res,$value,$tcaFieldConf,$table,$id,$curValue,$status,$realPid,$recFID,$field,$uploadedFiles,$tscPID)
+ * 1235:     function checkValue_input($res,$value,$tcaFieldConf,$PP,$field='')
+ * 1273:     function checkValue_check($res,$value,$tcaFieldConf,$PP)
+ * 1296:     function checkValue_radio($res,$value,$tcaFieldConf,$PP)
+ * 1322:     function checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)
+ * 1432:     function checkValue_group_select_file($valueArray,$tcaFieldConf,$curValue,$uploadedFileArray,$status,$table,$id,$recFID)
+ * 1601:     function checkValue_flex($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field)
+ * 1674:     function checkValue_flexArray2Xml($array, $addPrologue=FALSE)
+ * 1686:     function _DELETE_FLEX_FORMdata(&$valueArrayToRemoveFrom,$deleteCMDS)
+ * 1708:     function _MOVE_FLEX_FORMdata(&$valueArrayToMoveIn, $moveCMDS, $direction)
+ * 1748:     function checkValue_inline($res,$value,$tcaFieldConf,$PP,$field)
+ * 1791:     function checkValue_checkMax($tcaFieldConf, $valueArray)
  *
  *              SECTION: Helper functions for evaluation functions.
- * 1806:     function getUnique($table,$field,$value,$id,$newPid=0)
- * 1844:     function checkValue_input_Eval($value,$evalArray,$is_in)
- * 1941:     function checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,$type,$currentTable)
- * 1985:     function checkValue_group_select_explodeSelectGroupValue($value)
- * 2009:     function checkValue_flex_procInData($dataPart,$dataPart_current,$uploadedFiles,$dataStructArray,$pParams,$callBackFunc='')
- * 2048:     function checkValue_flex_procInData_travDS(&$dataValues,$dataValues_current,$uploadedFiles,$DSelements,$pParams,$callBackFunc,$structurePath)
+ * 1843:     function getUnique($table,$field,$value,$id,$newPid=0)
+ * 1881:     function checkValue_input_Eval($value,$evalArray,$is_in)
+ * 1978:     function checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,$type,$currentTable)
+ * 2022:     function checkValue_group_select_explodeSelectGroupValue($value)
+ * 2046:     function checkValue_flex_procInData($dataPart,$dataPart_current,$uploadedFiles,$dataStructArray,$pParams,$callBackFunc='')
+ * 2085:     function checkValue_flex_procInData_travDS(&$dataValues,$dataValues_current,$uploadedFiles,$DSelements,$pParams,$callBackFunc,$structurePath)
  *
  *              SECTION: PROCESSING COMMANDS
- * 2194:     function process_cmdmap()
+ * 2231:     function process_cmdmap()
  *
  *              SECTION: Cmd: Copying
- * 2334:     function copyRecord($table,$uid,$destPid,$first=0,$overrideValues=array(),$excludeFields='')
- * 2456:     function copyPages($uid,$destPid)
- * 2510:     function copySpecificPage($uid,$destPid,$copyTablesArray,$first=0)
- * 2544:     function copyRecord_raw($table,$uid,$pid,$overrideArray=array())
- * 2608:     function rawCopyPageContent($old_pid,$new_pid,$copyTablesArray)
- * 2632:     function insertNewCopyVersion($table,$fieldArray,$realPid)
- * 2683:     function copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf)
- * 2756:     function copyRecord_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2)
- * 2784:     function copyRecord_procFilesRefs($conf, $uid, $value)
+ * 2371:     function copyRecord($table,$uid,$destPid,$first=0,$overrideValues=array(),$excludeFields='')
+ * 2493:     function copyPages($uid,$destPid)
+ * 2547:     function copySpecificPage($uid,$destPid,$copyTablesArray,$first=0)
+ * 2581:     function copyRecord_raw($table,$uid,$pid,$overrideArray=array())
+ * 2645:     function rawCopyPageContent($old_pid,$new_pid,$copyTablesArray)
+ * 2669:     function insertNewCopyVersion($table,$fieldArray,$realPid)
+ * 2720:     function copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf)
+ * 2791:     function copyRecord_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2)
+ * 2819:     function copyRecord_procFilesRefs($conf, $uid, $value)
  *
  *              SECTION: Cmd: Moving, Localizing
- * 2853:     function moveRecord($table,$uid,$destPid)
- * 3040:     function localize($table,$uid,$language)
+ * 2888:     function moveRecord($table,$uid,$destPid)
+ * 3083:     function moveRecord_procFields($table,$uid,$destPid)
+ * 3103:     function moveRecord_procBasedOnFieldType($table,$uid,$destPid,$field,$value,$conf)
+ * 3136:     function localize($table,$uid,$language)
  *
  *              SECTION: Cmd: Deleting
- * 3124:     function deleteAction($table, $id)
- * 3171:     function deleteEl($table, $uid, $noRecordCheck=FALSE, $forceHardDelete=FALSE)
- * 3186:     function undeleteRecord($table,$uid)
- * 3203:     function deleteRecord($table,$uid, $noRecordCheck=FALSE, $forceHardDelete=FALSE,$undeleteRecord=FALSE)
- * 3291:     function deletePages($uid,$force=FALSE,$forceHardDelete=FALSE)
- * 3319:     function deleteSpecificPage($uid,$forceHardDelete=FALSE)
- * 3342:     function canDeletePage($uid)
- * 3369:     function cannotDeleteRecord($table,$id)
- * 3388:     function deleteRecord_procFields($table, $uid, $undeleteRecord = false)
- * 3411:     function deleteRecord_procBasedOnFieldType($table, $uid, $field, $value, $conf, $undeleteRecord = false)
+ * 3220:     function deleteAction($table, $id)
+ * 3267:     function deleteEl($table, $uid, $noRecordCheck=FALSE, $forceHardDelete=FALSE)
+ * 3282:     function undeleteRecord($table,$uid)
+ * 3299:     function deleteRecord($table,$uid, $noRecordCheck=FALSE, $forceHardDelete=FALSE,$undeleteRecord=FALSE)
+ * 3396:     function deletePages($uid,$force=FALSE,$forceHardDelete=FALSE)
+ * 3424:     function deleteSpecificPage($uid,$forceHardDelete=FALSE)
+ * 3447:     function canDeletePage($uid)
+ * 3474:     function cannotDeleteRecord($table,$id)
+ * 3493:     function deleteRecord_procFields($table, $uid, $undeleteRecord = false)
+ * 3516:     function deleteRecord_procBasedOnFieldType($table, $uid, $field, $value, $conf, $undeleteRecord = false)
  *
  *              SECTION: Cmd: Versioning
- * 3464:     function versionizeRecord($table,$id,$label,$delete=FALSE,$versionizeTree=-1)
- * 3540:     function versionizePages($uid,$label,$versionizeTree)
- * 3603:     function version_swap($table,$id,$swapWith,$swapIntoWS=0)
- * 3774:     function version_clearWSID($table,$id)
- * 3808:     function version_setStage($table,$id,$stageId,$comment='')
+ * 3577:     function versionizeRecord($table,$id,$label,$delete=FALSE,$versionizeTree=-1)
+ * 3653:     function versionizePages($uid,$label,$versionizeTree)
+ * 3716:     function version_swap($table,$id,$swapWith,$swapIntoWS=0)
+ * 3887:     function version_clearWSID($table,$id)
+ * 3921:     function version_setStage($table,$id,$stageId,$comment='')
  *
  *              SECTION: Cmd: Helper functions
- * 3853:     function remapListedDBRecords()
- * 3936:     function remapListedDBRecords_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2)
- * 3963:     function remapListedDBRecords_procDBRefs($conf, $value, $MM_localUid, $table)
- * 4009:     function remapListedDBRecords_procInline($conf, $value, $theUidToUpdate, $table)
+ * 3966:     function remapListedDBRecords()
+ * 4047:     function remapListedDBRecords_flexFormCallBack($pParams, $dsConf, $dataValue, $dataValue_ext1, $dataValue_ext2)
+ * 4074:     function remapListedDBRecords_procDBRefs($conf, $value, $MM_localUid, $table)
+ * 4120:     function remapListedDBRecords_procInline($conf, $value, $uid, $table)
  *
  *              SECTION: Access control / Checking functions
- * 4060:     function checkModifyAccessList($table)
- * 4072:     function isRecordInWebMount($table,$id)
- * 4086:     function isInWebMount($pid)
- * 4100:     function checkRecordUpdateAccess($table,$id)
- * 4124:     function checkRecordInsertAccess($insertTable,$pid,$action=1)
- * 4158:     function isTableAllowedForThisPage($page_uid, $checkTable)
- * 4191:     function doesRecordExist($table,$id,$perms)
- * 4252:     function doesRecordExist_pageLookUp($id, $perms)
- * 4278:     function doesBranchExist($inList,$pid,$perms,$recurse)
- * 4312:     function tableReadOnly($table)
- * 4324:     function tableAdminOnly($table)
- * 4338:     function destNotInsideSelf($dest,$id)
- * 4370:     function getExcludeListArray()
- * 4393:     function doesPageHaveUnallowedTables($page_uid,$doktype)
+ * 4163:     function checkModifyAccessList($table)
+ * 4175:     function isRecordInWebMount($table,$id)
+ * 4189:     function isInWebMount($pid)
+ * 4203:     function checkRecordUpdateAccess($table,$id)
+ * 4227:     function checkRecordInsertAccess($insertTable,$pid,$action=1)
+ * 4261:     function isTableAllowedForThisPage($page_uid, $checkTable)
+ * 4294:     function doesRecordExist($table,$id,$perms)
+ * 4355:     function doesRecordExist_pageLookUp($id, $perms)
+ * 4381:     function doesBranchExist($inList,$pid,$perms,$recurse)
+ * 4415:     function tableReadOnly($table)
+ * 4427:     function tableAdminOnly($table)
+ * 4441:     function destNotInsideSelf($dest,$id)
+ * 4473:     function getExcludeListArray()
+ * 4496:     function doesPageHaveUnallowedTables($page_uid,$doktype)
  *
  *              SECTION: Information lookup
- * 4442:     function pageInfo($id,$field)
- * 4462:     function recordInfo($table,$id,$fieldList)
- * 4483:     function getRecordProperties($table,$id,$noWSOL=FALSE)
- * 4499:     function getRecordPropertiesFromRow($table,$row)
+ * 4545:     function pageInfo($id,$field)
+ * 4565:     function recordInfo($table,$id,$fieldList)
+ * 4586:     function getRecordProperties($table,$id,$noWSOL=FALSE)
+ * 4602:     function getRecordPropertiesFromRow($table,$row)
  *
  *              SECTION: Storing data to Database Layer
- * 4542:     function updateDB($table,$id,$fieldArray)
- * 4594:     function insertDB($table,$id,$fieldArray,$newVersion=FALSE,$suggestedUid=0,$dontSetNewIdIndex=FALSE)
- * 4667:     function checkStoredRecord($table,$id,$fieldArray,$action)
- * 4704:     function setHistory($table,$id,$logId)
- * 4737:     function clearHistory($maxAgeSeconds=604800,$table)
- * 4751:     function updateRefIndex($table,$id)
+ * 4645:     function updateDB($table,$id,$fieldArray)
+ * 4697:     function insertDB($table,$id,$fieldArray,$newVersion=FALSE,$suggestedUid=0,$dontSetNewIdIndex=FALSE)
+ * 4770:     function checkStoredRecord($table,$id,$fieldArray,$action)
+ * 4807:     function setHistory($table,$id,$logId)
+ * 4840:     function clearHistory($maxAgeSeconds=604800,$table)
+ * 4854:     function updateRefIndex($table,$id)
  *
  *              SECTION: Misc functions
- * 4783:     function getSortNumber($table,$uid,$pid)
- * 4856:     function resorting($table,$pid,$sortRow, $return_SortNumber_After_This_Uid)
- * 4887:     function setTSconfigPermissions($fieldArray,$TSConfig_p)
- * 4904:     function newFieldArray($table)
- * 4936:     function addDefaultPermittedLanguageIfNotSet($table,&$incomingFieldArray)
- * 4960:     function overrideFieldArray($table,$data)
- * 4976:     function compareFieldArrayWithCurrentAndUnset($table,$id,$fieldArray)
- * 5022:     function assemblePermissions($string)
- * 5039:     function rmComma($input)
- * 5049:     function convNumEntityToByteValue($input)
- * 5071:     function destPathFromUploadFolder($folder)
- * 5081:     function deleteClause($table)
- * 5097:     function getTCEMAIN_TSconfig($tscPID)
- * 5112:     function getTableEntries($table,$TSconfig)
- * 5125:     function getPID($table,$uid)
- * 5138:     function dbAnalysisStoreExec()
- * 5154:     function removeRegisteredFiles()
- * 5166:     function removeCacheFiles()
- * 5180:     function int_pageTreeInfo($CPtable,$pid,$counter, $rootID)
- * 5201:     function compileAdminTables()
- * 5218:     function fixUniqueInPid($table,$uid)
- * 5254:     function fixCopyAfterDuplFields($table,$uid,$prevUid,$update, $newData=array())
- * 5279:     function extFileFields($table)
- * 5300:     function getUniqueFields($table)
- * 5325:     function isReferenceField($conf)
- * 5336:     function getInlineFieldType($conf)
- * 5359:     function getCopyHeader($table,$pid,$field,$value,$count,$prevTitle='')
- * 5388:     function prependLabel($table)
- * 5405:     function resolvePid($table,$pid)
- * 5435:     function clearPrefixFromValue($table,$value)
- * 5450:     function extFileFunctions($table,$field,$filelist,$func)
- * 5480:     function noRecordsFromUnallowedTables($inList)
- * 5506:     function notifyStageChange($stat,$stageId,$table,$id,$comment)
- * 5601:     function notifyStageChange_getEmails($listOfUsers,$noTablePrefix=FALSE)
+ * 4886:     function getSortNumber($table,$uid,$pid)
+ * 4959:     function resorting($table,$pid,$sortRow, $return_SortNumber_After_This_Uid)
+ * 4990:     function setTSconfigPermissions($fieldArray,$TSConfig_p)
+ * 5007:     function newFieldArray($table)
+ * 5039:     function addDefaultPermittedLanguageIfNotSet($table,&$incomingFieldArray)
+ * 5063:     function overrideFieldArray($table,$data)
+ * 5079:     function compareFieldArrayWithCurrentAndUnset($table,$id,$fieldArray)
+ * 5125:     function assemblePermissions($string)
+ * 5142:     function rmComma($input)
+ * 5152:     function convNumEntityToByteValue($input)
+ * 5174:     function destPathFromUploadFolder($folder)
+ * 5184:     function deleteClause($table)
+ * 5200:     function getTCEMAIN_TSconfig($tscPID)
+ * 5215:     function getTableEntries($table,$TSconfig)
+ * 5228:     function getPID($table,$uid)
+ * 5241:     function dbAnalysisStoreExec()
+ * 5257:     function removeRegisteredFiles()
+ * 5269:     function removeCacheFiles()
+ * 5283:     function int_pageTreeInfo($CPtable,$pid,$counter, $rootID)
+ * 5304:     function compileAdminTables()
+ * 5321:     function fixUniqueInPid($table,$uid)
+ * 5357:     function fixCopyAfterDuplFields($table,$uid,$prevUid,$update, $newData=array())
+ * 5382:     function extFileFields($table)
+ * 5403:     function getUniqueFields($table)
+ * 5428:     function isReferenceField($conf)
+ * 5439:     function getInlineFieldType($conf)
+ * 5462:     function getCopyHeader($table,$pid,$field,$value,$count,$prevTitle='')
+ * 5491:     function prependLabel($table)
+ * 5508:     function resolvePid($table,$pid)
+ * 5538:     function clearPrefixFromValue($table,$value)
+ * 5553:     function extFileFunctions($table,$field,$filelist,$func)
+ * 5583:     function noRecordsFromUnallowedTables($inList)
+ * 5609:     function notifyStageChange($stat,$stageId,$table,$id,$comment)
+ * 5704:     function notifyStageChange_getEmails($listOfUsers,$noTablePrefix=FALSE)
  *
  *              SECTION: Clearing cache
- * 5647:     function clear_cache($table,$uid)
- * 5757:     function clear_cacheCmd($cacheCmd)
+ * 5750:     function clear_cache($table,$uid)
+ * 5860:     function clear_cacheCmd($cacheCmd)
  *
  *              SECTION: Logging
- * 5863:     function log($table,$recuid,$action,$recpid,$error,$details,$details_nr=-1,$data=array(),$event_pid=-1,$NEWid='')
- * 5880:     function newlog($message, $error=0)
- * 5890:     function printLogErrorMessages($redirect)
+ * 5966:     function log($table,$recuid,$action,$recpid,$error,$details,$details_nr=-1,$data=array(),$event_pid=-1,$NEWid='')
+ * 5983:     function newlog($message, $error=0)
+ * 5993:     function printLogErrorMessages($redirect)
  *
- * TOTAL FUNCTIONS: 120
+ * TOTAL FUNCTIONS: 123
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -325,7 +328,7 @@ class t3lib_TCEmain	{
 	var $copyMappingArray = Array();			// Used by the copy action to track the ids of new pages so subpages are correctly inserted! THIS is internally cleared for each executed copy operation! DO NOT USE THIS FROM OUTSIDE! Read from copyMappingArray_merged instead which is accumulating this information.
 	var $remapStack = array();					// array used for remapping uids and values at the end of process_datamap
 	var $updateRefIndexStack = array();			// array used for additional calls to $this->updateRefIndex
-	
+
 		// Various
 	var $fileFunc;								// For "singleTon" file-manipulation object
 	var $checkValue_currentRecord=array();		// Set to "currentRecord" during checking of values.
@@ -810,13 +813,13 @@ class t3lib_TCEmain	{
 		}
 
 		// call_user_func_array
-		
+
 			// Process the stack of relations to remap/correct
 		if(is_array($this->remapStack)) {
 			foreach($this->remapStack as $remapAction) {
 					// if no position index for the arguments was set, skip this remap action
 				if (!is_array($remapAction['pos'])) continue;
-				
+
 					// load values from the argument array in remapAction
 				$field = $remapAction['field'];
 				$id = $remapAction['args'][$remapAction['pos']['id']];
@@ -845,7 +848,7 @@ class t3lib_TCEmain	{
 					array($this, $remapAction['func']),
 					$remapAction['args']
 				);
-				
+
 					// @TODO: Add option to disable count-field
 				$newVal = $this->checkValue_checkMax($tcaFieldConf, $remapAction['args'][$remapAction['pos']['valueArray']]);
 				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
@@ -1201,7 +1204,7 @@ class t3lib_TCEmain	{
 			break;
 			case 'group':
 			case 'select':
-				$res = $this->checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);	
+				$res = $this->checkValue_group_select($res,$value,$tcaFieldConf,$PP,$uploadedFiles,$field);
 			break;
 			case 'inline':
 				$res = $this->checkValue_inline($res,$value,$tcaFieldConf,$PP,$field);
@@ -1677,7 +1680,7 @@ class t3lib_TCEmain	{
 	 * Deletes a flex form element
 	 *
 	 * @param	array		&$valueArrayToRemoveFrom: by reference
-	 * @param	[type]		$deleteCMDS: ...	 *
+	 * @param	array		$deleteCMDS: ...	 *
 	 * @return	void
 	 */
 	function _DELETE_FLEX_FORMdata(&$valueArrayToRemoveFrom,$deleteCMDS)	{
@@ -1698,7 +1701,7 @@ class t3lib_TCEmain	{
 	 * TODO: Like _DELETE_FLEX_FORMdata, this is only a temporary solution!
 	 *
 	 * @param	array		&$valueArrayToMoveIn: by reference
-	 * @param	[type]		$moveCMDS: ...	 *
+	 * @param	array		$moveCMDS: ...	 *
 	 * @param	string		$direction: 'up' or 'down'
 	 * @return	void
 	 */
@@ -1751,10 +1754,10 @@ class t3lib_TCEmain	{
 
 			// When values are sent they come as comma-separated values which are exploded by this function:
 		$valueArray = t3lib_div::trimExplode(',', $value);
-		
+
 			// Remove duplicates: (should not be needed)
 		$valueArray = array_unique($valueArray);
-	
+
 			// Example for received data:
 			// $value = 45,NEW4555fdf59d154,12,123
 			// We need to decide whether we use the stack or can save the relation directly.
@@ -1776,7 +1779,7 @@ class t3lib_TCEmain	{
 
 		return $res;
 	}
-	
+
 	/**
 	 * Checks if a fields has more items than defined via TCA in maxitems.
 	 * If there are more items than allowd, the item list is truncated to the defined number.
@@ -1801,7 +1804,7 @@ class t3lib_TCEmain	{
 			$valueArrayC--;
 			$newVal[]=$nextVal;
 		}
-		
+
 		return $newVal;
 	}
 
@@ -2972,7 +2975,7 @@ class t3lib_TCEmain	{
 									$sortNumber = $this->getSortNumber($table,$uid,$destPid);
 									$updateFields[$sortRow] = $sortNumber;
 								}
-								
+
 									// check for child records that have also to be moved
 								$this->moveRecord_procFields($table,$uid,$destPid);
 									// Create query for update:
@@ -3075,6 +3078,7 @@ class t3lib_TCEmain	{
 	 * @param	string		$table: Record Table
 	 * @param	string		$uid: Record UID
 	 * @param	string		$destPid: Position to move to
+	 * @return	[type]		...
 	 */
 	function moveRecord_procFields($table,$uid,$destPid) {
 		t3lib_div::loadTCA($table);
@@ -3094,11 +3098,12 @@ class t3lib_TCEmain	{
 	 * @param	string		$field: Record field
 	 * @param	string		$value: Record field value
 	 * @param	array		$conf: TCA configuration on current field
+	 * @return	[type]		...
 	 */
 	function moveRecord_procBasedOnFieldType($table,$uid,$destPid,$field,$value,$conf) {
 		$moveTable = '';
 		$moveIds = array();
-		
+
 		if ($conf['type'] == 'inline')	{
 			$foreign_table = $conf['foreign_table'];
 
@@ -3111,7 +3116,7 @@ class t3lib_TCEmain	{
 				}
 			}
 		}
-		
+
 			// move the records
 		if (isset($dbAnalysis)) {
 			foreach ($dbAnalysis->itemArray as $v) {
@@ -3119,7 +3124,7 @@ class t3lib_TCEmain	{
 			}
 		}
 	}
-		
+
 	/**
 	 * Localizes a record to another system language
 	 *
@@ -3375,7 +3380,7 @@ class t3lib_TCEmain	{
 					}
 					unset($this->updateRefIndexStack[$table][$uid]);
 				}
-				
+
 			} else $this->log($table,$uid,3,0,1,'Attempt to delete record without delete-permissions');
 		}
 	}
@@ -3529,7 +3534,7 @@ class t3lib_TCEmain	{
 					}
 				}
 			}
-			
+
 			// no delete action but calls to updateRefIndex *AFTER* this record was deleted
 		} elseif ($this->isReferenceField($conf)) {
 			$allowedTables = $conf['type']=='group' ? $conf['allowed'] : $conf['foreign_table'].','.$conf['neg_foreign_table'];
@@ -4114,7 +4119,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	 */
 	function remapListedDBRecords_procInline($conf, $value, $uid, $table) {
 		$theUidToUpdate = $this->copyMappingArray_merged[$table][$uid];
-		
+
 		if ($conf['foreign_table']) {
 			$inlineType = $this->getInlineFieldType($conf);
 

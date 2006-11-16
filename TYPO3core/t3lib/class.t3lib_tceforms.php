@@ -39,129 +39,129 @@
  *
  *
  *  196: class t3lib_TCEforms
- *  301:     function t3lib_TCEforms()
+ *  302:     function t3lib_TCEforms()
  *  338:     function initDefaultBEmode()
  *
  *              SECTION: Rendering the forms, fields etc
- *  383:     function getSoloField($table,$row,$theFieldToReturn)
- *  422:     function getMainFields($table,$row,$depth=0)
- *  616:     function getListedFields($table,$row,$list)
- *  658:     function getPaletteFields($table,$row,$palette,$header='',$itemList='',$collapsedHeader='')
- *  735:     function getSingleField($table,$field,$row,$altName='',$palette=0,$extra='',$pal=0)
- *  917:     function getSingleField_SW($table,$field,$row,&$PA)
+ *  385:     function getSoloField($table,$row,$theFieldToReturn)
+ *  424:     function getMainFields($table,$row,$depth=0)
+ *  618:     function getListedFields($table,$row,$list)
+ *  660:     function getPaletteFields($table,$row,$palette,$header='',$itemList='',$collapsedHeader='')
+ *  737:     function getSingleField($table,$field,$row,$altName='',$palette=0,$extra='',$pal=0)
+ *  900:     function getSingleField_SW($table,$field,$row,&$PA)
  *
  *              SECTION: Rendering of each TCEform field type
- *  993:     function getSingleField_typeInput($table,$field,$row,&$PA)
- * 1074:     function getSingleField_typeText($table,$field,$row,&$PA)
- * 1195:     function getSingleField_typeCheck($table,$field,$row,&$PA)
- * 1261:     function getSingleField_typeRadio($table,$field,$row,&$PA)
- * 1296:     function getSingleField_typeSelect($table,$field,$row,&$PA)
- * 1376:     function getSingleField_typeSelect_single($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
- * 1493:     function getSingleField_typeSelect_checkbox($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
- * 1612:     function getSingleField_typeSelect_singlebox($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
- * 1722:     function getSingleField_typeSelect_multiple($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
- * 1826:     function getSingleField_typeGroup($table,$field,$row,&$PA)
- * 1995:     function getSingleField_typeNone($table,$field,$row,&$PA)
- * 2011:     function getSingleField_typeNone_render($config,$itemValue)
- * 2073:     function getSingleField_typeFlex($table,$field,$row,&$PA)
- * 2208:     function getSingleField_typeFlex_langMenu($languages,$elName,$selectedLanguage,$multi=1)
- * 2227:     function getSingleField_typeFlex_sheetMenu($sArr,$elName,$sheetKey)
- * 2262:     function getSingleField_typeFlex_draw($dataStruct,$editData,$cmdData,$table,$field,$row,&$PA,$formPrefix='',$level=0,$tRows=array())
- * 2455:     function getSingleField_typeUnknown($table,$field,$row,&$PA)
- * 2470:     function getSingleField_typeUser($table,$field,$row,&$PA)
+ *  976:     function getSingleField_typeInput($table,$field,$row,&$PA)
+ * 1057:     function getSingleField_typeText($table,$field,$row,&$PA)
+ * 1178:     function getSingleField_typeCheck($table,$field,$row,&$PA)
+ * 1244:     function getSingleField_typeRadio($table,$field,$row,&$PA)
+ * 1279:     function getSingleField_typeSelect($table,$field,$row,&$PA)
+ * 1359:     function getSingleField_typeSelect_single($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
+ * 1488:     function getSingleField_typeSelect_checkbox($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
+ * 1607:     function getSingleField_typeSelect_singlebox($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
+ * 1717:     function getSingleField_typeSelect_multiple($table,$field,$row,&$PA,$config,$selItems,$nMV_label)
+ * 1821:     function getSingleField_typeGroup($table,$field,$row,&$PA)
+ * 1990:     function getSingleField_typeNone($table,$field,$row,&$PA)
+ * 2006:     function getSingleField_typeNone_render($config,$itemValue)
+ * 2068:     function getSingleField_typeFlex($table,$field,$row,&$PA)
+ * 2203:     function getSingleField_typeFlex_langMenu($languages,$elName,$selectedLanguage,$multi=1)
+ * 2222:     function getSingleField_typeFlex_sheetMenu($sArr,$elName,$sheetKey)
+ * 2257:     function getSingleField_typeFlex_draw($dataStruct,$editData,$cmdData,$table,$field,$row,&$PA,$formPrefix='',$level=0,$tRows=array())
+ * 2450:     function getSingleField_typeUnknown($table,$field,$row,&$PA)
+ * 2465:     function getSingleField_typeUser($table,$field,$row,&$PA)
  *
  *              SECTION: Field content processing
- * 2499:     function formatValue ($config, $itemValue)
+ * 2494:     function formatValue ($config, $itemValue)
  *
  *              SECTION: "Configuration" fetching/processing functions
- * 2591:     function getRTypeNum($table,$row)
- * 2617:     function rearrange($fields)
- * 2643:     function getExcludeElements($table,$row,$typeNum)
- * 2691:     function getFieldsToAdd($table,$row,$typeNum)
- * 2716:     function mergeFieldsWithAddedFields($fields,$fieldsToAdd)
- * 2748:     function setTSconfig($table,$row,$field='')
- * 2770:     function getSpecConfForField($table,$row,$field)
- * 2791:     function getSpecConfFromString($extraString, $defaultExtras)
+ * 2586:     function getRTypeNum($table,$row)
+ * 2612:     function rearrange($fields)
+ * 2638:     function getExcludeElements($table,$row,$typeNum)
+ * 2686:     function getFieldsToAdd($table,$row,$typeNum)
+ * 2711:     function mergeFieldsWithAddedFields($fields,$fieldsToAdd)
+ * 2743:     function setTSconfig($table,$row,$field='')
+ * 2765:     function getSpecConfForField($table,$row,$field)
+ * 2786:     function getSpecConfFromString($extraString, $defaultExtras)
  *
  *              SECTION: Display of localized content etc.
- * 2819:     function registerDefaultLanguageData($table,$rec)
- * 2851:     function getLanguageOverlayRawValue($table, $row, $field, $fieldConf)
- * 2879:     function renderDefaultLanguageContent($table,$field,$row,$item)
- * 2902:     function renderDefaultLanguageDiff($table,$field,$row,$item)
+ * 2814:     function registerDefaultLanguageData($table,$rec)
+ * 2846:     function getLanguageOverlayRawValue($table, $row, $field, $fieldConf)
+ * 2874:     function renderDefaultLanguageContent($table,$field,$row,$item)
+ * 2897:     function renderDefaultLanguageDiff($table,$field,$row,$item)
  *
  *              SECTION: Form element helper functions
- * 2958:     function dbFileIcons($fName,$mode,$allowed,$itemArray,$selector='',$params=array(),$onFocus='')
- * 3111:     function getClipboardElements($allowed,$mode)
- * 3160:     function getClickMenu($str,$table,$uid='')
- * 3181:     function renderWizards($itemKinds,$wizConf,$table,$row,$field,&$PA,$itemName,$specConf,$RTE=0)
- * 3385:     function getIcon($icon)
- * 3412:     function optionTagStyle($iconString)
- * 3428:     function extractValuesOnlyFromValueLabelList($itemFormElValue)
- * 3450:     function wrapOpenPalette($header,$table,$row,$palette,$retFunc=0)
- * 3474:     function checkBoxParams($itemName,$thisValue,$c,$iCount,$addFunc='')
- * 3488:     function elName($itemName)
- * 3499:     function noTitle($str,$wrapParts=array())
- * 3508:     function blur()
- * 3517:     function thisReturnUrl()
- * 3530:     function getSingleHiddenField($table,$field,$row)
- * 3552:     function formWidth($size=48,$textarea=0)
- * 3579:     function formWidthText($size=48,$wrap='')
- * 3595:     function formElStyle($type)
- * 3606:     function formElClass($type)
- * 3617:     function formElStyleClassValue($type, $class=FALSE)
- * 3641:     function insertDefStyle($type)
- * 3660:     function getDynTabMenu($parts, $idString)
+ * 2953:     function dbFileIcons($fName,$mode,$allowed,$itemArray,$selector='',$params=array(),$onFocus='')
+ * 3106:     function getClipboardElements($allowed,$mode)
+ * 3155:     function getClickMenu($str,$table,$uid='')
+ * 3176:     function renderWizards($itemKinds,$wizConf,$table,$row,$field,&$PA,$itemName,$specConf,$RTE=0)
+ * 3380:     function getIcon($icon)
+ * 3407:     function optionTagStyle($iconString)
+ * 3423:     function extractValuesOnlyFromValueLabelList($itemFormElValue)
+ * 3445:     function wrapOpenPalette($header,$table,$row,$palette,$retFunc=0)
+ * 3469:     function checkBoxParams($itemName,$thisValue,$c,$iCount,$addFunc='')
+ * 3483:     function elName($itemName)
+ * 3494:     function noTitle($str,$wrapParts=array())
+ * 3503:     function blur()
+ * 3512:     function thisReturnUrl()
+ * 3525:     function getSingleHiddenField($table,$field,$row)
+ * 3547:     function formWidth($size=48,$textarea=0)
+ * 3574:     function formWidthText($size=48,$wrap='')
+ * 3590:     function formElStyle($type)
+ * 3601:     function formElClass($type)
+ * 3612:     function formElStyleClassValue($type, $class=FALSE)
+ * 3636:     function insertDefStyle($type)
+ * 3655:     function getDynTabMenu($parts, $idString)
  *
  *              SECTION: Item-array manipulation functions (check/select/radio)
- * 3699:     function initItemArray($fieldValue)
- * 3717:     function addItems($items,$iArray)
- * 3739:     function procItems($items,$iArray,$config,$table,$row,$field)
- * 3763:     function addSelectOptionsToItemArray($items,$fieldValue,$TSconfig,$field)
- * 3983:     function addSelectOptionsToItemArray_makeModuleData($value)
- * 4005:     function foreignTable($items,$fieldValue,$TSconfig,$field,$pFFlag=0)
+ * 3694:     function initItemArray($fieldValue)
+ * 3712:     function addItems($items,$iArray)
+ * 3734:     function procItems($items,$iArray,$config,$table,$row,$field)
+ * 3758:     function addSelectOptionsToItemArray($items,$fieldValue,$TSconfig,$field)
+ * 3978:     function addSelectOptionsToItemArray_makeModuleData($value)
+ * 4000:     function foreignTable($items,$fieldValue,$TSconfig,$field,$pFFlag=0)
  *
  *              SECTION: Template functions
- * 4086:     function setNewBEDesign()
- * 4141:     function intoTemplate($inArr,$altTemplate='')
- * 4165:     function addUserTemplateMarkers($marker,$table,$field,$row,&$PA)
- * 4176:     function wrapLabels($str)
- * 4189:     function wrapTotal($c,$rec,$table)
- * 4202:     function replaceTableWrap($arr,$rec,$table)
- * 4241:     function wrapBorder(&$out_array,&$out_pointer)
- * 4263:     function rplColorScheme($inTemplate)
- * 4283:     function getDivider()
- * 4293:     function printPalette($palArr)
- * 4344:     function helpTextIcon($table,$field,$force=0)
- * 4364:     function helpText($table,$field)
- * 4385:     function setColorScheme($scheme)
- * 4409:     function resetSchemes()
- * 4420:     function storeSchemes()
- * 4432:     function restoreSchemes()
+ * 4081:     function setNewBEDesign()
+ * 4136:     function intoTemplate($inArr,$altTemplate='')
+ * 4160:     function addUserTemplateMarkers($marker,$table,$field,$row,&$PA)
+ * 4171:     function wrapLabels($str)
+ * 4184:     function wrapTotal($c,$rec,$table)
+ * 4197:     function replaceTableWrap($arr,$rec,$table)
+ * 4234:     function wrapBorder(&$out_array,&$out_pointer)
+ * 4256:     function rplColorScheme($inTemplate)
+ * 4276:     function getDivider()
+ * 4286:     function printPalette($palArr)
+ * 4337:     function helpTextIcon($table,$field,$force=0)
+ * 4357:     function helpText($table,$field)
+ * 4378:     function setColorScheme($scheme)
+ * 4402:     function resetSchemes()
+ * 4413:     function storeSchemes()
+ * 4425:     function restoreSchemes()
  *
  *              SECTION: JavaScript related functions
- * 4462:     function JStop()
- * 4513:     function JSbottom($formname='forms[0]')
- * 4827:     function dbFileCon($formObj='document.forms[0]')
- * 5045:     function printNeededJSFunctions()
- * 5072:     function printNeededJSFunctions_top()
+ * 4455:     function JStop()
+ * 4506:     function JSbottom($formname='forms[0]')
+ * 4833:     function dbFileCon($formObj='document.forms[0]')
+ * 5051:     function printNeededJSFunctions()
+ * 5078:     function printNeededJSFunctions_top()
  *
  *              SECTION: Various helper functions
- * 5120:     function getDefaultRecord($table,$pid=0)
- * 5159:     function getRecordPath($table,$rec)
- * 5173:     function readPerms()
- * 5187:     function sL($str)
- * 5200:     function getLL($str)
- * 5221:     function isPalettesCollapsed($table,$palette)
- * 5237:     function isDisplayCondition($displayCond,$row,$ffValueKey='')
- * 5341:     function getTSCpid($table,$uid,$pid)
- * 5355:     function doLoadTableDescr($table)
- * 5367:     function getAvailableLanguages($onlyIsoCoded=1,$setDefault=1)
+ * 5126:     function getDefaultRecord($table,$pid=0)
+ * 5165:     function getRecordPath($table,$rec)
+ * 5179:     function readPerms()
+ * 5193:     function sL($str)
+ * 5206:     function getLL($str)
+ * 5227:     function isPalettesCollapsed($table,$palette)
+ * 5243:     function isDisplayCondition($displayCond,$row,$ffValueKey='')
+ * 5347:     function getTSCpid($table,$uid,$pid)
+ * 5361:     function doLoadTableDescr($table)
+ * 5373:     function getAvailableLanguages($onlyIsoCoded=1,$setDefault=1)
  *
  *
- * 5409: class t3lib_TCEforms_FE extends t3lib_TCEforms
- * 5417:     function wrapLabels($str)
- * 5427:     function printPalette($palArr)
- * 5452:     function setFancyDesign()
+ * 5415: class t3lib_TCEforms_FE extends t3lib_TCEforms
+ * 5423:     function wrapLabels($str)
+ * 5433:     function printPalette($palArr)
+ * 5458:     function setFancyDesign()
  *
  * TOTAL FUNCTIONS: 100
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -751,7 +751,7 @@ class t3lib_TCEforms	{
 		$PA['fieldConf'] = $TCA[$table]['columns'][$field];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
 
-		$skipThisField = $this->inline->getSingleField_typeInline_skipField($table, $field, $PA['fieldConf']['config']);
+		$skipThisField = $this->inline->skipField($table, $field, $PA['fieldConf']['config']);
 
 			// Now, check if this field is configured and editable (according to excludefields + other configuration)
 		if (	is_array($PA['fieldConf']) &&
@@ -822,7 +822,7 @@ class t3lib_TCEforms	{
 					$PA['fieldChangeFunc']['TBE_EDITOR_fieldChanged'] = "TBE_EDITOR_fieldChanged('".$table."','".$row['uid']."','".$field."','".$PA['itemFormElName']."');";
 					$PA['fieldChangeFunc']['alert']=$alertMsgOnChange;
 						// if this is the child of an inline type and it is the field creating the label
-					if ($this->inline->getSingleField_typeInline_isInlineChildAndLabelField($table, $field)) {
+					if ($this->inline->isInlineChildAndLabelField($table, $field)) {
 						$PA['fieldChangeFunc']['inline'] = "inline.handleChangedField('".$PA['itemFormElName']."','".$this->inline->inlineNames['object']."[$table][".$row['uid']."]');";
 					}
 
@@ -1358,13 +1358,13 @@ class t3lib_TCEforms	{
 	 */
 	function getSingleField_typeSelect_single($table,$field,$row,&$PA,$config,$selItems,$nMV_label)	{
 			// check against inline uniqueness
-		$inlineParent = $this->inline->getSingleField_typeInline_getStructureLevel(-1);
+		$inlineParent = $this->inline->getStructureLevel(-1);
 		if(is_array($inlineParent) && $inlineParent['uid']) {
 			if ($inlineParent['config']['foreign_table'] == $table && $inlineParent['config']['foreign_unique'] == $field) {
 				$uniqueIds = $this->inline->inlineData['unique'][$this->inline->inlineNames['object'].'['.$table.']']['used'];
 				$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['form']."','".$row['uid']."');";
 			}
-				// @TODO: Useful only for symmetric mm relations: 
+				// @TODO: Useful only for symmetric mm relations:
 			//$uniqueIds[] = $inlineParent['uid'];
 		}
 
@@ -4507,14 +4507,14 @@ class t3lib_TCEforms	{
 				// add JS needed for inline fields
 			if ($this->inline->inlineCount > 0) {
 				if (count($this->inline->inlineData)) {
-					$inlineData = 'inline.addToDataArray('.$this->inline->getSingleField_typeInline_getJSON($this->inline->inlineData).');';
+					$inlineData = 'inline.addToDataArray('.$this->inline->getJSON($this->inline->inlineData).');';
 				}
 
-				$out .= $this->inline->getSingleField_typeInline_addJavaScript();
+				$out .= $this->inline->addJavaScript();
 				$out .= t3lib_div::wrapJS('
 					inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
 					inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
-					'.$inlineData.'				
+					'.$inlineData.'
 				');
 			}
 
