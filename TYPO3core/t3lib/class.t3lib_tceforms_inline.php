@@ -763,7 +763,7 @@ class t3lib_TCEforms_inline {
 		$onClick = "return inline.createNewRecord('$objectPrefix')";
 		$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createnew',1);
 
-		if ($conf['appearance']['addTableTitleToHeader'])
+		if ($conf['appearance']['newRecordLinkAddTitle'])
 			$title .= ' '.$GLOBALS['LANG']->sL($GLOBALS['TCA'][$conf['foreign_table']]['ctrl']['title'],1);
 
 		$out = '
