@@ -37,20 +37,21 @@
  *
  *
  *
- *   75: class t3lib_loadDBGroup
- *  109:     function start($itemlist, $tablelist, $MMtable='', $MMuid=0, $currentTable='', $conf=array())
- *  177:     function readList($itemlist)
- *  223:     function readMM($tableName,$uid)
- *  274:     function writeMM($tableName,$uid,$prependTableName=0)
- *  350:     function readForeignField($uid, $conf)
- *  394:     function writeForeignField($conf, $parentUid = 0)
- *  429:     function getValueArray($prependTableName='')
- *  457:     function convertPosNeg($valueArray,$fTable,$nfTable)
- *  479:     function getFromDB()
- *  514:     function readyForInterface()
- *  540:     function countItems($returnAsArray = true)
+ *   76: class t3lib_loadDBGroup
+ *  111:     function start($itemlist, $tablelist, $MMtable='', $MMuid=0, $currentTable='', $conf=array())
+ *  179:     function readList($itemlist)
+ *  225:     function readMM($tableName,$uid)
+ *  276:     function writeMM($tableName,$uid,$prependTableName=0)
+ *  352:     function readForeignField($uid, $conf)
+ *  435:     function writeForeignField($conf, $parentUid, $updateToUid=0)
+ *  508:     function getValueArray($prependTableName='')
+ *  536:     function convertPosNeg($valueArray,$fTable,$nfTable)
+ *  558:     function getFromDB()
+ *  593:     function readyForInterface()
+ *  619:     function countItems($returnAsArray = true)
+ *  634:     function updateRefIndex($table,$id)
  *
- * TOTAL FUNCTIONS: 11
+ * TOTAL FUNCTIONS: 12
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -363,22 +364,22 @@ class t3lib_loadDBGroup	{
 
 			// strip a possible "ORDER BY" in front of the $sortby value
 		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
-	
+
 			// get the rows from storage
 		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,'','',$sortby,'',$useDeleteClause);
-		
+
 			// Handle symmetric relations
 		if ($conf['symmetric_field']) {
 			$symSortby = $conf['symmetric_sortby'] ? $conf['symmetric_sortby'] : $sortby;
 			$symRows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['symmetric_field'],$uid,'','',$symSortby,'',$useDeleteClause);
-			
+
 			if (count($symRows)) {
 					// if there are rows and symRows, we have to merge them, but keeping the sorting order
 				if (count($rows)) {
 					$newRows = array();
 					reset($rows);
 					reset($symRows);
-					
+
 					$row = current($rows);
 					$symRow = current($symRows);
 
@@ -392,8 +393,8 @@ class t3lib_loadDBGroup	{
 							// all better sorted symRows have been processed, now add the row itself
 						$newRows[] = $row;
 						$row = next($rows);
-					
-							// if there are no more rows, paste all remaining symRows	
+
+							// if there are no more rows, paste all remaining symRows
 						if ($row == false && $symRow != false) {
 							while (is_array($symRow)) {
 								$newRows[] = $symRow;
@@ -401,14 +402,14 @@ class t3lib_loadDBGroup	{
 							}
 						}
 					}
-					
+
 						// set the rows value to the new ordered array
 					$rows = $newRows;
-					
+
 					// there are no rows, just symRows, so we use them - sorting comes from database
 				} else {
 					$rows = $symRows;
-					
+
 				}
 			}
 		}
@@ -620,7 +621,7 @@ class t3lib_loadDBGroup	{
 		if ($returnAsArray) $count = array($count);
 		return $count;
 	}
-	
+
 	/**
 	 * Update Reference Index (sys_refindex) for a record
 	 * Should be called any almost any update to a record which could affect references inside the record.
@@ -634,7 +635,7 @@ class t3lib_loadDBGroup	{
 		$refIndexObj = t3lib_div::makeInstance('t3lib_refindex');
 		$result = $refIndexObj->updateRefIndexTable($table,$id);
 	}
-	
+
 	/**
 	 * Checks, if we're looking from the "other" side, the symmetric side, to a symmetric relation.
 	 *

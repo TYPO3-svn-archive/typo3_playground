@@ -36,25 +36,25 @@
  *
  *
  *
- *   76: class t3lib_refindex
- *   94:     function updateRefIndexTable($table,$uid,$testOnly=FALSE)
- *  165:     function generateRefIndexData($table,$uid)
- *  242:     function createEntryData($table,$uid,$field,$flexpointer,$deleted,$ref_table,$ref_uid,$ref_string='',$sort=-1,$softref_key='',$softref_id='')
- *  269:     function createEntryData_dbRels($table,$uid,$fieldname,$flexpointer,$deleted,$items)
- *  286:     function createEntryData_fileRels($table,$uid,$fieldname,$flexpointer,$deleted,$items)
- *  307:     function createEntryData_softreferences($table,$uid,$fieldname,$flexpointer,$deleted,$keys)
+ *   83: class t3lib_refindex
+ *  101:     function updateRefIndexTable($table,$uid,$testOnly=FALSE)
+ *  172:     function generateRefIndexData($table,$uid)
+ *  253:     function createEntryData($table,$uid,$field,$flexpointer,$deleted,$ref_table,$ref_uid,$ref_string='',$sort=-1,$softref_key='',$softref_id='')
+ *  280:     function createEntryData_dbRels($table,$uid,$fieldname,$flexpointer,$deleted,$items)
+ *  297:     function createEntryData_fileRels($table,$uid,$fieldname,$flexpointer,$deleted,$items)
+ *  318:     function createEntryData_softreferences($table,$uid,$fieldname,$flexpointer,$deleted,$keys)
  *
  *              SECTION: Get relations from table row
- *  362:     function getRelations($table,$row)
- *  459:     function getRelations_flexFormCallBack($dsArr, $dataValue, $PA, $structurePath, &$pObj)
- *  509:     function getRelations_procFiles($value, $conf, $uid)
- *  559:     function getRelations_procDB($value, $conf, $uid)
+ *  373:     function getRelations($table,$row)
+ *  470:     function getRelations_flexFormCallBack($dsArr, $dataValue, $PA, $structurePath, &$pObj)
+ *  520:     function getRelations_procFiles($value, $conf, $uid)
+ *  571:     function getRelations_procDB($value, $conf, $uid, $table = '')
  *
  *              SECTION: Helper functions
- *  596:     function isReferenceField($conf)
- *  606:     function destPathFromUploadFolder($folder)
- *  616:     function error($msg)
- *  627:     function updateIndex($testOnly,$cli_echo=FALSE)
+ *  612:     function isReferenceField($conf)
+ *  622:     function destPathFromUploadFolder($folder)
+ *  632:     function error($msg)
+ *  643:     function updateIndex($testOnly,$cli_echo=FALSE)
  *
  * TOTAL FUNCTIONS: 14
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -69,10 +69,10 @@ require_once(PATH_t3lib.'class.t3lib_flexformtools.php');
 /**
  * Reference index processing and relation extraction
  *
- * NOTICE: When the reference index is updated for an offline version the results may not be correct. 
+ * NOTICE: When the reference index is updated for an offline version the results may not be correct.
  * First, lets assumed that the reference update happens in LIVE workspace (ALWAYS update from Live workspace if you analyse whole database!)
  * Secondly, lets assume that in a Draft workspace you have changed the data structure of a parent page record - this is (in TemplaVoila) inherited by subpages.
- * When in the LIVE workspace the data structure for the records/pages in the offline workspace will not be evaluated to the right one simply because the data structure is taken from a rootline traversal and in the Live workspace that will NOT include the changed DataSTructure! Thus the evaluation will be based on the Data Structure set in the Live workspace! 
+ * When in the LIVE workspace the data structure for the records/pages in the offline workspace will not be evaluated to the right one simply because the data structure is taken from a rootline traversal and in the Live workspace that will NOT include the changed DataSTructure! Thus the evaluation will be based on the Data Structure set in the Live workspace!
  * Somehow this scenario is rarely going to happen. Yet, it is an inconsistency and I see now practical way to handle it - other than simply ignoring maintaining the index for workspace records. Or we can say that the index is precise for all Live elements while glitches might happen in an offline workspace?
  * Anyway, I just wanted to document this finding - I don't think we can find a solution for it. And its very TemplaVoila specific.
  *
@@ -565,7 +565,7 @@ class t3lib_refindex {
 	 * @param	string		Field value
 	 * @param	array		Field configuration array of type "TCA/columns"
 	 * @param	integer		Field uid
-	 * @param 	string		Table name
+	 * @param	string		Table name
 	 * @return	array		If field type is OK it will return an array with the database relations. Else false
 	 */
 	function getRelations_procDB($value, $conf, $uid, $table = '')	{

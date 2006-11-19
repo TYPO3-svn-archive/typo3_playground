@@ -34,53 +34,54 @@
  *
  *
  *
- *   87: class t3lib_TCEforms_inline
- *  108:     function init(&$tceForms)
- *  126:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *   88: class t3lib_TCEforms_inline
+ *  109:     function init(&$tceForms)
+ *  127:     function getSingleField_typeInline($table,$field,$row,&$PA)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  250:     function renderForeignRecord($parentUid, $rec, $config = array())
- *  311:     function renderForeignRecordHeader($foreign_table,$rec,$config = array())
- *  360:     function renderForeignRecordHeaderControl($table,$row,$config = array())
- *  486:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
- *  543:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
- *  608:     function addJavaScript()
- *  624:     function addJavaScriptSortable($objectId)
+ *  251:     function renderForeignRecord($parentUid, $rec, $config = array())
+ *  306:     function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array())
+ *  359:     function renderForeignRecordHeaderControl($table,$row,$config = array())
+ *  485:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
+ *  539:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
+ *  602:     function addJavaScript()
+ *  618:     function addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling of AJAX calls
- *  658:     function createNewRecord($domObjectId, $foreignUid = 0)
- *  745:     function getJSON($jsonArray)
- *  760:     function getNewRecordLink($objectPrefix, $conf = array())
+ *  652:     function createNewRecord($domObjectId, $foreignUid = 0)
+ *  739:     function getJSON($jsonArray)
+ *  754:     function getNewRecordLink($objectPrefix, $conf = array())
  *
  *              SECTION: Get data from database and handle relations
- *  797:     function getRelatedRecords($table,$field,$row,&$PA,$config)
- *  829:     function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
- *  875:     function getUniqueIds($records, $conf=array())
- *  895:     function getRecord($pid, $table, $uid, $cmd='')
- *  935:     function getNewRecord($pid, $table)
+ *  791:     function getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  823:     function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
+ *  869:     function getUniqueIds($records, $conf=array())
+ *  889:     function getRecord($pid, $table, $uid, $cmd='')
+ *  913:     function getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- *  957:     function pushStructure($table, $uid, $field = '', $config = array())
- *  973:     function popStructure()
- *  990:     function updateStructureNames()
- * 1006:     function getStructureItemName($levelData)
- * 1021:     function getStructureLevel($level)
- * 1038:     function getStructurePath($structureDepth = -1)
- * 1063:     function parseStructureString($string, $loadConfig = false)
+ *  935:     function pushStructure($table, $uid, $field = '', $config = array())
+ *  951:     function popStructure()
+ *  968:     function updateStructureNames()
+ *  984:     function getStructureItemName($levelData)
+ *  999:     function getStructureLevel($level)
+ * 1016:     function getStructurePath($structureDepth = -1)
+ * 1041:     function parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1104:     function checkConfiguration(&$config)
- * 1129:     function checkAccess($cmd, $table, $theUid)
- * 1191:     function compareStructureConfiguration($compare)
- * 1205:     function normalizeUid($string)
- * 1219:     function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
- * 1248:     function isInlineChildAndLabelField($table, $field)
- * 1264:     function getStructureDepth()
- * 1301:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
- * 1353:     function getPossibleRecordsFlat($possibleRecords)
- * 1371:     function skipField($table, $field, $config)
+ * 1082:     function checkConfiguration(&$config)
+ * 1107:     function checkAccess($cmd, $table, $theUid)
+ * 1169:     function compareStructureConfiguration($compare)
+ * 1183:     function normalizeUid($string)
+ * 1197:     function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
+ * 1226:     function isInlineChildAndLabelField($table, $field)
+ * 1242:     function getStructureDepth()
+ * 1279:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1333:     function isAssociativeArray($object)
+ * 1348:     function getPossibleRecordsFlat($possibleRecords)
+ * 1367:     function skipField($table, $field, $row, $config)
  *
- * TOTAL FUNCTIONS: 34
+ * TOTAL FUNCTIONS: 35
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -1310,7 +1311,7 @@ class t3lib_TCEforms_inline {
 				} else {
 					$localMatches += isset($subjectArray[$key]) && isset($value) && $subjectArray[$key] === $value ? 1 : 0;
 				}
-				
+
 					// if one or more matches are required ('OR'), return true after the first successful match
 				if ($type == '%OR' && $localMatches > 0) return true;
 					// if all matches are required ('AND') and we have no result after the first run, return false
@@ -1335,7 +1336,7 @@ class t3lib_TCEforms_inline {
 			: false;
 	}
 
-	
+
 	/**
 	 * Makes a flat array from the $possibleRecords array.
 	 * The key of the flat array is the value of the record,
@@ -1359,7 +1360,7 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$table: The table name
 	 * @param	string		$field: The field name
-	 * @param 	array		$row: The record row from the database
+	 * @param	array		$row: The record row from the database
 	 * @param	array		$config: TCA configuration of the field
 	 * @return	boolean		Determines whether the field should be skipped.
 	 */
@@ -1389,10 +1390,10 @@ class t3lib_TCEforms_inline {
 					),
 				),
 			);
-			
+
 				// get the parent record from structure stack
 			$level = $this->getStructureLevel(-1);
-			
+
 				// if we have symmetric fields, check on which side we are and hide fields, that are set automatically
 			if (t3lib_loadDBGroup::isOnSymmetricSide($level['uid'], $level['config'], $row)) {
 				$searchArray['%OR']['config'][0]['%AND']['%OR']['symmetric_field'] = $field;
@@ -1405,7 +1406,7 @@ class t3lib_TCEforms_inline {
 
 			$skipThisField = $this->compareStructureConfiguration($searchArray, true);
 		}
-		
+
 		return $skipThisField;
 	}
  }
