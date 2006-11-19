@@ -580,13 +580,11 @@ class t3lib_TCEforms_inline {
 
 				// add a "Create new relation" link for the case that the selector has a size of one item
 				// so the onChange event could not be used in this case
-			if ($config['size'] == 1) {
-				$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
-				$itemsToSelect .= '
-					<a href="#" onclick="'.htmlspecialchars($sOnChange).'">'.
-						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' title="'.$createNewRelationText.'" alt="" /> '.$createNewRelationText.
-					'</a>';
-			}
+			$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
+			$itemsToSelect .= '
+				<a href="#" onclick="'.htmlspecialchars($sOnChange).'" align="abstop">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' title="'.$createNewRelationText.'" alt="" /> '.$createNewRelationText.
+				'</a>';
 		}
 
 		return $itemsToSelect;
