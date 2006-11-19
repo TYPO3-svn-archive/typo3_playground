@@ -268,7 +268,7 @@ class t3lib_TCEforms_inline {
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 		$formFieldNames = $nameObject.$appendFormFieldNames;
 
-		$header = $this->renderForeignRecordHeader($foreign_table, $rec, $config);
+		$header = $this->renderForeignRecordHeader($parentUid, $foreign_table, $rec, $config);
 		$combination = $this->renderCombinationTable($rec, $appendFormFieldNames, $config);
 		$fields = $this->fObj->getMainFields($foreign_table,$rec);
 		$fields = $this->wrapFormsSection($fields);
@@ -285,14 +285,7 @@ class t3lib_TCEforms_inline {
 
 		$out = '<div id="'.$formFieldNames.'_header" class="sortableHandle">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
-
-			// if the fields for symmetric relations were swapped, send information about the keys (foreign_field|symmetric_fields)
-			// on saving the record, this information is swapped back for storing via TCEmain
-		if ($rec['__symmetric']) {
-			$out .= '<input type="hidden" name="'.$this->prependNaming.'[__ctrl][symmetric]' .
-				$appendFormFieldNames.'" value="'.htmlspecialchars($rec['__symmetric']).'" />';
-		}
-
+			// wrap the header, fields and combination part of a child record with a div container
 		$out = '<div id="'.$formFieldNames.'_div"'.($isNewRecord ? ' class="inlineIsNewRecord"' : '').'>' . $out . '</div>';
 
 		return $out;
@@ -303,16 +296,21 @@ class t3lib_TCEforms_inline {
 	 * Renders the HTML header for a foreign record, such as the title, toggle-function, drag'n'drop, etc.
 	 * Later on the command-icons are inserted here.
 	 *
+	 * @param	string		$parentUid: The uid of the parent (embedding) record (uid or NEW...)
 	 * @param	string		$foreign_table: The foreign_table we create a header for
 	 * @param	array		$rec: The current record of that table
 	 * @param	array		$config: content of $PA['fieldConf']['config']
 	 * @return	string		The HTML code of the header
 	 */
-	function renderForeignRecordHeader($foreign_table,$rec,$config = array()) {
+	function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array()) {
 			// if an alternative label for the field we render is set, use it
-		$titleCol = $config['foreign_label']
-			? $config['foreign_label']
-			: $GLOBALS['TCA'][$foreign_table]['ctrl']['label'];
+		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
+		if (!$isOnSymmetricSide && $config['foreign_label'])
+			$titleCol = $config['foreign_label'];
+		elseif ($isOnSymmetricSide && $config['symmetric_label'])
+			$titleCol = $config['symmetric_label'];
+		else
+			$GLOBALS['TCA'][$foreign_table]['ctrl']['label'];
 
 		$recTitle = t3lib_BEfunc::getProcessedValueExtra($foreign_table, $titleCol, $rec[$titleCol]);
 		$recTitle = $this->fObj->noTitle($recTitle);
@@ -499,15 +497,12 @@ class t3lib_TCEforms_inline {
 					$rec[$foreign_selector]
 				);
 				$isNewRecord = false;
-
 				// it's a new record, so get some default data
 			} else {
 				$comboRecord = $this->getNewRecord(
 					$this->inlineFirstPid,
 					$comboConfig['foreign_table']
 				);
-					// tell our parent (intermediate table), that we have a uid (NEW...)
-				// $rec[$foreign_selector] = $comboRecord['uid'];
 				$isNewRecord = true;
 			}
 
@@ -902,22 +897,6 @@ class t3lib_TCEforms_inline {
 		$trData->fetchRecord($table, $uid, ($cmd === 'new' ? 'new' : ''));
 		reset($trData->regTableItems_data);
 		$rec = current($trData->regTableItems_data);
-
-			// Check, if we have to swap fields for the case that the parent uid is responsible
-			// for the pointer value on the *other* side - this is the case if an other parent
-			// built the relation and were looking at it now.
-			// This is only relevant on relation records, that were already saved.
-		$level = $this->getStructureLevel(-1);
-		if (t3lib_div::testInt($rec['uid']) && $level['config']['symmetric_field']) {
-				// if our current relation was defined from the "other side", swap the value pairs
-			if ($level['uid'] == $rec[$level['config']['symmetric_field']]) {
-				$temp = $rec[$level['config']['foreign_field']];
-				$rec[$level['config']['foreign_field']] = $rec[$level['config']['symmetric_field']];
-				$rec[$level['config']['symmetric_field']] = $temp;
-				$rec['__symmetric'] = $level['config']['foreign_field'].'|'.$level['config']['symmetric_field'];
-			}
-		}
-
 		$rec['uid'] = $cmd == 'new' ? uniqid('NEW') : $uid;
 		if ($cmd=='new') $rec['pid'] = $pid;
 
@@ -1318,18 +1297,22 @@ class t3lib_TCEforms_inline {
 				$localEntries++;
 
 					// process a sub-group of OR-conditions
-				if (substr(strtoupper($key),0,3) == '%OR')
+				if ($key == '%OR') {
 					$localMatches += $this->arrayCompareComplex($subjectArray, $value, '%OR') ? 1 : 0;
 					// process a sub-group of AND-conditions
-				elseif (substr(strtoupper($key),0,4) == '%AND')
+				} elseif ($key == '%AND') {
 					$localMatches += $this->arrayCompareComplex($subjectArray, $value, '%AND') ? 1 : 0;
-					// a part of a array should be compared, so step down in the array hierarchy
-				elseif (is_array($value))
+					// a part of an associative array should be compared, so step down in the array hierarchy
+				} elseif (is_array($value) && $this->isAssociativeArray($searchArray)) {
 					$localMatches += $this->arrayCompareComplex($subjectArray[$key], $value, $type) ? 1 : 0;
+					// it is a normal array that is only used for grouping and indexing
+				} elseif (is_array($value)) {
+					$localMatches += $this->arrayCompareComplex($subjectArray, $value, $type) ? 1 : 0;
 					// directly compare a value
-				else
+				} else {
 					$localMatches += isset($subjectArray[$key]) && isset($value) && $subjectArray[$key] === $value ? 1 : 0;
-
+				}
+				
 					// if one or more matches are required ('OR'), return true after the first successful match
 				if ($type == '%OR' && $localMatches > 0) return true;
 					// if all matches are required ('AND') and we have no result after the first run, return false
@@ -1342,6 +1325,19 @@ class t3lib_TCEforms_inline {
 	}
 
 
+	/**
+	 * Checks whether an object is an associative array.
+	 *
+	 * @param	mixed		$object: The object to be checked
+	 * @return	boolean		Returns true, if the object is an associative array
+	 */
+	function isAssociativeArray($object) {
+		return is_array($object) && count($object) && (array_keys($object) !== range(0, sizeof($object) - 1))
+			? true
+			: false;
+	}
+
+	
 	/**
 	 * Makes a flat array from the $possibleRecords array.
 	 * The key of the flat array is the value of the record,
@@ -1365,40 +1361,53 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$table: The table name
 	 * @param	string		$field: The field name
-	 * @param	[type]		$config: ...
+	 * @param 	array		$row: The record row from the database
+	 * @param	array		$config: TCA configuration of the field
 	 * @return	boolean		Determines whether the field should be skipped.
 	 */
-	function skipField($table, $field, $config) {
+	function skipField($table, $field, $row, $config) {
 		$skipThisField = false;
+
 		if ($this->getStructureDepth()) {
 			$searchArray = array(
 				'%OR' => array(
-					'%AND.0' => array(
-						'config' => array(
-							'foreign_table' => $table,
-							'%OR' => array(
-								'foreign_field' => $field,
-								'foreign_sortby' => $field,
-								'%AND' => array(
-									'appearance' => array('useCombination' => 1),
-									'foreign_selector' => $field,
+					'config' => array(
+						0 => array(
+							'%AND' => array(
+								'foreign_table' => $table,
+								'%OR' => array(
+									'%AND' => array(
+										'appearance' => array('useCombination' => 1),
+										'foreign_selector' => $field,
+									),
+									'MM' => $config['MM']
 								),
-								'MM' => $config['MM']
-							)
-						)
-					),
-					'%AND.1' => array(
-						'config' => array(
+							),
+						),
+						1 => array(
 							'foreign_table' => $config['foreign_table'],
 							'foreign_selector' => $config['foreign_field']
 						),
-					)
-				)
+					),
+				),
 			);
+			
+				// get the parent record from structure stack
+			$level = $this->getStructureLevel(-1);
+			
+				// if we have symmetric fields, check on which side we are and hide fields, that are set automatically
+			if (t3lib_loadDBGroup::isOnSymmetricSide($level['uid'], $level['config'], $row)) {
+				$searchArray['%OR']['config'][0]['%AND']['%OR']['symmetric_field'] = $field;
+				$searchArray['%OR']['config'][0]['%AND']['%OR']['symmetric_sortby'] = $field;
+				// hide fields, that are set automatically
+			} else {
+				$searchArray['%OR']['config'][0]['%AND']['%OR']['foreign_field'] = $field;
+				$searchArray['%OR']['config'][0]['%AND']['%OR']['foreign_sortby'] = $field;
+			}
 
-				// if the test on the configuration was successful, skip this field
 			$skipThisField = $this->compareStructureConfiguration($searchArray, true);
 		}
+		
 		return $skipThisField;
 	}
  }

@@ -367,7 +367,7 @@ class t3lib_loadDBGroup	{
 			// get the rows from storage
 		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,'','',$sortby,'',$useDeleteClause);
 		
-			// FIXME: Experiments on bidirectional symmetric record handling with attributes
+			// Handle symmetric relations
 		if ($conf['symmetric_field']) {
 			$symSortby = $conf['symmetric_sortby'] ? $conf['symmetric_sortby'] : $sortby;
 			$symRows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['symmetric_field'],$uid,'','',$symSortby,'',$useDeleteClause);
@@ -441,26 +441,24 @@ class t3lib_loadDBGroup	{
 		if (t3lib_div::testInt($parentUid) && count($this->tableArray)) {
 				// if updateToUid is not a positive integer, set it to '0', so it will be ignored
 			if (!(t3lib_div::testInt($updateToUid) && $updateToUid > 0)) $updateToUid = 0;
-			$fields = $foreign_field.($symmetric_field ? ','.$symmetric_field : '');
+			$fields = 'uid,'.$foreign_field.($symmetric_field ? ','.$symmetric_field : '');
 
 				// update all items
 			foreach ($this->itemArray as $val) {
 				$uid = $val['id'];
 				$table = $val['table'];
 
-					// fetch the current (not overwritten) relation record if we handle symmetric relations
+					// fetch the current (not overwritten) relation record if we should handle symmetric relations
 				$row = t3lib_BEfunc::getRecord($table,$uid,$fields,'',false);
+				$isOnSymmetricSide = self::isOnSymmetricSide($parentUid, $conf, $row);
 
 				$updateValues = array();
 
 					// no update to a foreign_field/symmetric_field pointer is requested -> just sorting
 				if (!$updateToUid) {
 						// Always add the pointer to the parent uid
-					//
-
-					if ($symmetric_field && $row[$symmetric_field] == $parentUid) {
-						// do nothing
-						$updateValues[$foreign_field] = $parentUid;
+					if ($isOnSymmetricSide) {
+						$updateValues[$symmetric_field] = $parentUid;
 					} else {
 						$updateValues[$foreign_field] = $parentUid;
 					}
@@ -476,19 +474,18 @@ class t3lib_loadDBGroup	{
 					$symSortby = $conf['symmetric_sortby'];
 
 						// set the sorting on the right side, it depends on who created the relation, so what uid is in the symmetric_field
-					if ($symmetric_field && $row[$symmetric_field] == $parentUid && $symSortby)
+					if ($isOnSymmetricSide && $symSortby) {
 						$updateValues[$symSortby] = ++$c;
-					elseif ($sortby)
+					} elseif ($sortby) {
 						$updateValues[$sortby] = ++$c;
+					}
 
 					// update to a foreign_field/symmetric_field pointer is requested, normally used on record copies
 					// only update the fields, if the old uid is found somewhere - for select fields, TCEmain is doing this already!
 				} else {
-					// @TODO: Needed for symmetric relations
-					/*if ($symmetric_field && $row[$symmetric_field] == $parentUid)
+					if ($isOnSymmetricSide) {
 						$updateValues[$symmetric_field] = $updateToUid;
-					else*/
-					if ($row[$foreign_field] == $parentUid) {
+					} else {
 						$updateValues[$foreign_field] = $updateToUid;
 					}
 				}
@@ -636,6 +633,20 @@ class t3lib_loadDBGroup	{
 	function updateRefIndex($table,$id)	{
 		$refIndexObj = t3lib_div::makeInstance('t3lib_refindex');
 		$result = $refIndexObj->updateRefIndexTable($table,$id);
+	}
+	
+	/**
+	 * Checks, if we're looking from the "other" side, the symmetric side, to a symmetric relation.
+	 *
+	 * @param	string		$parentUid: The uid of the parent record
+	 * @param	array		$parentConf: The TCA configuration of the parent field embedding the child records
+	 * @param	array		$childRec: The record row of the child record
+	 * @return	boolean		Returns true if looking from the symmetric ("other") side to the relation.
+	 */
+	static function isOnSymmetricSide($parentUid, $parentConf, $childRec) {
+		return t3lib_div::testInt($childRec['uid']) && $parentConf['symmetric_field'] && $parentUid == $childRec[$parentConf['symmetric_field']]
+			? true
+			: false;
 	}
 }
 

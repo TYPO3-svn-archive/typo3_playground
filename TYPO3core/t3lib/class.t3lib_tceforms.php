@@ -751,7 +751,7 @@ class t3lib_TCEforms	{
 		$PA['fieldConf'] = $TCA[$table]['columns'][$field];
 		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
 
-		$skipThisField = $this->inline->skipField($table, $field, $PA['fieldConf']['config']);
+		$skipThisField = $this->inline->skipField($table, $field, $row, $PA['fieldConf']['config']);
 
 			// Now, check if this field is configured and editable (according to excludefields + other configuration)
 		if (	is_array($PA['fieldConf']) &&
@@ -1364,8 +1364,10 @@ class t3lib_TCEforms	{
 				$uniqueIds = $this->inline->inlineData['unique'][$this->inline->inlineNames['object'].'['.$table.']']['used'];
 				$PA['fieldChangeFunc']['inlineUnique'] = "inline.updateUnique(this,'".$this->inline->inlineNames['object'].'['.$table."]','".$this->inline->inlineNames['form']."','".$row['uid']."');";
 			}
-				// @TODO: Useful only for symmetric mm relations:
-			//$uniqueIds[] = $inlineParent['uid'];
+				// hide uid of parent record for symmetric relations
+			if ($inlineParent['config']['foreign_table'] == $table && ($inlineParent['config']['foreign_field'] == $field || $inlineParent['config']['symmetric_field'] == $field)) {
+				$uniqueIds[] = $inlineParent['uid'];
+			}
 		}
 
 			// Initialization:
