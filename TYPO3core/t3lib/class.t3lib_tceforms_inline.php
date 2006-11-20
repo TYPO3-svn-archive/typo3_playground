@@ -201,6 +201,7 @@ class t3lib_TCEforms_inline {
 			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
 		}
 
+		$item .= '<div id="'.$nameObject.'_records">';
 		$relationList = array();
 		if (count($recordList)) {
 			foreach ($recordList as $rec) {
@@ -208,18 +209,20 @@ class t3lib_TCEforms_inline {
 				$relationList[] = $rec['uid'];
 			}
 		}
-
+		$item .= '</div>';
+		
 			// add the "Create new record" link after all child records
 		if ($config['appearance']['newRecordLinkPosition'] != 'top') {
 			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
 		}
 
+			// add Drag&Drop functions for sorting to TCEforms::$additionalJS_post
+		if ($config['appearance']['useSortable'])
+			$this->addJavaScriptSortable($nameObject.'_records');
+			// publish the uids of the child records in the given order to the browser
+		$item .= '<input type="hidden" name="'.$nameForm.'" value="'.implode(',', $relationList).'" />';
 			// close the wrap for all inline fields (container)
 		$item .= '</div>';
-
-			// add Drag&Drop functions for sorting
-		// $item .= $this->addJavaScriptSortable($nameObject);
-		$item .= '<input type="hidden" name="'.$nameForm.'" value="'.implode(',', $relationList).'" />';
 
 			// on finishing this section, remove the last item from the structure stack
 		$this->popStructure();
@@ -281,11 +284,12 @@ class t3lib_TCEforms_inline {
 		}
 
 			// set the appearance style of the records of this table
-		if (is_array($config['appearance']) && count($config['appearance']))
-			$appearanceStyle = ' style="'.($config['appearance']['collapseAll'] ? 'display: none; ' : '').'"';
-
-		$out = '<div id="'.$formFieldNames.'_header" class="sortableHandle">'.$header.'</div>';
-		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyle.'>'.$fields.$combination.'</div>';
+		if (is_array($config['appearance']) && count($config['appearance'])) {
+			if ($config['appearance']['collapseAll']) $appearanceStyleFields = ' style="display: none;"';
+		}
+		
+		$out = '<div id="'.$formFieldNames.'_header">'.$header.'</div>';
+		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyleFields.'>'.$fields.$combination.'</div>';
 			// wrap the header, fields and combination part of a child record with a div container
 		$out = '<div id="'.$formFieldNames.'_div"'.($isNewRecord ? ' class="inlineIsNewRecord"' : '').'>' . $out . '</div>';
 
@@ -304,6 +308,10 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code of the header
 	 */
 	function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array()) {
+		$formFieldNames = $this->inlineNames['object'].'['.$foreign_table.']['.$rec['uid'].']';
+		$expandSingle = $config['appearance']['expandSingle'] ? 1 : 0;
+		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
+		
 			// if an alternative label for the field we render is set, use it
 		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
 		if (!$isOnSymmetricSide && $config['foreign_label'])
@@ -311,32 +319,26 @@ class t3lib_TCEforms_inline {
 		elseif ($isOnSymmetricSide && $config['symmetric_label'])
 			$titleCol = $config['symmetric_label'];
 		else
-			$GLOBALS['TCA'][$foreign_table]['ctrl']['label'];
+			$titleCol = $GLOBALS['TCA'][$foreign_table]['ctrl']['label'];
 
 		$recTitle = t3lib_BEfunc::getProcessedValueExtra($foreign_table, $titleCol, $rec[$titleCol]);
 		$recTitle = $this->fObj->noTitle($recTitle);
 
 		$altText = t3lib_BEfunc::getRecordIconAltText($rec, $foreign_table);
-		$iconImg = t3lib_iconWorks::getIconImage(
-			$foreign_table, $rec, $this->backPath,
-			'title="'.htmlspecialchars($altText).'" class="absmiddle"'
-		);
+		$iconImg =
+			'<a href="#" onclick="'.htmlspecialchars($onClick).'">'.t3lib_iconWorks::getIconImage(
+				$foreign_table, $rec, $this->backPath,
+				'title="'.htmlspecialchars($altText).'" class="absmiddle"'
+			).'</a>';
 
-		$formFieldNames = $this->inlineNames['object'].'['.$foreign_table.']['.$rec['uid'].']';
-		$expandSingle = $config['appearance']['expandSingle'] ? 1 : 0;
-		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
-		$label .= '<a href="#" onclick="'.$onClick.'" style="display: block">';
-		// $label .= '<img '.t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/plusbullet.gif').' align="absmiddle" /> ';
-		$label .= '<span id="'.$formFieldNames.'_label">'.$recTitle.'</span>';
-		$label .= '</a>';
-
-			// from class.db_list_extra.inc
-			// $theData[$fCol]=$this->makeControl($table,$rec);
-			// $theData[$fCol]=$this->makeClip($table,$rec);
+		$label =
+			'<a href="#" onclick="'.htmlspecialchars($onClick).'" style="display: block;">'.
+			//	'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"').' align="absmiddle" /> '.
+				'<span id="'.$formFieldNames.'_label">'.$recTitle.'</span>'.
+			'</a>';
 
 		$ctrl = $this->renderForeignRecordHeaderControl($foreign_table,$rec,$config);
 
-			// FIXME: Use the correct css-classes to fit with future skins etc.
 		$header =
 			'<table cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-right: 5px;"'.
 			($this->fObj->borderStyle[2] ? ' background="'.htmlspecialchars($this->backPath.$this->fObj->borderStyle[2]).'"':'').
@@ -383,6 +385,11 @@ class t3lib_TCEforms_inline {
 			// This expresses the edit permissions for this particular element:
 		$permsEdit = ($table=='pages' && ($localCalcPerms&2)) || ($table!='pages' && ($calcPerms&16));
 
+			// drag&drop sortable handler
+		if ($permsEdit && $config['appearance']['useSortable'] && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
+			$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
+		}
+		
 			// "Show" link (only pages and tt_content elements)
 		if ($table=='pages' || $table=='tt_content')	{
 			$params='&edit['.$table.']['.$row['uid'].']=edit';
@@ -579,13 +586,17 @@ class t3lib_TCEforms_inline {
 					',$opt).'
 				</select>';
 
-				// add a "Create new relation" link for the case that the selector has a size of one item
-				// so the onChange event could not be used in this case
+				// add a "Create new relation" link for adding new relations
+				// this is neccessary, if the size of the selector is "1" or if
+				// there is only one record item in the select-box, that is selected by default
+				// the selector-box creates a new relation on using a onChange event (see some line above)
 			$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
-			$itemsToSelect .= '
-				<a href="#" onclick="'.htmlspecialchars($sOnChange).'" align="abstop">'.
+			$itemsToSelect .= 
+				'<a href="#" onclick="'.htmlspecialchars($sOnChange).'" align="abstop">'.
 					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' title="'.$createNewRelationText.'" alt="" /> '.$createNewRelationText.
 				'</a>';
+				// wrap the selector and add a spacer to the bottom
+			$itemsToSelect = '<div style="margin-bottom: 20px;">'.$itemsToSelect.'</div>';
 		}
 
 		return $itemsToSelect;
@@ -613,23 +624,22 @@ class t3lib_TCEforms_inline {
 	 * Add Sortable functionality using script.acolo.us "Sortable".
 	 *
 	 * @param	string		$objectId: The container id of the object - elements inside will be sortable
-	 * @return	string		The HTML code creating the Sortable element, wrapped by <script>
 	 */
 	function addJavaScriptSortable($objectId) {
-		$jsCode = '
-		<script type="text/javascript">
+		$this->fObj->additionalJS_post[] = '
 			Sortable.create(
 				"'.$objectId.'",
 				{
-					onUpdate: function() { alert("done"); },
+					format: /^[^_\-](?:[A-Za-z0-9\[\]\-\_]*)\[(.*)\]_div$/,
+					onUpdate: inline.dragAndDropSorting,
 					tag: "div",
 					handle: "sortableHandle",
 					overlap: "vertical",
 					constraint: "vertical",
-					delay: 300
+					delay: 250
 				}
 			);
-		</script>';
+		';
 		return $jsCode;
 	}
 
@@ -697,7 +707,7 @@ class t3lib_TCEforms_inline {
 			$jsonArray = array(
 				'data'	=> $item,
 				'scriptCall' => array(
-					"inline.domAddNewRecord('bottom','".$this->inlineNames['object']."','$objectPrefix',json.data);",
+					"inline.domAddNewRecord('bottom','".$this->inlineNames['object']."_records','$objectPrefix',json.data);",
 					"inline.memorizeAddRecord('$objectPrefix','".$record['uid']."',null,'$foreignUid');"
 				)
 			);
@@ -758,13 +768,13 @@ class t3lib_TCEforms_inline {
 		$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createnew',1);
 
 		if ($conf['appearance']['newRecordLinkAddTitle'])
-			$title .= ' '.$GLOBALS['LANG']->sL($GLOBALS['TCA'][$conf['foreign_table']]['ctrl']['title'],1);
+			$tableTitle .= ' '.$GLOBALS['LANG']->sL($GLOBALS['TCA'][$conf['foreign_table']]['ctrl']['title'],1);
 
 		$out = '
 				<div class="typo3-newRecordLink">
-					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$style.' title="'.$title.'">'.
-					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$title.'" />'.
-					t3lib_div::fixed_lgd_cs($title, $this->fObj->titleLen).
+					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$style.' title="'.$title.$tableTitle.'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$title.$tableTitle.'" />'.
+					$title.t3lib_div::fixed_lgd_cs($tableTitle, $this->fObj->titleLen).
 					'</a>
 				</div>';
 		return $out;

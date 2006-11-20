@@ -437,7 +437,7 @@ class t3lib_loadDBGroup	{
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
 		$symmetric_field = $conf['symmetric_field'];
-
+		
 			// if there are table items and we have a proper $parentUid
 		if (t3lib_div::testInt($parentUid) && count($this->tableArray)) {
 				// if updateToUid is not a positive integer, set it to '0', so it will be ignored
@@ -450,8 +450,10 @@ class t3lib_loadDBGroup	{
 				$table = $val['table'];
 
 					// fetch the current (not overwritten) relation record if we should handle symmetric relations
-				$row = t3lib_BEfunc::getRecord($table,$uid,$fields,'',false);
-				$isOnSymmetricSide = self::isOnSymmetricSide($parentUid, $conf, $row);
+				if ($conf['symmetric_field']) {
+					$row = t3lib_BEfunc::getRecord($table,$uid,$fields,'',false);
+					$isOnSymmetricSide = self::isOnSymmetricSide($parentUid, $conf, $row);
+				}
 
 				$updateValues = array();
 

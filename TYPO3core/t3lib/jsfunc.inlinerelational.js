@@ -103,10 +103,12 @@ function inlineRelational() {
 		alert('Error: '+xhr.status+"\n"+xhr.statusText);
 	}
 		
-	this.importNewRecord = function(objectId, selectedOption) {
+	this.importNewRecord = function(objectId) {
 		var selector = $(objectId+'_selector');
-		var selectedValue = selector.options[selector.selectedIndex].value;
-		this.makeAjaxCall('createNewRecord', objectId, selectedValue);
+		if (selector.selectedIndex != -1) {
+			var selectedValue = selector.options[selector.selectedIndex].value;
+			this.makeAjaxCall('createNewRecord', objectId, selectedValue);
+		}
 		return false;
 	}
 	
@@ -192,6 +194,14 @@ function inlineRelational() {
 		}
 		
 		return false;
+	}
+	
+	this.dragAndDropSorting = function(element) {
+		var order = Sortable.sequence(element);
+		var objectId = element.getAttribute('id').replace(/_records$/, '');
+		var objectName = prependFormFieldNames+inline.parseFormElementName('parts', objectId, 3);
+		var formObj = document.getElementsByName(objectName);
+		if (formObj.length) formObj[0].value = order.join(',');
 	}
 	
 	this.redrawSortingButtons = function(objectPrefix, records) {
