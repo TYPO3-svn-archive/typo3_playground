@@ -39,47 +39,47 @@
  *  127:     function getSingleField_typeInline($table,$field,$row,&$PA)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  251:     function renderForeignRecord($parentUid, $rec, $config = array())
- *  306:     function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array())
- *  359:     function renderForeignRecordHeaderControl($table,$row,$config = array())
- *  485:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
- *  539:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
- *  602:     function addJavaScript()
- *  618:     function addJavaScriptSortable($objectId)
+ *  254:     function renderForeignRecord($parentUid, $rec, $config = array())
+ *  310:     function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array())
+ *  361:     function renderForeignRecordHeaderControl($table,$row,$config = array())
+ *  492:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
+ *  546:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
+ *  613:     function addJavaScript()
+ *  629:     function addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling of AJAX calls
- *  652:     function createNewRecord($domObjectId, $foreignUid = 0)
- *  739:     function getJSON($jsonArray)
- *  754:     function getNewRecordLink($objectPrefix, $conf = array())
+ *  663:     function createNewRecord($domObjectId, $foreignUid = 0)
+ *  750:     function getJSON($jsonArray)
+ *  765:     function getNewRecordLink($objectPrefix, $conf = array())
  *
  *              SECTION: Get data from database and handle relations
- *  791:     function getRelatedRecords($table,$field,$row,&$PA,$config)
- *  823:     function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
- *  869:     function getUniqueIds($records, $conf=array())
- *  889:     function getRecord($pid, $table, $uid, $cmd='')
- *  913:     function getNewRecord($pid, $table)
+ *  802:     function getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  834:     function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
+ *  880:     function getUniqueIds($records, $conf=array())
+ *  900:     function getRecord($pid, $table, $uid, $cmd='')
+ *  924:     function getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- *  935:     function pushStructure($table, $uid, $field = '', $config = array())
- *  951:     function popStructure()
- *  968:     function updateStructureNames()
- *  984:     function getStructureItemName($levelData)
- *  999:     function getStructureLevel($level)
- * 1016:     function getStructurePath($structureDepth = -1)
- * 1041:     function parseStructureString($string, $loadConfig = false)
+ *  946:     function pushStructure($table, $uid, $field = '', $config = array())
+ *  962:     function popStructure()
+ *  979:     function updateStructureNames()
+ *  995:     function getStructureItemName($levelData)
+ * 1010:     function getStructureLevel($level)
+ * 1027:     function getStructurePath($structureDepth = -1)
+ * 1052:     function parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1082:     function checkConfiguration(&$config)
- * 1107:     function checkAccess($cmd, $table, $theUid)
- * 1169:     function compareStructureConfiguration($compare)
- * 1183:     function normalizeUid($string)
- * 1197:     function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
- * 1226:     function isInlineChildAndLabelField($table, $field)
- * 1242:     function getStructureDepth()
- * 1279:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
- * 1333:     function isAssociativeArray($object)
- * 1348:     function getPossibleRecordsFlat($possibleRecords)
- * 1367:     function skipField($table, $field, $row, $config)
+ * 1093:     function checkConfiguration(&$config)
+ * 1118:     function checkAccess($cmd, $table, $theUid)
+ * 1180:     function compareStructureConfiguration($compare)
+ * 1194:     function normalizeUid($string)
+ * 1208:     function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
+ * 1237:     function isInlineChildAndLabelField($table, $field)
+ * 1253:     function getStructureDepth()
+ * 1290:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1344:     function isAssociativeArray($object)
+ * 1359:     function getPossibleRecordsFlat($possibleRecords)
+ * 1378:     function skipField($table, $field, $row, $config)
  *
  * TOTAL FUNCTIONS: 35
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -210,7 +210,7 @@ class t3lib_TCEforms_inline {
 			}
 		}
 		$item .= '</div>';
-		
+
 			// add the "Create new record" link after all child records
 		if ($config['appearance']['newRecordLinkPosition'] != 'top') {
 			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
@@ -287,7 +287,7 @@ class t3lib_TCEforms_inline {
 		if (is_array($config['appearance']) && count($config['appearance'])) {
 			if ($config['appearance']['collapseAll']) $appearanceStyleFields = ' style="display: none;"';
 		}
-		
+
 		$out = '<div id="'.$formFieldNames.'_header">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyleFields.'>'.$fields.$combination.'</div>';
 			// wrap the header, fields and combination part of a child record with a div container
@@ -311,7 +311,7 @@ class t3lib_TCEforms_inline {
 		$formFieldNames = $this->inlineNames['object'].'['.$foreign_table.']['.$rec['uid'].']';
 		$expandSingle = $config['appearance']['expandSingle'] ? 1 : 0;
 		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
-		
+
 			// if an alternative label for the field we render is set, use it
 		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
 		if (!$isOnSymmetricSide && $config['foreign_label'])
@@ -389,7 +389,7 @@ class t3lib_TCEforms_inline {
 		if ($permsEdit && $config['appearance']['useSortable'] && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
 			$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
 		}
-		
+
 			// "Show" link (only pages and tt_content elements)
 		if ($table=='pages' || $table=='tt_content')	{
 			$params='&edit['.$table.']['.$row['uid'].']=edit';
@@ -591,7 +591,7 @@ class t3lib_TCEforms_inline {
 				// there is only one record item in the select-box, that is selected by default
 				// the selector-box creates a new relation on using a onChange event (see some line above)
 			$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
-			$itemsToSelect .= 
+			$itemsToSelect .=
 				'<a href="#" onclick="'.htmlspecialchars($sOnChange).'" align="abstop">'.
 					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' title="'.$createNewRelationText.'" alt="" /> '.$createNewRelationText.
 				'</a>';
@@ -624,6 +624,7 @@ class t3lib_TCEforms_inline {
 	 * Add Sortable functionality using script.acolo.us "Sortable".
 	 *
 	 * @param	string		$objectId: The container id of the object - elements inside will be sortable
+	 * @return	[type]		...
 	 */
 	function addJavaScriptSortable($objectId) {
 		$this->fObj->additionalJS_post[] = '

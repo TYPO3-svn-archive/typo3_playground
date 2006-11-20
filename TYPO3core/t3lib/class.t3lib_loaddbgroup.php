@@ -44,12 +44,12 @@
  *  276:     function writeMM($tableName,$uid,$prependTableName=0)
  *  352:     function readForeignField($uid, $conf)
  *  435:     function writeForeignField($conf, $parentUid, $updateToUid=0)
- *  508:     function getValueArray($prependTableName='')
- *  536:     function convertPosNeg($valueArray,$fTable,$nfTable)
- *  558:     function getFromDB()
- *  593:     function readyForInterface()
- *  619:     function countItems($returnAsArray = true)
- *  634:     function updateRefIndex($table,$id)
+ *  510:     function getValueArray($prependTableName='')
+ *  538:     function convertPosNeg($valueArray,$fTable,$nfTable)
+ *  560:     function getFromDB()
+ *  595:     function readyForInterface()
+ *  621:     function countItems($returnAsArray = true)
+ *  636:     function updateRefIndex($table,$id)
  *
  * TOTAL FUNCTIONS: 12
  * (This index is automatically created/updated by the extension "extdeveval")
@@ -437,7 +437,7 @@ class t3lib_loadDBGroup	{
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
 		$symmetric_field = $conf['symmetric_field'];
-		
+
 			// if there are table items and we have a proper $parentUid
 		if (t3lib_div::testInt($parentUid) && count($this->tableArray)) {
 				// if updateToUid is not a positive integer, set it to '0', so it will be ignored
