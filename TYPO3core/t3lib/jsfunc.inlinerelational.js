@@ -65,7 +65,7 @@ function inlineRelational() {
 			var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
 
 			var records = formObj[0].value.split(',');
-			for (var i = 0; i < records.length; i++) {
+			for (var i=0; i<records.length; i++) {
 				if (records[i] != callingUid) Element.hide(objectPrefix+'['+records[i]+']_fields');
 			}
 		}
@@ -80,7 +80,7 @@ function inlineRelational() {
 	this.makeAjaxCall = function() {
 		if (arguments.length > 1) {
 			var params = '';
-			for (var i = 0; i < arguments.length; i++) params += '&ajax['+i+']='+arguments[i];
+			for (var i=0; i<arguments.length; i++) params += '&ajax['+i+']='+arguments[i];
 
 			var url = 'alt_doc_ajax.php';
 			var options = {
@@ -128,7 +128,7 @@ function inlineRelational() {
 				
 				if (fieldObj.length) {
 						// remove all before used items from the new select-item
-					for (var i = 0; i < values.length; i++) this.removeSelectOption(fieldObj[0], values[i]);
+					for (var i=0; i<values.length; i++) this.removeSelectOption(fieldObj[0], values[i]);
 						// set the selected item automatically to the first of the remaining items
 					selectedValue = fieldObj[0].options[0].value;
 					fieldObj[0].options[0].selected = true;
@@ -197,11 +197,25 @@ function inlineRelational() {
 	}
 	
 	this.dragAndDropSorting = function(element) {
-		var order = Sortable.sequence(element);
 		var objectId = element.getAttribute('id').replace(/_records$/, '');
 		var objectName = prependFormFieldNames+inline.parseFormElementName('parts', objectId, 3);
 		var formObj = document.getElementsByName(objectName);
-		if (formObj.length) formObj[0].value = order.join(',');
+		
+		if (formObj.length) {
+			var checked = new Array();
+			var order = Sortable.sequence(element);
+			var records = formObj[0].split(',');
+			
+				// check if ordered uid is really part of the records
+				// virtually deleted items might still be there but ordering shouldn't saved at all on them
+			for (var i=0; i<order.length; i++) {
+				if (records.indexOf(order[i]) != -1) {
+					checked.push(order[i]);
+				}
+			}
+			
+			formObj[0].value = checked.join(',');
+		}
 	}
 	
 	this.redrawSortingButtons = function(objectPrefix, records) {
@@ -217,7 +231,7 @@ function inlineRelational() {
 			if (formObj.length) records = formObj[0].value.split(',');
 		}
 		
-		for (i = 0; i < records.length; i++) {
+		for (i=0; i<records.length; i++) {
 			if (!records[i].length) continue;
 			
 			headerObj = $(objectPrefix+'['+records[i]+']_header');
@@ -242,7 +256,7 @@ function inlineRelational() {
 				
 				if (afterUid) {
 					var newRecords = new Array();
-					for (var i = 0; i < records.length; i++) {
+					for (var i=0; i<records.length; i++) {
 						if (records[i].length) newRecords.push(records[i]);
 						if (afterUid == records[i]) newRecords.push(newUid);
 					}
@@ -291,7 +305,7 @@ function inlineRelational() {
 				if (unique && formObj.length) {
 					var records = formObj[0].value.split(',');
 					var recordObj;
-					for (var i = 0; i < records.length; i++) {
+					for (var i=0; i<records.length; i++) {
 						recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
 						if (recordObj.length && recordObj[0] != srcElement) {
 							this.removeSelectOption(recordObj[0], srcElement.value);
@@ -325,7 +339,7 @@ function inlineRelational() {
 					var records = formObj[0].value.split(',');
 					var recordObj;
 						// walk through all inline records on that level and get the select field
-					for (var i = 0; i < records.length; i++) {
+					for (var i=0; i<records.length; i++) {
 						recordObj = document.getElementsByName(prependFormFieldNames+'['+unique.table+']['+records[i]+']['+unique.field+']');
 						if (recordObj.length) this.readdSelectOption(recordObj[0], fieldObj[0].value, unique);
 					}
@@ -407,12 +421,12 @@ function inlineRelational() {
 		var elReturn;
 		var elParts = new Array();
 		var idParts = objectId.split('][');
-		for (var i = 0; i < skipRight; i++) idParts.pop();
+		for (var i=0; i<skipRight; i++) idParts.pop();
 
 		if (rightCount > 0) {
-			for (var i = 0; i < rightCount; i++) elParts.unshift(idParts.pop());
+			for (var i=0; i<rightCount; i++) elParts.unshift(idParts.pop());
 		} else {
-			for (var i = 0; i < -rightCount; i++) idParts.shift();
+			for (var i=0; i<-rightCount; i++) idParts.shift();
 			elParts = idParts;
 		}
 		
@@ -473,7 +487,7 @@ function inlineRelational() {
 	
 	this.getOptionsHash = function(selectObj) {
 		var optionsHash = {};
-		for (var i = 0; i < selectObj.options.length; i++) optionsHash[selectObj.options[i].value] = i;
+		for (var i=0; i<selectObj.options.length; i++) optionsHash[selectObj.options[i].value] = i;
 		return optionsHash;
 	}
 	
@@ -512,7 +526,7 @@ function inlineRelational() {
 	
 	this.setVisibilityOfElementsWithClassName = function(action, className, parentElement) {
 		var domObjects = document.getElementsByClassName(className, parentElement);
-		for (var i = 0; i < domObjects.length; i++) {
+		for (var i=0; i<domObjects.length; i++) {
 			if (action == 'hide')
 				new Effect.Fade(domObjects[i]);
 			else if (action = 'show')

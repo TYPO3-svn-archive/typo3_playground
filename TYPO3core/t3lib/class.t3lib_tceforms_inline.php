@@ -143,7 +143,14 @@ class t3lib_TCEforms_inline {
 			// remember the page id (pid of record) where inline editing started first
 			// we need that pid for ajax calls, so that they would know where the action takes place on the page structure
 		if (!isset($this->inlineFirstPid)) {
-			$this->inlineFirstPid = $row['pid'];
+				// if pid is negative, fetch the previous record and take its pid
+			if ($row['pid'] < 0) {
+				$prevRec = t3lib_BEfunc::getRecord($table, abs($row['pid']));
+				$this->inlineFirstPid = $prevRec['pid'];
+				// take the pid as it is
+			} else {
+				$this->inlineFirstPid = $row['pid'];
+			}
 		}
 			// add the current inline job to the structure stack
 		$this->pushStructure($table, $row['uid'], $field, $config);
