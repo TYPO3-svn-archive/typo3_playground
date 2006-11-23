@@ -232,8 +232,7 @@ var inline = {
 				tag: 'div',
 				handle: 'sortableHandle',
 				overlap: 'vertical',
-				constraint: 'vertical',
-				delay: 250
+				constraint: 'vertical'
 			}
 		);
 	},

@@ -623,7 +623,7 @@ class t3lib_TCEforms_inline {
 		$jsCode = array(
 			'<script src="prototype.js" type="text/javascript"></script>',
 			'<script src="scriptaculous/scriptaculous.js" type="text/javascript"></script>',
-			'<script src="../t3lib/jsfunc.inlinerelational.js" type="text/javascript"></script>',
+			'<script src="../t3lib/jsfunc.inline.js" type="text/javascript"></script>',
 		);
 
 		return implode("\n", $jsCode);
