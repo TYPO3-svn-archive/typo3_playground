@@ -204,7 +204,7 @@ function inlineRelational() {
 		if (formObj.length) {
 			var checked = new Array();
 			var order = Sortable.sequence(element);
-			var records = formObj[0].split(',');
+			var records = formObj[0].value.split(',');
 			
 				// check if ordered uid is really part of the records
 				// virtually deleted items might still be there but ordering shouldn't saved at all on them
@@ -213,9 +213,33 @@ function inlineRelational() {
 					checked.push(order[i]);
 				}
 			}
-			
+
 			formObj[0].value = checked.join(',');
+
+			if (data.config && data.config[objectId]) {
+				var table = data.config[objectId].table;
+				inline.redrawSortingButtons(objectId+'['+table+']', checked);
+			}
 		}
+	}
+	
+	this.createDragAndDropSorting = function(objectId) {
+		Sortable.create(
+			objectId,
+			{
+				format: /^[^_\-](?:[A-Za-z0-9\[\]\-\_]*)\[(.*)\]_div$/,
+				onUpdate: inline.dragAndDropSorting,
+				tag: 'div',
+				handle: 'sortableHandle',
+				overlap: 'vertical',
+				constraint: 'vertical',
+				delay: 250
+			}
+		);
+	}
+	
+	this.destroyDragAndDropSorting = function(objectId) {
+		Sortable.destroy(objectId);
 	}
 	
 	this.redrawSortingButtons = function(objectPrefix, records) {
@@ -284,9 +308,14 @@ function inlineRelational() {
 		var formObj = document.getElementsByName(objectName);
 		if (formObj.length) {
 			var parts = new Array();
-			if (formObj[0].value.length) parts = formObj[0].value.split(',');
-			formObj[0].value = parts.without(removeUid).join(',');
+			if (formObj[0].value.length) {
+				parts = formObj[0].value.split(',');
+				parts = parts.without(removeUid);
+				formObj[0].value = parts.join(',');
+				return parts.length;
+			}
 		}
+		return false;
 	}
 	
 	this.updateUnique = function(srcElement, objectPrefix, formName, recordUid) {
@@ -383,11 +412,14 @@ function inlineRelational() {
 			new Effect.Fade(objectId+'_div');
 		}
 
-		this.memorizeRemoveRecord(
+		var recordCount = this.memorizeRemoveRecord(
 			prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 2),
 			recordUid
 		);
 
+		if (recordCount <= 1) {
+			this.destroyDragAndDropSorting(this.parseFormElementName('full', objectId, 0 , 2)+'_records');
+		}
 		this.redrawSortingButtons(objectPrefix);
 		
 			// if the NEW-button was hidden and now we can add again new children, show the button
@@ -541,6 +573,18 @@ function inlineRelational() {
 		new Effect.Opacity(objectId, optOut);
 	}
 }
+
+Object.extend(Array.prototype, {
+	diff: function(current) {
+		var diff = new Array();
+		if (this.length == current.length) {
+			for (var i=0; i<this.length; i++) {
+				if (this[i] !== current[i]) diff.push(i);
+			}
+		}
+		return diff;
+	}
+});
 
 var inline = new inlineRelational();
 

@@ -165,9 +165,11 @@ class t3lib_TCEforms_inline {
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
 			// tell the browser what we have (using JSON later)
+		$this->inlineData['config'][$nameObject] = array('table' => $foreign_table);
 		$this->inlineData['config'][$nameObject.'['.$foreign_table.']'] = array(
 			'min' => $minitems,
 			'max' => $maxitems,
+			'sortable' => $config['appearance']['useSortable'],
 		);
 
 			// if relations are required to be unique, get the uids that have already been used on the foreign side of the relation
@@ -181,7 +183,7 @@ class t3lib_TCEforms_inline {
 				'table' => $config['foreign_table'],
 				'field' => $config['foreign_unique'],
 				'selector' => $config['foreign_selector'] ? true : false,
-				'possible' => $this->getPossibleRecordsFlat($possibleRecords)
+				'possible' => $this->getPossibleRecordsFlat($possibleRecords),
 			);
 		}
 
@@ -224,7 +226,7 @@ class t3lib_TCEforms_inline {
 		}
 
 			// add Drag&Drop functions for sorting to TCEforms::$additionalJS_post
-		if ($config['appearance']['useSortable'])
+		if (count($relationList) > 1 && $config['appearance']['useSortable'])
 			$this->addJavaScriptSortable($nameObject.'_records');
 			// publish the uids of the child records in the given order to the browser
 		$item .= '<input type="hidden" name="'.$nameForm.'" value="'.implode(',', $relationList).'" />';
@@ -392,11 +394,6 @@ class t3lib_TCEforms_inline {
 			// This expresses the edit permissions for this particular element:
 		$permsEdit = ($table=='pages' && ($localCalcPerms&2)) || ($table!='pages' && ($calcPerms&16));
 
-			// drag&drop sortable handler
-		if ($permsEdit && $config['appearance']['useSortable'] && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
-			$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
-		}
-
 			// "Show" link (only pages and tt_content elements)
 		if ($table=='pages' || $table=='tt_content')	{
 			$params='&edit['.$table.']['.$row['uid'].']=edit';
@@ -430,6 +427,11 @@ class t3lib_TCEforms_inline {
 				}
 			}
 
+				// Drag&Drop Sorting: Sortable handler for script.aculo.us
+			if ($permsEdit && $config['appearance']['useSortable'] && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
+				$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16" hspace="2"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
+			}
+			
 				// "Up/Down" links
 			if ($permsEdit && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
 				$onClick = "return inline.changeSorting('".$nameObjectFtId."', '1')";	// Up
@@ -631,24 +633,12 @@ class t3lib_TCEforms_inline {
 	 * Add Sortable functionality using script.acolo.us "Sortable".
 	 *
 	 * @param	string		$objectId: The container id of the object - elements inside will be sortable
-	 * @return	[type]		...
+	 * @return	void
 	 */
 	function addJavaScriptSortable($objectId) {
 		$this->fObj->additionalJS_post[] = '
-			Sortable.create(
-				"'.$objectId.'",
-				{
-					format: /^[^_\-](?:[A-Za-z0-9\[\]\-\_]*)\[(.*)\]_div$/,
-					onUpdate: inline.dragAndDropSorting,
-					tag: "div",
-					handle: "sortableHandle",
-					overlap: "vertical",
-					constraint: "vertical",
-					delay: 250
-				}
-			);
+			inline.createDragAndDropSorting("'.$objectId.'");
 		';
-		return $jsCode;
 	}
 
 
@@ -734,6 +724,9 @@ class t3lib_TCEforms_inline {
 			// if a new level of child records (child of children) was created, send the JSON array
 		if (count($this->inlineData))
 			$jsonArray['scriptCall'][] = 'inline.addToDataArray('.$this->getJSON($this->inlineData).');';
+			// if script.aculo.us Sortable is used, update the Observer to know the the record
+		if ($config['appearance']['useSortable'])
+			$jsonArray['scriptCall'][] = "inline.createDragAndDropSorting('".$this->inlineNames['object']."_records');";
 			// if TCEforms has some JavaScript code to be executed, just do it
 		if ($this->fObj->extJSCODE)
 			$jsonArray['scriptCall'][] = $this->fObj->extJSCODE;
