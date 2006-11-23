@@ -39,16 +39,16 @@
  *  127:     function getSingleField_typeInline($table,$field,$row,&$PA)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  254:     function renderForeignRecord($parentUid, $rec, $config = array())
- *  310:     function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array())
- *  361:     function renderForeignRecordHeaderControl($table,$row,$config = array())
- *  492:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
- *  546:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
- *  613:     function addJavaScript()
- *  629:     function addJavaScriptSortable($objectId)
+ *  263:     function renderForeignRecord($parentUid, $rec, $config = array())
+ *  319:     function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array())
+ *  370:     function renderForeignRecordHeaderControl($table,$row,$config = array())
+ *  501:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
+ *  555:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
+ *  622:     function addJavaScript()
+ *  638:     function addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling of AJAX calls
- *  663:     function createNewRecord($domObjectId, $foreignUid = 0)
+ *  660:     function createNewRecord($domObjectId, $foreignUid = 0)
  *  750:     function getJSON($jsonArray)
  *  765:     function getNewRecordLink($objectPrefix, $conf = array())
  *
@@ -431,7 +431,7 @@ class t3lib_TCEforms_inline {
 			if ($permsEdit && $config['appearance']['useSortable'] && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
 				$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16" hspace="2"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
 			}
-			
+
 				// "Up/Down" links
 			if ($permsEdit && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
 				$onClick = "return inline.changeSorting('".$nameObjectFtId."', '1')";	// Up
