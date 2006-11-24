@@ -352,9 +352,18 @@ class t3lib_loadDBGroup	{
 	function readForeignField($uid, $conf) {
 		$key = 0;
 		$uid = intval($uid);
+		$whereClause = '';
 		$foreign_table = $conf['foreign_table'];
+		$foreign_table_field = $conf['foreign_table_field'];
 		$useDeleteClause = $this->undeleteRecord ? false : true;
 
+			// if it's requested to look for the parent uid AND the parent table,
+			// add an additional SQL-WHERE clause
+		if ($foreign_table_field && $this->currentTable) {
+			$whereClause = 'AND '.$foreign_table_field.'='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->currentTable, $foreign_table);
+		}
+		
+			// get the correct sorting field
 		if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
 			$sortby = $conf['foreign_sortby'];
 		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// specific sortby for all table records
@@ -366,7 +375,7 @@ class t3lib_loadDBGroup	{
 		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
 
 			// get the rows from storage
-		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,'','',$sortby,'',$useDeleteClause);
+		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,$whereClause,'',$sortby,'',$useDeleteClause);
 
 			// Handle symmetric relations
 		if ($conf['symmetric_field']) {
@@ -437,6 +446,7 @@ class t3lib_loadDBGroup	{
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
 		$symmetric_field = $conf['symmetric_field'];
+		$foreign_table_field = $conf['foreign_table_field'];
 
 			// if there are table items and we have a proper $parentUid
 		if (t3lib_div::testInt($parentUid) && count($this->tableArray)) {
@@ -457,13 +467,19 @@ class t3lib_loadDBGroup	{
 
 				$updateValues = array();
 
-					// no update to a foreign_field/symmetric_field pointer is requested -> just sorting
+					// no update to the uid is requested, so this is the normal behaviour
+					// just update the fields and care about sorting
 				if (!$updateToUid) {
 						// Always add the pointer to the parent uid
 					if ($isOnSymmetricSide) {
 						$updateValues[$symmetric_field] = $parentUid;
 					} else {
 						$updateValues[$foreign_field] = $parentUid;
+					}
+					
+						// if it is configured in TCA also to store the parent table in the child record, just do it
+					if ($foreign_table_field && $this->currentTable) {
+						$updateValues[$foreign_table_field] = $this->currentTable;
 					}
 
 						// specific sortby for data handled by this field
