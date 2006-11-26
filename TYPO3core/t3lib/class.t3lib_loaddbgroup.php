@@ -295,15 +295,20 @@ class t3lib_loadDBGroup	{
 			if ($this->MM_is_foreign && $prep)	{
 				$additionalWhere_tablenames = ' AND tablenames="'.$this->currentTable.'"';
 			}
-			$existingMMs = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows($uidForeign_field, $tableName, $uidLocal_field.'='.$uid.$additionalWhere_tablenames, '', '', '', $uidForeign_field);
+			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery($uidForeign_field.($prep?', tablenames':''), $tableName, $uidLocal_field.'='.$uid.$additionalWhere_tablenames);
 
+			$oldMMs = array();
+			while($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+				if (!$this->MM_is_foreign && $prep)	{
+					$oldMMs[] = array($row['tablenames'], $row[$uidForeign_field]);
+				} else {
+					$oldMMs[] = $row[$uidForeign_field];
+				}
+			}
 
 				// For each item, insert it:
-			$uidList = array();
 			foreach($this->itemArray as $val)	{
 				$c++;
-
-				$uidList[] = $val['id'];
 
 				if ($prep || $val['table']=='_NO_TABLE')	{
 					if ($this->MM_is_foreign)	{	// insert current table if needed
@@ -315,10 +320,19 @@ class t3lib_loadDBGroup	{
 					$tablename = '';
 				}
 
-				if (isset($existingMMs[$val['id']]))	{
+				if(!$this->MM_is_foreign && $prep) {
+					$item = array($val['table'], $val['id']);
+				} else {
+					$item = $val['id'];
+				}
+
+				if (in_array($item, $oldMMs))	{
+					unset($oldMMs[array_search($item, $oldMMs)]);	// remove the item from the $oldMMs array so after this foreach loop only the ones that need to be deleted are in there.
+
 					$whereClause = $uidLocal_field.'='.$uid.' AND '.$uidForeign_field.'='.$val['id'];
-					if ($tablename)
+					if ($tablename) {
 						$whereClause .= ' AND tablenames="'.$tablename.'"';
+					}
 					$GLOBALS['TYPO3_DB']->exec_UPDATEquery($tableName, $whereClause, array($sorting_field => $c));
 				} else {
 					$GLOBALS['TYPO3_DB']->exec_INSERTquery($tableName, array(
@@ -331,13 +345,18 @@ class t3lib_loadDBGroup	{
 			}
 
 				// Delete all not-used relations:
-			$additionalWhere = '';
-			if (count($uidList))	{
-				$additionalWhere = ' AND '.$uidForeign_field.' NOT IN ( '.implode(',', $uidList).' ) ';
+			if(is_array($oldMMs) && count($oldMMs) > 0) {
+				$removeClauses = array();
+				foreach($oldMMs as $mmItem) {
+					if(is_array($mmItem)) {
+						$removeClauses[] = 'tablenames="'.$mmItem[0].'" AND '.$uidForeign_field.'='.$mmItem[1];
+					} else {
+						$removeClauses[] = $uidForeign_field.'='.$mmItem;
+					}
+				}
+				$additionalWhere = ' AND ('.implode(' OR ', $removeClauses).')';
+				$GLOBALS['TYPO3_DB']->exec_DELETEquery($tableName, $uidLocal_field.'='.intval($uid).$additionalWhere.$additionalWhere_tablenames);
 			}
-
-			$GLOBALS['TYPO3_DB']->exec_DELETEquery($tableName, $uidLocal_field.'='.intval($uid).$additionalWhere.$additionalWhere_tablenames);
-
 		}
 	}
 
@@ -352,18 +371,9 @@ class t3lib_loadDBGroup	{
 	function readForeignField($uid, $conf) {
 		$key = 0;
 		$uid = intval($uid);
-		$whereClause = '';
 		$foreign_table = $conf['foreign_table'];
-		$foreign_table_field = $conf['foreign_table_field'];
 		$useDeleteClause = $this->undeleteRecord ? false : true;
 
-			// if it's requested to look for the parent uid AND the parent table,
-			// add an additional SQL-WHERE clause
-		if ($foreign_table_field && $this->currentTable) {
-			$whereClause = 'AND '.$foreign_table_field.'='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->currentTable, $foreign_table);
-		}
-		
-			// get the correct sorting field
 		if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
 			$sortby = $conf['foreign_sortby'];
 		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// specific sortby for all table records
@@ -375,7 +385,7 @@ class t3lib_loadDBGroup	{
 		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
 
 			// get the rows from storage
-		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,$whereClause,'',$sortby,'',$useDeleteClause);
+		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,'','',$sortby,'',$useDeleteClause);
 
 			// Handle symmetric relations
 		if ($conf['symmetric_field']) {
@@ -446,7 +456,6 @@ class t3lib_loadDBGroup	{
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
 		$symmetric_field = $conf['symmetric_field'];
-		$foreign_table_field = $conf['foreign_table_field'];
 
 			// if there are table items and we have a proper $parentUid
 		if (t3lib_div::testInt($parentUid) && count($this->tableArray)) {
@@ -467,19 +476,13 @@ class t3lib_loadDBGroup	{
 
 				$updateValues = array();
 
-					// no update to the uid is requested, so this is the normal behaviour
-					// just update the fields and care about sorting
+					// no update to a foreign_field/symmetric_field pointer is requested -> just sorting
 				if (!$updateToUid) {
 						// Always add the pointer to the parent uid
 					if ($isOnSymmetricSide) {
 						$updateValues[$symmetric_field] = $parentUid;
 					} else {
 						$updateValues[$foreign_field] = $parentUid;
-					}
-					
-						// if it is configured in TCA also to store the parent table in the child record, just do it
-					if ($foreign_table_field && $this->currentTable) {
-						$updateValues[$foreign_table_field] = $this->currentTable;
 					}
 
 						// specific sortby for data handled by this field

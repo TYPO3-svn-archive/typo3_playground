@@ -2,7 +2,7 @@
 #
 # Host: TYPO3_host    Database: t3_testsite
 #--------------------------------------------------------
-# TYPO3 CVS ID: $Id: ext_tables.sql 1697 2006-08-29 20:42:04Z ingmars $
+# TYPO3 CVS ID: $Id: ext_tables.sql 1753 2006-10-11 13:08:26Z masi $
 
 
 #
@@ -282,7 +282,7 @@ CREATE TABLE sys_template (
   tx_impexp_origuid int(11) DEFAULT '0' NOT NULL,
   PRIMARY KEY (uid),
   KEY t3ver_oid (t3ver_oid,t3ver_wsid),
-  KEY parent (pid)
+  KEY parent (pid,sorting)
 );
 
 

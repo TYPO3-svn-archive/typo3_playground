@@ -371,6 +371,41 @@ class t3lib_extMgm {
 	}
 
 	/**
+	 * Adds a module path to TBE_MODULES for used with the module dispatcher, mod.php
+	 * Used only for modules that are not placed in the main/sub menu hierarchy by the traditional mechanism of addModule()
+	 * Examples for this is context menu functionality (like import/export) which runs as an independent module through mod.php
+	 * FOR USE IN ext_tables.php FILES
+	 * Example:  t3lib_extMgm::addModulePath('xMOD_tximpexp',t3lib_extMgm::extPath($_EXTKEY).'app/');
+	 *
+	 * @param	string		$name is the name of the module, refer to conf.php of the module.
+	 * @param	string		$path is the absolute path to the module directory inside of which "index.php" and "conf.php" is found.
+	 * @return	void
+	 */
+	function addModulePath($name,$path)	{
+		global $TBE_MODULES;
+
+		$TBE_MODULES['_PATHS'][$name] = $path;
+	}
+
+	/**
+	 * Adding an application for the top menu. These are regular modules but is required to respond with Ajax content in case of certain parameters sent to them.
+	 *
+	 * @param	string		$name is the name of the module, refer to conf.php of the module.
+	 * @param	string		$path is the absolute path to the module directory inside of which "index.php" and "conf.php" is found.
+	 * @param	boolean		If set, the application is placed in the shortcut bar below the menu bar.
+	 * @param	array		Options
+	 * @return	void
+	 */
+	function addTopApp($name,$path,$iconPane=FALSE,$options=array())	{
+		global $TBE_MODULES,$TYPO3_CONF_VARS;
+
+		$TYPO3_CONF_VARS['SC_OPTIONS']['GLOBAL']['topApps'][$iconPane?'icons':'menu'][$name] = $options;
+
+			// Set path for TBE-modules:
+		$TBE_MODULES['_PATHS'][$name] = $path;
+	}
+
+	/**
 	 * Adds a "Function menu module" ('third level module') to an existing function menu for some other backend module
 	 * The arguments values are generally determined by which function menu this is supposed to interact with
 	 * See Inside TYPO3 for information on how to use this function.
@@ -949,11 +984,11 @@ tt_content.'.$key.$prefix.' {
 				$temp_extensions = array_unique(t3lib_div::trimExplode(',',$rawExtList,1));
 				foreach($temp_extensions as $temp_extKey)	{
 						// Check local, global and system locations:
-					if (@is_dir(PATH_site.'typo3conf/ext/'.$temp_extKey.'/'))	{
+					if (@is_dir(PATH_typo3conf.'ext/'.$temp_extKey.'/'))	{
 						$extensions[$temp_extKey] = array('type'=>'L', 'siteRelPath'=>'typo3conf/ext/'.$temp_extKey.'/', 'typo3RelPath'=>'../typo3conf/ext/'.$temp_extKey.'/');
-					} elseif (@is_dir(PATH_site.TYPO3_mainDir.'ext/'.$temp_extKey.'/'))	{
+					} elseif (@is_dir(PATH_typo3.'ext/'.$temp_extKey.'/'))	{
 						$extensions[$temp_extKey] = array('type'=>'G', 'siteRelPath'=>TYPO3_mainDir.'ext/'.$temp_extKey.'/', 'typo3RelPath'=>'ext/'.$temp_extKey.'/');
-					} elseif (@is_dir(PATH_site.TYPO3_mainDir.'sysext/'.$temp_extKey.'/'))	{
+					} elseif (@is_dir(PATH_typo3.'sysext/'.$temp_extKey.'/'))	{
 						$extensions[$temp_extKey] = array('type'=>'S', 'siteRelPath'=>TYPO3_mainDir.'sysext/'.$temp_extKey.'/', 'typo3RelPath'=>'sysext/'.$temp_extKey.'/');
 					}
 
@@ -971,8 +1006,8 @@ tt_content.'.$key.$prefix.' {
 
 					// write cache?
 				if ($TYPO3_CONF_VARS['EXT']['extCache'] &&
-						@is_dir(PATH_site.TYPO3_mainDir.'sysext/') &&
-						@is_dir(PATH_site.TYPO3_mainDir.'ext/'))	{	// Must also find global and system extension directories to exist, otherwise caching cannot be allowed (since it is most likely a temporary server problem). This might fix a rare, unrepeatable bug where global/system extensions are not loaded resulting in fatal errors if that is cached!
+						@is_dir(PATH_typo3.'sysext/') &&
+						@is_dir(PATH_typo3.'ext/'))	{	// Must also find global and system extension directories to exist, otherwise caching cannot be allowed (since it is most likely a temporary server problem). This might fix a rare, unrepeatable bug where global/system extensions are not loaded resulting in fatal errors if that is cached!
 					$wrError = t3lib_extMgm::cannotCacheFilesWritable($cacheFilePrefix);
 					if ($wrError)	{
 						$TYPO3_CONF_VARS['EXT']['extCache']=0;

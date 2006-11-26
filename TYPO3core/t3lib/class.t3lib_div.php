@@ -487,13 +487,13 @@ class t3lib_div {
 	 * Truncate string
 	 * Returns a new string of max. $chars length.
 	 * If the string is longer, it will be truncated and appended with '...'.
-	 * DEPRECATED. Works ONLY for single-byte charsets! USE t3lib_div::fixed_lgd_cs() instead
 	 * Usage: 39
 	 *
 	 * @param	string		string to truncate
 	 * @param	integer		must be an integer with an absolute value of at least 4. if negative the string is cropped from the right end.
 	 * @param	string		String to append to the output if it is truncated, default is '...'
 	 * @return	string		new string
+	 * @deprecated		Works ONLY for single-byte charsets! USE t3lib_div::fixed_lgd_cs() instead
 	 * @see fixed_lgd_pre()
 	 */
 	function fixed_lgd($string,$origChars,$preStr='...')	{
@@ -513,12 +513,12 @@ class t3lib_div {
 	 * Returns a new string of max. $chars length.
 	 * If the string is longer, it will be truncated and prepended with '...'.
 	 * This works like fixed_lgd, but is truncated in the start of the string instead of the end
-	 * DEPRECATED. Use either fixed_lgd() or fixed_lgd_cs() (with negative input value for $chars)
 	 * Usage: 6
 	 *
 	 * @param	string		string to truncate
 	 * @param	integer		must be an integer of at least 4
 	 * @return	string		new string
+	 * @deprecated		Use either fixed_lgd() or fixed_lgd_cs() (with negative input value for $chars)
 	 * @see fixed_lgd()
 	 */
 	function fixed_lgd_pre($string,$chars)	{
@@ -550,13 +550,14 @@ class t3lib_div {
 	 * @param	string		The string to break up
 	 * @param	string		The string to implode the broken lines with (default/typically \n)
 	 * @param	integer		The line length
+	 * @deprecated		Use PHP function wordwrap()
 	 * @return	string
 	 */
 	function breakTextForEmail($str,$implChar="\n",$charWidth=76)	{
 		$lines = explode(chr(10),$str);
 		$outArr=array();
 		while(list(,$lStr)=each($lines))	{
-			$outArr = array_merge($outArr,t3lib_div::breakLinesForEmail($lStr,$implChar,$charWidth));
+			$outArr[] = t3lib_div::breakLinesForEmail($lStr,$implChar,$charWidth);
 		}
 		return implode(chr(10),$outArr);
 	}
@@ -1082,11 +1083,11 @@ class t3lib_div {
 
 	/**
 	 * strtoupper which converts danish (and other characters) characters as well
-	 * (DEPRECATED, use t3lib_cs::conv_case() instead or for HTML output, wrap your content in <span class="uppercase">...</span>)
 	 * Usage: 0
 	 *
 	 * @param	string		String to process
 	 * @return	string
+	 * @deprecated		Use t3lib_cs::conv_case() instead or for HTML output, wrap your content in <span class="uppercase">...</span>)
 	 * @ignore
 	 */
 	function danish_strtoupper($string)	{
@@ -1097,11 +1098,11 @@ class t3lib_div {
 	/**
 	 * Change umlaut characters to plain ASCII with normally two character target
 	 * Only known characters will be converted, so don't expect a result for any character.
-	 * (DEPRECATED: Works only for western europe single-byte charsets! Use t3lib_cs::specCharsToASCII() instead!)
 	 *
 	 * ä => ae, Ö => Oe
 	 *
 	 * @param	string		String to convert.
+	 * @deprecated		Works only for western europe single-byte charsets! Use t3lib_cs::specCharsToASCII() instead!
 	 * @return	string
 	 */
 	function convUmlauts($str)	{
@@ -1463,13 +1464,12 @@ class t3lib_div {
 
 	/**
 	 * Remove duplicate values from an array
-	 * This function is deprecated, use the PHP function array_unique instead
 	 * Usage: 0
 	 *
 	 * @param	array		Array of values to make unique
 	 * @return	array
 	 * @ignore
-	 * @deprecated
+	 * @deprecated		Use the PHP function array_unique instead
 	 */
 	function uniqueArray($valueArray)	{
 		return array_unique($valueArray);
@@ -1992,7 +1992,7 @@ class t3lib_div {
 	 * @param	string		tag-prefix, eg. a namespace prefix like "T3:"
 	 * @param	integer		Current recursion level. Don't change, stay at zero!
 	 * @param	string		Alternative document tag. Default is "phparray".
-	 * @param	integer		If set, the number of spaces corresponding to this number is used for indenting, otherwise a single chr(9) (TAB) is used
+	 * @param	integer		If greater than zero, then the number of spaces corresponding to this number is used for indenting, if less than zero - no indentation, if zero - a single chr(9) (TAB) is used
 	 * @param	array		Options for the compilation. Key "useNindex" => 0/1 (boolean: whether to use "n0, n1, n2" for num. indexes); Key "useIndexTagForNum" => "[tag for numerical indexes]"; Key "useIndexTagForAssoc" => "[tag for associative indexes"; Key "parentTagMap" => array('parentTag' => 'thisLevelTag')
 	 * @param	string		Stack data. Don't touch.
 	 * @return	string		An XML string made from the input content in the array.
@@ -2007,6 +2007,7 @@ class t3lib_div {
 			// Set indenting mode:
 		$indentChar = $spaceInd ? ' ' : chr(9);
 		$indentN = $spaceInd>0 ? $spaceInd : 1;
+		$nl = ($spaceInd >= 0 ? chr(10) : '');
 
 			// Init output variable:
 		$output='';
@@ -2057,7 +2058,7 @@ class t3lib_div {
 						$clearStackPath = FALSE;
 					}
 
-					$content = chr(10).
+					$content = $nl .
 								t3lib_div::array2xml(
 									$v,
 									$NSprefix,
@@ -2071,7 +2072,7 @@ class t3lib_div {
 										'path' => $clearStackPath ? '' : $stackData['path'].'/'.$tagName,
 									)
 								).
-								str_pad('',($level+1)*$indentN,$indentChar);
+								($spaceInd >= 0 ? str_pad('',($level+1)*$indentN,$indentChar) : '');
 					if ((int)$options['disableTypeAttrib']!=2)	{	// Do not set "type = array". Makes prettier XML but means that empty arrays are not restored with xml2array
 						$attr.=' type="array"';
 					}
@@ -2080,7 +2081,7 @@ class t3lib_div {
 						// Look for binary chars:
 					if (strcspn($v,$binaryChars) != strlen($v))	{	// Go for base64 encoding if the initial segment NOT matching any binary char has the same length as the whole string!
 							// If the value contained binary chars then we base64-encode it an set an attribute to notify this situation:
-						$content = chr(10).chunk_split(base64_encode($v));
+						$content = $nl.chunk_split(base64_encode($v));
 						$attr.=' base64="1"';
 					} else {
 							// Otherwise, just htmlspecialchar the stuff:
@@ -2091,14 +2092,14 @@ class t3lib_div {
 				}
 
 					// Add the element to the output string:
-				$output.=str_pad('',($level+1)*$indentN,$indentChar).'<'.$NSprefix.$tagName.$attr.'>'.$content.'</'.$NSprefix.$tagName.'>'.chr(10);
+				$output.=($spaceInd >= 0 ? str_pad('',($level+1)*$indentN,$indentChar) : '').'<'.$NSprefix.$tagName.$attr.'>'.$content.'</'.$NSprefix.$tagName.'>'.$nl;
 			}
 		}
 
 			// If we are at the outer-most level, then we finally wrap it all in the document tags and return that as the value:
 		if (!$level)	{
 			$output =
-				'<'.$docTag.'>'.chr(10).
+				'<'.$docTag.'>'.$nl.
 				$output.
 				'</'.$docTag.'>';
 		}
@@ -2128,14 +2129,18 @@ class t3lib_div {
 		xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
 		xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 0);
 
-			// PHP5 fix of charset awareness:
-			// Problem is: PHP5 apparently detects the charset of the XML file (or defaults to utf-8) and will AUTOMATICALLY convert the content to either utf-8, iso-8859-1 or us-ascii. PHP4 just passed the content through without taking action regarding the charset.
-			// In TYPO3 we expect that the charset of XML content is NOT handled in the parser but internally in TYPO3 instead. Therefore it would be very nice if PHP5 could be configured to NOT process the charset of the files. But this is not possible for now.
-			// What we do here fixes the problem but ONLY if the charset is utf-8, iso-8859-1 or us-ascii. That should work for most TYPO3 installations, in particular if people use utf-8 which we highly recommend.
-		if ((double)phpversion()>=5)	{
-			$ereg_result = array();
-			ereg('^[[:space:]]*<\?xml[^>]*encoding[[:space:]]*=[[:space:]]*"([^"]*)"',substr($string,0,200),$ereg_result);
-			$theCharset = $ereg_result[1] ? $ereg_result[1] : ($TYPO3_CONF_VARS['BE']['forceCharset'] ? $TYPO3_CONF_VARS['BE']['forceCharset'] : 'iso-8859-1');
+			//  PHP4 doesn't like Unicode byte order marks (BOM), so we have to check for them
+			// The BOM check comes first, so that the PHP5 preg_match() below doesn't have to check for it
+		if(substr($string,0,3)=="\xEF\xBB\xBF")	{
+			xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, 'utf-8');
+		}
+			// PHP 4.x: output charset is the same as the input charset, charsets are handled transparently if not specified in xml_parser_create()
+			// PHP 5.0.0 & 5.0.1: default output charset is ISO-8859-1, only ASCII, ISO-8859-1 and UTF-8 are supported!!!
+			// PHP 5.0.2+: default output charset is UTF-8	, only ASCII, ISO-8859-1 and UTF-8 are supported!!!
+		elseif ((double)phpversion()>=5)	{
+			$match = array();
+			preg_match('/^[[:space:]]*<\?xml[^>]*encoding[[:space:]]*=[[:space:]]*"([^"]*)"/',substr($string,0,200),$match);
+			$theCharset = $match[1] ? $match[1] : ($TYPO3_CONF_VARS['BE']['forceCharset'] ? $TYPO3_CONF_VARS['BE']['forceCharset'] : 'iso-8859-1');
 			xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, $theCharset);  // us-ascii / utf-8 / iso-8859-1
 		}
 
@@ -2321,6 +2326,7 @@ class t3lib_div {
 			curl_setopt($ch, CURLOPT_NOBODY, $includeHeader == 2 ? 1 : 0);
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_FAILONERROR, 1);
 			if (is_array($requestHeaders))	{
 				curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
 			}
@@ -3025,15 +3031,16 @@ class t3lib_div {
 				SCRIPT_FILENAME	=	Absolute filename of script		(Differs between windows/unix). On windows 'C:\\blabla\\blabl\\' will be converted to 'C:/blabla/blabl/'
 
 			Special extras:
-				TYPO3_HOST_ONLY	=		[host]			= 192.168.1.4
-				TYPO3_PORT		=		[port]			= 8080 (blank if 80, taken from host value)
+				TYPO3_HOST_ONLY =		[host] = 192.168.1.4
+				TYPO3_PORT =			[port] = 8080 (blank if 80, taken from host value)
 				TYPO3_REQUEST_HOST = 	[scheme]://[host][:[port]]
-				TYPO3_REQUEST_URL =		[scheme]://[host][:[port]][path]?[query]	(sheme will by default be 'http' until we can detect if it's https -
+				TYPO3_REQUEST_URL =		[scheme]://[host][:[port]][path]?[query] (scheme will by default be "http" until we can detect something different)
 				TYPO3_REQUEST_SCRIPT =  [scheme]://[host][:[port]][path_script]
 				TYPO3_REQUEST_DIR =		[scheme]://[host][:[port]][path_dir]
 				TYPO3_SITE_URL = 		[scheme]://[host][:[port]][path_dir] of the TYPO3 website frontend
 				TYPO3_SITE_SCRIPT = 	[script / Speaking URL] of the TYPO3 website
-				TYPO3_DOCUMENT_ROOT	=	Absolute path of root of documents:	TYPO3_DOCUMENT_ROOT.SCRIPT_NAME = SCRIPT_FILENAME (typically)
+				TYPO3_DOCUMENT_ROOT =	Absolute path of root of documents: TYPO3_DOCUMENT_ROOT.SCRIPT_NAME = SCRIPT_FILENAME (typically)
+				TYPO3_SSL = 			Returns TRUE if this session uses SSL (HTTPS)
 
 			Notice: [fragment] is apparently NEVER available to the script!
 
@@ -3049,7 +3056,7 @@ class t3lib_div {
 
 		$retVal = '';
 
-		switch((string)$getEnvName)	{
+		switch ((string)$getEnvName)	{
 			case 'SCRIPT_NAME':
 				$retVal = (php_sapi_name()=='cgi'||php_sapi_name()=='cgi-fcgi')&&($_SERVER['ORIG_PATH_INFO']?$_SERVER['ORIG_PATH_INFO']:$_SERVER['PATH_INFO']) ? ($_SERVER['ORIG_PATH_INFO']?$_SERVER['ORIG_PATH_INFO']:$_SERVER['PATH_INFO']) : ($_SERVER['ORIG_SCRIPT_NAME']?$_SERVER['ORIG_SCRIPT_NAME']:$_SERVER['SCRIPT_NAME']);
 			break;
@@ -3198,7 +3205,7 @@ class t3lib_div {
 			$bInfo['BROWSER']= 'konqu';
 		} elseif (strstr($useragent,'Opera'))	{
 			$bInfo['BROWSER']= 'opera';
-		} elseif (strstr($useragent,'MSIE 4') || strstr($useragent,'MSIE 5') || strstr($useragent,'MSIE 6'))	{
+		} elseif (strstr($useragent,'MSIE 4') || strstr($useragent,'MSIE 5') || strstr($useragent,'MSIE 6') || strstr($useragent,'MSIE 7'))	{
 			$bInfo['BROWSER']= 'msie';
 		} elseif (strstr($useragent,'Mozilla/4') || strstr($useragent,'Mozilla/5'))	{
 			$bInfo['BROWSER']='net';
@@ -3620,7 +3627,7 @@ class t3lib_div {
 						// If no entry is found for the language key, then force a value depending on meta-data setting. By default an automated filename will be used:
 					if (!isset($xmlContent['data'][$langKey]))	{
 						$LOCAL_LANG[$langKey] = t3lib_div::llXmlAutoFileName($fileRef, $langKey);
- 					} else {
+					} else {
 						$LOCAL_LANG[$langKey] = $xmlContent['data'][$langKey];
 					}
 
@@ -3696,16 +3703,15 @@ class t3lib_div {
 	 * @return	string		Returns the filename reference for the language unless error occured (or local mode is used) in which case it will be NULL
 	 */
 	function llXmlAutoFileName($fileRef,$language)	{
-
 			// Analyse file reference:
 		$location = 'typo3conf/l10n/'.$language.'/';	// Default location of translations
-		if (t3lib_div::isFirstPartOfStr($fileRef,PATH_site.TYPO3_mainDir.'sysext/'))	{	// Is system:
-			$validatedPrefix = PATH_site.TYPO3_mainDir.'sysext/';
+		if (t3lib_div::isFirstPartOfStr($fileRef,PATH_typo3.'sysext/'))	{	// Is system:
+			$validatedPrefix = PATH_typo3.'sysext/';
 			#$location = 'EXT:csh_'.$language.'/';	// For system extensions translations are found in "csh_*" extensions (language packs)
-		} elseif (t3lib_div::isFirstPartOfStr($fileRef,PATH_site.TYPO3_mainDir.'ext/'))	{	// Is global:
-			$validatedPrefix = PATH_site.TYPO3_mainDir.'ext/';
-		} elseif (t3lib_div::isFirstPartOfStr($fileRef,PATH_site.'typo3conf/ext/'))	{	// Is local:
-			$validatedPrefix = PATH_site.'typo3conf/ext/';
+		} elseif (t3lib_div::isFirstPartOfStr($fileRef,PATH_typo3.'ext/'))	{	// Is global:
+			$validatedPrefix = PATH_typo3.'ext/';
+		} elseif (t3lib_div::isFirstPartOfStr($fileRef,PATH_typo3conf.'ext/'))	{	// Is local:
+			$validatedPrefix = PATH_typo3conf.'ext/';
 		} else {
 			$validatedPrefix = '';
 		}
@@ -4232,25 +4238,28 @@ class t3lib_div {
 	 */
 	function substUrlsInPlainText($message,$urlmode='76',$index_script_url='')	{
 			// Substitute URLs with shorter links:
-		$urlSplit=explode('http://',$message);
-		reset($urlSplit);
-		while(list($c,$v)=each($urlSplit))	{
-			if ($c)	{
-				$newParts = preg_split('/\s|[<>"{}|\\\^`()\']/', $v, 2);
-				$newURL='http://'.$newParts[0];
-					switch((string)$urlmode)	{
+		foreach (array('http','https') as $protocol)	{
+			$urlSplit = explode($protocol.'://',$message);
+			reset($urlSplit);
+			while (list($c,$v) = each($urlSplit))	{
+				if ($c)	{
+					$newParts = preg_split('/\s|[<>"{}|\\\^`()\']/', $v, 2);
+					$newURL = $protocol.'://'.$newParts[0];
+
+					switch ((string)$urlmode)	{
 						case 'all':
-							$newURL=t3lib_div::makeRedirectUrl($newURL,0,$index_script_url);
+							$newURL = t3lib_div::makeRedirectUrl($newURL,0,$index_script_url);
 						break;
 						case '76':
-							$newURL=t3lib_div::makeRedirectUrl($newURL,76,$index_script_url);
+							$newURL = t3lib_div::makeRedirectUrl($newURL,76,$index_script_url);
 						break;
 					}
-				$urlSplit[$c]=$newURL.substr($v,strlen($newParts[0]));
+					$urlSplit[$c] = $newURL . substr($v,strlen($newParts[0]));
+				}
 			}
+			$message = implode('',$urlSplit);
 		}
 
-		$message=implode('',$urlSplit);
 		return $message;
 	}
 
@@ -4281,6 +4290,7 @@ class t3lib_div {
 			$inUrl=($index_script_url ? $index_script_url : t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR').'index.php').
 				'?RDCT='.$md5;
 		}
+
 		return $inUrl;
 	}
 
@@ -4395,7 +4405,7 @@ class t3lib_div {
 				$file = fopen($destination, 'a');
 				if ($file)     {
 					flock($file, LOCK_EX);  // try locking, but ignore if not available (eg. on NFS and FAT)
-					fwrite($file, date('d/m/Y i:H').$msgLine.chr(10));
+					fwrite($file, date('d/m/Y H:i').$msgLine.chr(10));
 					flock($file, LOCK_UN);    // release the lock
 					fclose($file);
 				}

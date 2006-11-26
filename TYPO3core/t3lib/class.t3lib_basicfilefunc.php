@@ -80,7 +80,7 @@ require_once(PATH_t3lib.'class.t3lib_cs.php');
  */
 class t3lib_basicFileFunctions	{
 	var $getUniqueNamePrefix = '';	// Prefix which will be prepended the file when using the getUniqueName-function
-	var $maxNumber = 20;			// This number decides the highest allowed appended number used on a filename before we use naming with unique strings
+	var $maxNumber = 99;			// This number decides the highest allowed appended number used on a filename before we use naming with unique strings
 	var $uniquePrecision = 6;		// This number decides how many characters out of a unique MD5-hash that is appended to a filename if getUniqueName is asked to find an available filename.
 	var $maxInputNameLen = 60;		// This is the maximum length of names treated by cleanFileName()
 	var $tempFN = '_temp_';			// Temp-foldername. A folder in the root of one of the mounts with this name is regarded a TEMP-folder (used for upload from clipboard)
@@ -444,6 +444,12 @@ class t3lib_basicFileFunctions	{
 	 * @return	string		Output string with any characters not matching [.a-zA-Z0-9_-] is substituted by '_'
 	 */
 	function cleanFileName($fileName,$charset='')	{
+			// handle UTF-8 characters
+		if ($GLOBALS['TYPO3_CONF_VARS']['BE']['forceCharset'] == 'utf-8' && $GLOBALS['TYPO3_CONF_VARS']['SYS']['UTF8filesystem'])	{
+				// allow ".", "-", 0-9, a-z, A-Z and everything beyond U+C0 (latin capital letter a with grave)
+			return preg_replace('/[\x00-\x2C\/\x3A-\x3F\x5B-\x60\x7B-\xBF]/u','_',trim($fileName));
+		}
+
 		if (!is_object($this->csConvObj))	{
 			if (TYPO3_MODE=='FE')	{
 				$this->csConvObj = &$GLOBALS['TSFE']->csConvObj;

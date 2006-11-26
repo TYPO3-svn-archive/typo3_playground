@@ -27,7 +27,7 @@
 /*
  * Inline CSS Plugin for TYPO3 htmlArea RTE
  *
- * TYPO3 CVS ID: $Id: inlinecss.js 1421 2006-04-10 09:27:15Z mundaun $
+ * TYPO3 CVS ID: $Id: inlinecss.js 1809 2006-11-23 12:04:14Z ingmars $
  */
 
 InlineCSS = function(editor,args) {

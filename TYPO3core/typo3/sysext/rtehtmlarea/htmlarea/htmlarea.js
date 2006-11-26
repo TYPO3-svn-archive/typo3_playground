@@ -31,7 +31,7 @@
 /*
  * Main script of TYPO3 htmlArea RTE
  *
- * TYPO3 CVS ID: $Id: htmlarea.js 1676 2006-08-15 04:51:33Z stanrolland $
+ * TYPO3 CVS ID: $Id: htmlarea.js 1809 2006-11-23 12:04:14Z ingmars $
  */
 
 /***************************************************

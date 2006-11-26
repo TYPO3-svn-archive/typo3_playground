@@ -297,7 +297,7 @@ class template {
 	 */
 	function wrapClickMenuOnIcon($str,$table,$uid='',$listFr=1,$addParams='',$enDisItems='', $returnOnClick=FALSE)	{
 		$backPath = rawurlencode($this->backPath).'|'.t3lib_div::shortMD5($this->backPath.'|'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);
-		$onClick = 'showClickmenu("'.$table.'","'.$uid.'","'.$listFr.'","'.$enDisItems.'","'.str_replace('&','&amp;',addcslashes($backPath,'"')).'","'.str_replace('&','&amp;',addcslashes($addParams,'"')).'");return false;';
+		$onClick = 'showClickmenu("'.$table.'","'.$uid.'","'.$listFr.'","'.str_replace('+','%2B',$enDisItems).'","'.str_replace('&','&amp;',addcslashes($backPath,'"')).'","'.str_replace('&','&amp;',addcslashes($addParams,'"')).'");return false;';
 		return $returnOnClick ? $onClick : '<a href="#" onclick="'.htmlspecialchars($onClick).'"'.($GLOBALS['TYPO3_CONF_VARS']['BE']['useOnContextMenuHandler'] ? ' oncontextmenu="'.htmlspecialchars($onClick).'"' : '').'>'.$str.'</a>';
 	}
 
@@ -882,7 +882,7 @@ $str.=$this->docBodyTagBegin().
 	 * @return	string		HTML body tag
 	 */
 	function docBodyTagBegin()	{
-		$bodyContent = 'body '.trim($this->bodyTagAdditions.($this->bodyTagId ? ' id="'.$this->bodyTagId.'"' : ''));
+		$bodyContent = 'body onclick="if (top.menuReset) top.menuReset();" '.trim($this->bodyTagAdditions.($this->bodyTagId ? ' id="'.$this->bodyTagId.'"' : ''));
 		return '<'.trim($bodyContent).'>';
 	}
 
@@ -1249,7 +1249,7 @@ $str.=$this->docBodyTagBegin().
 			/*<![CDATA[*/
 					// is called from most clickmenu links
 				function showClickmenu(table, uid, listFr, enDisItems, backPath, addParams)	{
-					var url = "'.$this->backPath.'alt_clickmenu.php?table=" + table
+					var url = "'.$this->backPath.'alt_clickmenu.php?table=" + encodeURIComponent(table)
 					          + "&uid=" + uid
 										+ "&listFr=" + listFr
 										+ "&enDisItems=" + enDisItems
@@ -1260,28 +1260,22 @@ $str.=$this->docBodyTagBegin().
 				}
 					// switch - either forwards call to ajax or does the request in the top frame
 				function showClickmenu_raw(url)	{';
-		if($this->isCMlayers()) { // ajax
-			$content .= '
+		if ($this->isCMlayers())	{ // AJAX
+			$content.= '
 					url += "&ajax=1";
 					ajax_doRequest(url);';
-		} else { // no ajax
-			$content .= '
+		} else { // no AJAX
+			$content.= '
 					showClickmenu_noajax(url);';
 		}
-		$content .= '
+		$content.= '
 				}
 
-	/**
-	 * [Describe function...]
-	 *
-	 * @param	[type]		$url: ...
-	 * @return	[type]		...
-	 */
 				function showClickmenu_noajax(url)	{
 					top.loadTopMenu(url);
 				}';
 		if ($this->isCMlayers())	{
-			$content .= t3lib_ajax::getJScode('showClickmenu_ajax', 'showClickmenu_noajax');
+			$content.= t3lib_ajax::getJScode('showClickmenu_ajax', 'showClickmenu_noajax');
 			$content.='
 					// opens the clickmenu, is called from ajax_doRequest
 				function showClickmenu_ajax(t3ajax)	{

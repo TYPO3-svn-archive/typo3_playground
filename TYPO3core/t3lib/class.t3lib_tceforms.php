@@ -1874,20 +1874,21 @@ class t3lib_TCEforms	{
 					$imgs = array();
 					foreach($itemArray as $imgRead)	{
 						$imgP = explode('|',$imgRead);
+						$imgPath = rawurldecode($imgP[0]);
 
 						$rowCopy = array();
-						$rowCopy[$field] = $imgP[0];
+						$rowCopy[$field] = $imgPath;
 
 							// Icon + clickmenu:
-						$absFilePath = t3lib_div::getFileAbsFileName($config['uploadfolder'].'/'.$imgP[0]);
+						$absFilePath = t3lib_div::getFileAbsFileName($config['uploadfolder'].'/'.$imgPath);
 
-						$fI = pathinfo($imgP[0]);
+						$fI = pathinfo($imgPath);
 						$fileIcon = t3lib_BEfunc::getFileIcon(strtolower($fI['extension']));
 						$fileIcon = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/fileicons/'.$fileIcon,'width="18" height="16"').' class="absmiddle" title="'.htmlspecialchars($fI['basename'].($absFilePath && @is_file($absFilePath) ? ' ('.t3lib_div::formatSize(filesize($absFilePath)).'bytes)' : ' - FILE NOT FOUND!')).'" alt="" />';
 
 						$imgs[] = '<span class="nobr">'.t3lib_BEfunc::thumbCode($rowCopy,$table,$field,$this->backPath,'thumbs.php',$config['uploadfolder'],0,' align="middle"').
 									($absFilePath ? $this->getClickMenu($fileIcon, $absFilePath) : $fileIcon).
-									$imgP[0].
+									$imgPath.
 									'</span>';
 					}
 					$thumbsnail = implode('<br />',$imgs);
@@ -2086,7 +2087,7 @@ class t3lib_TCEforms	{
 			$editData=t3lib_div::xml2array($xmlData);
 			if (!is_array($editData))	{	// Must be XML parsing error...
 				$editData=array();
-			} elseif (isset($editData['meta']) && !is_array($editData['meta']))	{
+			} elseif (!isset($editData['meta']) || !is_array($editData['meta']))	{
 			    $editData['meta'] = array();
 			}
 
@@ -2497,15 +2498,19 @@ class t3lib_TCEforms	{
 		$format = trim($config['format']);
 		switch($format)	{
 			case 'date':
-				$option = trim($config['format.']['option']);
-				if ($option)	{
-					if ($config['format.']['strftime'])	{
-						$value = strftime($option,$itemValue);
+				if ($itemValue)	{
+					$option = trim($config['format.']['option']);
+					if ($option)	{
+						if ($config['format.']['strftime'])	{
+							$value = strftime($option,$itemValue);
+						} else {
+							$value = date($option,$itemValue);
+						}
 					} else {
-						$value = date($option,$itemValue);
+						$value = date('d-m-Y',$itemValue);
 					}
 				} else {
-					$value = date('d-m-Y',$itemValue);
+					$value = '';
 				}
 				if ($config['format.']['appendAge'])	{
 					$value .= ' ('.t3lib_BEfunc::calcAge((time()-$itemValue), $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.minutesHoursDaysYears')).')';

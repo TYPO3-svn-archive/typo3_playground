@@ -31,7 +31,7 @@
  * @author	Kasper Skaarhoj <kasper@typo3.com>
  * @author	Stanislas Rolland <stanislas.rolland(arobas)fructifor.ca>
  *
- * $Id: class.tx_rtehtmlarea_select_image.php 1676 2006-08-15 04:51:33Z stanrolland $  *
+ * $Id: class.tx_rtehtmlarea_select_image.php 1811 2006-11-23 18:44:52Z masi $  *
  */
 require_once(PATH_typo3.'class.browse_links.php');
 require_once(PATH_t3lib.'class.t3lib_foldertree.php');
@@ -284,6 +284,7 @@ class tx_rtehtmlarea_select_image extends browse_links {
 						$destName = $fileFunc->getUniqueName($mainBase,$destPath);
 						@copy($imgI[3],$destName);
 
+						$destName = dirname($destName).'/'.rawurlencode(basename($destName));
 						$iurl = $this->siteUrl.substr($destName,strlen(PATH_site));
 						echo'
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">

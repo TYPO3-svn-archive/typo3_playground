@@ -1400,10 +1400,8 @@ class t3lib_TCEforms_inline {
 							),
 						),
 						1 => array(
-							'%AND' => array(
-								'foreign_table' => $config['foreign_table'],
-								'foreign_selector' => $config['foreign_field'],
-							),
+							'foreign_table' => $config['foreign_table'],
+							'foreign_selector' => $config['foreign_field']
 						),
 					),
 				),

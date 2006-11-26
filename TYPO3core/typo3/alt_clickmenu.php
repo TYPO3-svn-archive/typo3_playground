@@ -409,11 +409,12 @@ class clickMenu {
 	 * @param	string		The URL relative to TYPO3_mainDir
 	 * @param	string		The return_url-parameter
 	 * @param	boolean		If set, the "hideCM()" will be called
+	 * @param	string		If set, gives alternative location to load in (for example top frame or somewhere else)
 	 * @return	string		JavaScript for an onClick event.
 	 */
-	function urlRefForCM($url,$retUrl='',$hideCM=1)	{
+	function urlRefForCM($url,$retUrl='',$hideCM=1,$overrideLoc='')	{
 		$loc='top.content'.($this->listFrame && !$this->alwaysContentFrame ?'.list_frame':'');
-		$editOnClick='var docRef=(top.content.list_frame)?top.content.list_frame:'.$loc.'; docRef.location.href=top.TS.PATH_typo3+\''.$url.'\''.
+		$editOnClick= ($overrideLoc ? 'var docRef='.$overrideLoc : 'var docRef=(top.content.list_frame)?top.content.list_frame:'.$loc).'; docRef.location.href=top.TS.PATH_typo3+\''.$url.'\''.
 			($retUrl?"+'&".$retUrl."='+top.rawurlencode(".$this->frameLocation('docRef.document').')':'').';'.
 			($hideCM?'return hideCM();':'');
 		return $editOnClick;
@@ -1590,7 +1591,7 @@ class SC_alt_clickmenu {
 		}
 
 			// Initialize template object
-		if(!$this->ajax)	{
+		if (!$this->ajax)	{
 			$this->doc = t3lib_div::makeInstance('template');
 			$this->doc->docType='xhtml_trans';
 			$this->doc->backPath = $BACK_PATH;
@@ -1685,7 +1686,7 @@ class SC_alt_clickmenu {
 
 			// Start page
 		if(!$this->ajax)	{
-			$this->content.=$this->doc->startPage('Context Sensitive Menu');
+			$this->content.= $this->doc->startPage('Context Sensitive Menu');
 		}
 			// Set content of the clickmenu with the incoming var, "item"
 		$this->content.= $clickMenu->init();
@@ -1697,11 +1698,12 @@ class SC_alt_clickmenu {
 	 * @return	void
 	 */
 	function printContent()	{
-		if(!$this->ajax)	{
+		if (!$this->ajax)	{
 			$this->content.= $this->doc->endPage();
 			$this->content = $this->doc->insertStylesAndJS($this->content);
 			echo $this->content;
 		} else {
+			$this->content = $GLOBALS['LANG']->csConvObj->utf8_encode($this->content,$GLOBALS['LANG']->charSet);
 			t3lib_ajax::outputXMLreply($this->content);
 		}
 	}

@@ -1270,8 +1270,14 @@
 	 * @return	void		(The function exits!)
 	 */
 	function pageNotFoundHandler($code, $header='', $reason='')	{
+
 			// Issue header in any case:
-		if ($header)	{header($header);}
+		if ($header)	{
+			$headerArr = preg_split('/\r|\n/',$header,-1,PREG_SPLIT_NO_EMPTY);
+			foreach ($headerArr as $header)	{
+				header ($header);
+			}
+		}
 
 			// Convert $code in case it was written as a string (e.g. if edited in Install Tool)
 			// TODO: Once the Install Tool handles such data types correctly, this workaround should be removed again...
@@ -1320,15 +1326,32 @@
 			}
 
 				// Prepare headers
-			$headers = array(
+			$headerArr = array(
 				'User-agent: ' . t3lib_div::getIndpEnv('HTTP_USER_AGENT'),
 				'Referer: ' . t3lib_div::getIndpEnv('TYPO3_REQUEST_URL')
 			);
-			$content = t3lib_div::getURL($code, 0, $headers);
+			$res = t3lib_div::getURL($code, 1, $headerArr);
+
+				// Header and content are separated by an empty line
+			list($header,$content) = split("\r\n\r\n", $res, 2);
+			$content.= "\r\n";
+
 			if (false === $content) {
 					// Last chance -- redirect
 				header('Location: '.t3lib_div::locationHeaderUrl($code));
 			} else {
+
+				$forwardHeaders = array(	// Forward these response headers to the client
+					'Content-Type:',
+				);
+				$headerArr = preg_split('/\r|\n/',$header,-1,PREG_SPLIT_NO_EMPTY);
+				foreach ($headerArr as $header)	{
+					foreach ($forwardHeaders as $h)	{
+						if (preg_match('/^'.$h.'/', $header))	{
+							header ($header);
+						}
+					}
+				}
 					// Put <base> if necesary
 				if ($checkBaseTag)	{
 
@@ -1441,7 +1464,7 @@
 	/**
 	 * Looking for a ADMCMD_prev code, looks it up if found and returns configuration data.
 	 * Background: From the backend a request to the frontend to show a page, possibly with workspace preview can be "recorded" and associated with a keyword. When the frontend is requested with this keyword the associated request parameters are restored from the database AND the backend user is loaded - only for that request.
-	 * The main point is that a special URL valid for a limited time, eg. http://localhost/typo3site/?ADMCMD_prev=035d9bf938bd23cb657735f68a8cedbf will open up for a preview that doesn't require login. Thus its useful for sending an email.
+	 * The main point is that a special URL valid for a limited time, eg. http://localhost/typo3site/index.php?ADMCMD_prev=035d9bf938bd23cb657735f68a8cedbf will open up for a preview that doesn't require login. Thus its useful for sending an email.
 	 * This can also be used to generate previews of hidden pages, start/endtimes, usergroups and those other settings from the Admin Panel - just not implemented yet.
 	 *
 	 * @return	array		Preview configuration array from sys_preview record.
@@ -1464,7 +1487,7 @@
 				// - Make sure to remove fe/be cookies (temporarily); BE already done in ADMCMD_preview_postInit()
 			if (is_array($previewData))	{
 				if (!count(t3lib_div::_POST()))	{
-					if (t3lib_div::getIndpEnv('TYPO3_SITE_URL').'?ADMCMD_prev='.$inputCode === t3lib_div::getIndpEnv('TYPO3_REQUEST_URL'))	{
+					if (t3lib_div::getIndpEnv('TYPO3_SITE_URL').'index.php?ADMCMD_prev='.$inputCode === t3lib_div::getIndpEnv('TYPO3_REQUEST_URL'))	{
 
 							// Unserialize configuration:
 						$previewConfig = unserialize($previewData['config']);
@@ -1476,7 +1499,7 @@
 
 							// Return preview keyword configuration:
 						return $previewConfig;
-					} else die(htmlspecialchars('Request URL did not match "'.t3lib_div::getIndpEnv('TYPO3_SITE_URL').'?ADMCMD_prev='.$inputCode.'"'));	// This check is to prevent people from setting additional GET vars via realurl or other URL path based ways of passing parameters.
+					} else die(htmlspecialchars('Request URL did not match "'.t3lib_div::getIndpEnv('TYPO3_SITE_URL').'index.php?ADMCMD_prev='.$inputCode.'"'));	// This check is to prevent people from setting additional GET vars via realurl or other URL path based ways of passing parameters.
 				} else die('POST requests are incompatible with keyword preview.');
 			} else die('ADMCMD command could not be executed! (No keyword configuration found)');
 		}

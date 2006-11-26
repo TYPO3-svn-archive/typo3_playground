@@ -4,7 +4,7 @@
 #--------------------------------------------------------
 # Server version	3.22.27
 #
-# TYPO3 CVS ID: $Id: tables.sql 1709 2006-08-31 23:09:19Z mundaun $
+# TYPO3 CVS ID: $Id: tables.sql 1794 2006-11-16 21:33:17Z masi $
 
 #
 # Table structure for table 'be_groups'
@@ -221,6 +221,7 @@ CREATE TABLE sys_workspace (
   unpublish_time int(11) DEFAULT '0' NOT NULL,
   freeze tinyint(3) DEFAULT '0' NOT NULL,
   live_edit tinyint(3) DEFAULT '0' NOT NULL,
+  review_stage_edit tinyint(3) DEFAULT '0' NOT NULL,
   vtypes tinyint(3) DEFAULT '0' NOT NULL,
   disable_autocreate tinyint(1) DEFAULT '0' NOT NULL,
   swap_modes tinyint(3) DEFAULT '0' NOT NULL,
@@ -284,7 +285,36 @@ CREATE TABLE sys_refindex (
   PRIMARY KEY (hash),
   KEY lookup_rec (tablename,recuid),
   KEY lookup_uid (ref_table,ref_uid),
-  KEY lookup_string (ref_table,ref_string(199))
+  KEY lookup_string (ref_table,ref_string)
+);
+
+#
+# Table structure for table ''
+#
+CREATE TABLE sys_refindex_words (
+  wid int(11) DEFAULT '0' NOT NULL,
+  baseword varchar(60) DEFAULT '' NOT NULL,
+  PRIMARY KEY (wid)
+);
+
+#
+# Table structure for table ''
+#
+CREATE TABLE sys_refindex_rel (
+  rid int(11) DEFAULT '0' NOT NULL,
+  wid int(11) DEFAULT '0' NOT NULL,
+  PRIMARY KEY (rid,wid)
+);
+
+
+#
+# Table structure for table ''
+#
+CREATE TABLE sys_refindex_res (
+  rid int(11) DEFAULT '0' NOT NULL,
+  tablename varchar(100) DEFAULT '' NOT NULL,
+  recuid int(11) DEFAULT '0' NOT NULL,
+  PRIMARY KEY (rid)
 );
 
 #

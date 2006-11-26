@@ -1,3 +1,114 @@
+2006-11-26  Michael Stucki  <michael@typo3.org>
+
+	* Fixed bug #4556: PHP4 compatibility issues
+
+2006-11-21  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* New Feature: List users online (aka who is online) for BE users in Tools > User Manager
+	* New Feature: Allow UTF-8 file names (to enable set BE[forceCharset]='utf-8' and SYS[UTF8filesystem]=1)
+
+2006-11-23  Ingmar Schlecht  <ingmar@typo3.org>
+
+	* New Feature: Inline Relational Record Editing (IRRE). See http://wiki.typo3.org/index.php/Inline_Relational_Record_Editing for details. Thanks a lot to Oliver Hader who programmed this as his diploma thesis and to Sebastian who reviewed the code together with me!
+
+2006-11-21  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Fix a problem with PHP4 and UTF-8 byte order marks (BOM) in t3lib_div::xml2array()
+
+2006-11-17  Michael Stucki  <michael@typo3.org>
+
+	* Fixed bug #4059: options.hideRecords.pages doesn't work for mounted pages - Thanks to Marc Bastian Heinrichs for providing a fix!
+ 	* Fixed bug #4379: pageNotFound_handling ignores forceCharset setting
+	* Fixed bug #3115: JavaScript error on clickmenu in filelist module
+	* Fixed bug #4515: Input field with settings eval "date" and readOnly shows 01-01-1970 if the value is empty - Thanks to Marc Bastian Heinrichs for providing a fix!
+
+2006-11-17  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Indexed Search: Added stdWrap around the search word in the output (tx_indexedsearch_pi[whatis]): tx_indexedsearch_pi.whatis_stdWrap
+	* Indexed Search: Removed superfluos <P> tag around search word
+
+2006-11-16  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Indexed Search: Added freeIndexSetId GROUP BY in tx_indexedsearch->execFinalQuery() to make SELECT work on DBs other than Mysql
+	* Add an index prefix to Mysql key definitions when (var)chars are changed to text when multiplyDBfieldSize is set
+	* Reverted change to key of sys_refindex on 2006-09-01 (key prefix is set now automatically)
+
+2006-11-13  Bernhard Kraft  <kraftb@kraftb.at>
+
+	* Fixed a bug: Normal labels rendered by class.db_list_extra.inc didn't get passed through t3lib_BEfunc::getProcessedValueExtra when alt_label fields are set.
+
+2006-11-08  Dmitry Dulepov  <dmitry@typo3.org>
+
+	* Enable creation of compact flexforms
+
+2006-11-07  Michael Stucki  <michael@typo3.org>
+
+	* Fixed bug #4348: Wrong time format in syslog output
+
+2006-11-06  Michael Stucki  <michael@typo3.org>
+
+	* Fix bug #3495: Endless recursion with some MySQL versions
+
+2006-11-03  Michael Stucki  <michael@typo3.org>
+
+	* Fixed bug #4425: Garble code in adodb extension
+	* Fixed Cross Site Scripting issue in fe_adminLib.inc. For details, see http://typo3.org/teams/security/security-bulletins/typo3-20061010-1/ - thanks to Andriu Isenring Ritsch for discovering and reporting this issue.
+
+2006-11-02 Ingmar Schlecht  <ingmar@typo3.org>
+
+	* Fixed bug with bidirectional mm-relations: "group" fields with more than one table allowed didn't work properly any more
+
+2006-11-02  Michael Stucki  <michael@typo3.org>
+
+	* Fixed bug #1655: t3lib_div::substUrlsInPlainText() did not support HTTPS links
+	* Fixed bug #1236 again: 404 error while using the new content wizard
+	* Fixed bug #4443: Items in CE "Insert Records" don't have edit options in context menu any longer
+	* Small EM change: Annotate if all or only reviewed extensions should be searched
+
+2006-10-30  Karsten Dambekalns	<karsten@typo3.org>
+
+	* Add security hints in typo3/mod/tools/em/class.em_index.php
+	* Fixed bug #3637 in EM (translation handling)
+
+2006-10-29  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Fixed bug #4021: array_merge error with PHP 5.0
+	* Changed occurences of PATH_site.'typo3conf/' to PATH_typo3conf and PATH_site.TYPO3_mainDir to PATH_typo3
+
+2006-10-25  Kasper Skårhøj	<kasper2006@typo3.com>
+
+	* Added "alt_main_new.php" including various modifications around to support this.
+	* Added clean-up functions in extension "lowlevel" plus modified t3lib_refindex and t3lib_tcemain accordingly
+	* Added word index to sys_refindex.
+	* Added feature to workspace records so an element can still be edited even when passed to "review"; This allows an editor to notify that the element is ready but still make changes. Of course no more changes can be made as soon as the reviewer has pushed it to the next level.
+	* Added "mod.php" which is a module dispatch script that can potentially help us to get rid of the problem with local vs global extensions and their backend modules having different conf.php files. Documentation remains to be added to "Inside TYPO3".
+
+2006-10-14  Dmitry Dulepov  <dmitry@typo3.org>
+
+	* Fixed bug #3199: SUing to myself?
+	* Fixed bug #3720: Multilanguage Flexforms don't work after migrating a site from one language to more languages
+	* Fixed bug #4358: Add an option to t3lib_div::xml2array to remove all unnecessary spaces
+
+2006-10-17  Ernesto Baschny  <ernst@cron-it.de>
+
+	* Fix: no more "ERR" or "Unpacking the language pack failed" in the translation handling with curl enabled.
+
+2006-10-14  Dmitry Dulepov  <dmitry@typo3.org>
+
+	* Fix: t3lib_db::exec_SELECTgetRows() did not free recordset
+
+2006-10-24  Karsten Dambekalns  <karsten@typo3.org>
+
+	* ADOdb system extension updated to upstream 4.93. Added danish translation, thanks to Peter Klein!
+
+2006-10-11  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Changed index "parent" of sys_template to (pid,sorting)
+
+2006-10-10  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Fixed bug #3777: thumbs.php looks for file in t3lib/gfx instead of typo3/gfx
+
 2006-09-20  Bernhard Kraft  <kraftb@kraftb.at>
 
 	* Fixed a missing space in typo3/template.php
