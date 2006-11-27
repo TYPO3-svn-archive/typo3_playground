@@ -5228,6 +5228,17 @@ class tslib_cObj {
 							// Query Params:
 						$addQueryParams = $conf['addQueryString'] ? $this->getQueryArguments($conf['addQueryString.']) : '';
 						$addQueryParams .= trim($this->stdWrap($conf['additionalParams'],$conf['additionalParams.']));
+							
+							// Adjust type setting for simulateStaticDocuments:
+							// if a type value was set in additionalParams and no type was defined in the parameter pair
+							// take the type from additionalParams and make it behave like it was set in the parameter pair
+							// (it has to be done here instead of in t3lib_tstemplate::linkData, because of cHash)
+						if ($GLOBALS['TSFE']->config['config']['simulateStaticDocuments'] && strpos($addQueryParams, '&type=') !== false && !isset($theTypeP)) {
+							preg_match('/&type=(.+)(&|$)/', $addQueryParams, $match);
+							$theTypeP = $match[1];
+							$addQueryParams = str_replace('&type='.$theTypeP, '', $addQueryParams);
+						}
+							
 						if (substr($addQueryParams,0,1)!='&')		{
 							$addQueryParams = '';
 						} elseif ($conf['useCacheHash']) {	// cache hashing:
