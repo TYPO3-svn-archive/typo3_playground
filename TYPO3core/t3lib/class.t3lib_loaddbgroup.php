@@ -445,8 +445,8 @@ class t3lib_loadDBGroup	{
 		if (count($rows)) {
 			foreach ($rows as $row) {
 				$this->itemArray[$key]['id'] = $row['uid'];
-				$this->itemArray[$key]['table'] = $conf['foreign_table'];
-				$this->tableArray[$theTable][]= $row['uid'];
+				$this->itemArray[$key]['table'] = $foreign_table;
+				$this->tableArray[$foreign_table][]= $row['uid'];
 				$key++;
 			}
 		}
