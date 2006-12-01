@@ -335,7 +335,7 @@ class t3lib_TCEforms_inline {
 			$recTitle = $this->fObj->noTitle($recTitle);
 			// render the standard
 		} else {
-			$recTitle = t3lib_BEfunc::getRecordTitle($foreign_table, $rec);
+			$recTitle = t3lib_BEfunc::getRecordTitle($foreign_table, $rec, 1);
 		}
 
 		$altText = t3lib_BEfunc::getRecordIconAltText($rec, $foreign_table);
@@ -353,6 +353,7 @@ class t3lib_TCEforms_inline {
 
 		$ctrl = $this->renderForeignRecordHeaderControl($foreign_table,$rec,$config);
 
+			// @TODO: Check the table wrapping and the CSS definitions
 		$header =
 			'<table cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-right: 5px;"'.
 			($this->fObj->borderStyle[2] ? ' background="'.htmlspecialchars($this->backPath.$this->fObj->borderStyle[2]).'"':'').

@@ -1825,8 +1825,12 @@ class t3lib_BEfunc	{
 				if ($TCA[$table]['ctrl']['label_alt_force'])	$t=implode(', ',$tA);
 			}
 			if ($prep) 	{
+				$tOriginal = $t;
 				$t = htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen']));
-				if (!strcmp(trim($t),''))	$t='<em>['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']</em>';
+				if (!strcmp(trim($t),''))
+					$t='<em>['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']</em>';
+				elseif ($t != $tOriginal)
+					$t='<span title="'.htmlspecialchars($tOriginal).'">'.$t.'</span>';
 			}
 			return $t;
 		}
