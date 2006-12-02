@@ -2655,7 +2655,7 @@ class tx_impexp {
 					$pInfo['updateMode'] = $this->renderSelectBox('tx_impexp[import_mode]['.$table.':'.$uid.']',$this->import_mode[$table.':'.$uid],$optValues);
 				}
 
-					// Diff vieiw:
+					// Diff view:
 				if ($this->showDiff)	{
 						// For IMPORTS, get new id:
 					if ($newUid = $this->import_mapId[$table][$uid])	{
