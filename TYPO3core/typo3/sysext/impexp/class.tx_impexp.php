@@ -2692,7 +2692,7 @@ class tx_impexp {
 
 			// DB relations
 		if (is_array($record['rels']))	{
-			$this->addRelations($record['rels'],$lines,$preCode);
+			$this->addRelations($record['rels'],$lines,$preCode,array($table.':'.$uid));
 		}
 
 			// Soft ref
@@ -2754,7 +2754,18 @@ class tx_impexp {
 	 * @see singleRecordLines()
 	 */
 	function addRelations($rels,&$lines,$preCode,$recurCheck=array(),$htmlColorClass='')	{
+			// defines if the next deeper tree level should be rendered
+			// Pre-Processing:
+		$allowNextLevel = true;
+		foreach ($rels as $dat) {
+				// if top element is this relation, don't step down the tree and break, because we have the information we want
+			if (is_array($recurCheck) && $recurCheck[0] == $dat['table'].':'.$dat['id']) {
+				$allowNextLevel = false;
+				break;
+			}
+		}
 
+			// Processing:
 		foreach($rels as $dat)	{
 			$table = $dat['table'];
 			$uid = $dat['id'];
@@ -2762,7 +2773,8 @@ class tx_impexp {
 			$Iprepend = '';
 			$staticFixed = FALSE;
 			$pInfo['ref'] = $table.':'.$uid;
-			if (!in_array($pInfo['ref'],$recurCheck))	{
+				// allowNextLevel=false also means, to show this level but don't walk down the tree
+			if (!in_array($pInfo['ref'],$recurCheck) || !$allowNextLevel)	{
 				if ($uid > 0)	{
 					$record = $this->dat['header']['records'][$table][$uid];
 					if (!is_array($record))	{
@@ -2798,7 +2810,7 @@ class tx_impexp {
 
 				if (!$staticFixed || $this->showStaticRelations)	{
 					$lines[] = $pInfo;
-					if (is_array($record) && is_array($record['rels']))	{
+					if (is_array($record) && is_array($record['rels']) && $allowNextLevel)	{
 						$this->addRelations($record['rels'], $lines, $preCode.'&nbsp;&nbsp;', array_merge($recurCheck,array($pInfo['ref'])), $htmlColorClass);
 					}
 				}
