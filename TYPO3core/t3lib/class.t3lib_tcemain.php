@@ -330,7 +330,8 @@ class t3lib_TCEmain	{
 	var $copyMappingArray = Array();			// Used by the copy action to track the ids of new pages so subpages are correctly inserted! THIS is internally cleared for each executed copy operation! DO NOT USE THIS FROM OUTSIDE! Read from copyMappingArray_merged instead which is accumulating this information.
 	var $remapStack = array();					// array used for remapping uids and values at the end of process_datamap
 	var $updateRefIndexStack = array();			// array used for additional calls to $this->updateRefIndex
-
+	var $callFromImpExp = false;				// tells, that this TCEmain was called from tx_impext - this variable is set by tx_impexp
+	
 		// Various
 	var $fileFunc;								// For "singleTon" file-manipulation object
 	var $checkValue_currentRecord=array();		// Set to "currentRecord" during checking of values.
@@ -2003,8 +2004,10 @@ class t3lib_TCEmain	{
 			$valueArray = $dbAnalysis->countItems();
 		} elseif ($type == 'inline') {
 			if ($tcaFieldConf['foreign_field']) {
-					// update sorting
-				$dbAnalysis->writeForeignField($tcaFieldConf, $id);
+					// if the record was imported, sorting was also imported, so skip this
+				$skipSorting = $this->callFromImpExp ? true : false;
+					// update record in intermediate table (sorting & pointer uid to parent record)
+				$dbAnalysis->writeForeignField($tcaFieldConf, $id, 0, $skipSorting);
 				$valueArray = $dbAnalysis->countItems();
 			} else {
 				$valueArray = $dbAnalysis->getValueArray($prep);

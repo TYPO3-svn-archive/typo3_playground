@@ -1480,6 +1480,8 @@ class tx_impexp {
 		$tce->dontProcessTransformations = 1;
 		$tce->enableLogging = $this->enableLogging;
 		$tce->alternativeFileName = $this->alternativeFileName;
+			// tell TCEmain that it was called from an import/export action
+		$tce->callFromImpExp = true;
 		return $tce;
 	}
 

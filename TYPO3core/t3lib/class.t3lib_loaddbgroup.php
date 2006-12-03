@@ -458,9 +458,10 @@ class t3lib_loadDBGroup	{
 	 * @param	array		$conf: TCA configuration for current field
 	 * @param	integer		$parentUid: The uid of the parent record
 	 * @param	boolean		$updateForeignField: Whether to update the foreign field with the $parentUid (on Copy)
+	 * @param 	boolean		$skipSorting: Do not update the sorting columns, this could happen for imported values
 	 * @return	void
 	 */
-	function writeForeignField($conf, $parentUid, $updateToUid=0) {
+	function writeForeignField($conf, $parentUid, $updateToUid=0, $skipSorting=false) {
 		$c = 0;
 		$foreign_table = $conf['foreign_table'];
 		$foreign_field = $conf['foreign_field'];
@@ -501,21 +502,24 @@ class t3lib_loadDBGroup	{
 						$updateValues[$foreign_table_field] = $this->currentTable;
 					}
 
-						// specific sortby for data handled by this field
-					if ($conf['foreign_sortby']) {
-						$sortby = $conf['foreign_sortby'];
-					} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby']) { // specific sortby for all table records
-						$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
-					}
-						// strip a possible "ORDER BY" in front of the $sortby value
-					$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
-					$symSortby = $conf['symmetric_sortby'];
-
-						// set the sorting on the right side, it depends on who created the relation, so what uid is in the symmetric_field
-					if ($isOnSymmetricSide && $symSortby) {
-						$updateValues[$symSortby] = ++$c;
-					} elseif ($sortby) {
-						$updateValues[$sortby] = ++$c;
+						// update sorting columns if not to be skipped
+					if (!$skipSorting) {
+							// specific sortby for data handled by this field
+						if ($conf['foreign_sortby']) {
+							$sortby = $conf['foreign_sortby'];
+						} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby']) { // specific sortby for all table records
+							$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
+						}
+							// strip a possible "ORDER BY" in front of the $sortby value
+						$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
+						$symSortby = $conf['symmetric_sortby'];
+	
+							// set the sorting on the right side, it depends on who created the relation, so what uid is in the symmetric_field
+						if ($isOnSymmetricSide && $symSortby) {
+							$updateValues[$symSortby] = ++$c;
+						} elseif ($sortby) {
+							$updateValues[$sortby] = ++$c;
+						}
 					}
 
 					// update to a foreign_field/symmetric_field pointer is requested, normally used on record copies
