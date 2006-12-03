@@ -93,6 +93,7 @@ class t3lib_TCEforms_inline {
 	var $inlineFirstPid;					// the first call of an inline type appeared on this page (pid of record)
 	var $inlineNames = array();				// keys: form, object -> hold the name/id for each of them
 	var $inlineData = array();				// inline data array used for JSON output
+	var $inlineView = array();				// expanded/collapsed states for the current BE user
 	var $inlineCount = 0;					// count the number of inline types used
 
 	var $prependNaming = 'data';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
@@ -143,6 +144,12 @@ class t3lib_TCEforms_inline {
 			// remember the page id (pid of record) where inline editing started first
 			// we need that pid for ajax calls, so that they would know where the action takes place on the page structure
 		if (!isset($this->inlineFirstPid)) {
+				// if this record is not new, try to fetch the inlineView states
+				// @TODO: Add checking/cleaning for unused tables, records, etc. to save space in uc-field
+			if (t3lib_div::testInt($row['uid'])) {
+				$inlineView = unserialize($GLOBALS['BE_USER']->uc['inlineView']);
+				$this->inlineView = $inlineView[$table][$row['uid']];
+			}
 				// if pid is negative, fetch the previous record and take its pid
 			if ($row['pid'] < 0) {
 				$prevRec = t3lib_BEfunc::getRecord($table, abs($row['pid']));
@@ -165,11 +172,16 @@ class t3lib_TCEforms_inline {
 		$config['inline']['last'] = $recordList[count($recordList)-1]['uid'];
 
 			// tell the browser what we have (using JSON later)
+		$top = $this->getStructureLevel(0);
 		$this->inlineData['config'][$nameObject] = array('table' => $foreign_table);
 		$this->inlineData['config'][$nameObject.'['.$foreign_table.']'] = array(
 			'min' => $minitems,
 			'max' => $maxitems,
 			'sortable' => $config['appearance']['useSortable'],
+			'top' => array(
+				'table' => $top['table'],
+				'uid'	=> $top['uid'],
+			),
 		);
 
 			// if relations are required to be unique, get the uids that have already been used on the foreign side of the relation
@@ -287,16 +299,26 @@ class t3lib_TCEforms_inline {
 		$fields = $this->wrapFormsSection($fields);
 
 		if ($isNewRecord) {
+				// show this record expanded or collapsed
+			$isExpanded = is_array($config['appearance']) && $config['appearance']['collapseAll'] ? true : false;
+				// get the top parent table
+			$top = $this->getStructureLevel(0);
+			$ucFieldName = 'uc['.$top['table'].']['.$top['uid'].']'.$appendFormFieldNames;
+				// set additional fields for processing for saving
 			$fields .= '<input type="hidden" name="'.$this->prependFormFieldNames.$appendFormFieldNames.'[pid]" value="'.$rec['pid'].'"/>';
+			$fields .= '<input type="hidden" name="'.$ucFieldName.'" value="'.$isExpanded.'" />';
+
 		} else {
+				// show this record expanded or collapsed
+			$isExpanded = $this->getExpandedCollapsedState($foreign_table, $rec['uid']);
+				// set additional field for processing for saving
 			$fields .= '<input type="hidden" name="'.$this->prependCmdFieldNames.$appendFormFieldNames.'[delete]" value="1" disabled="disabled" />';
 		}
+		
+			// if this record should be shown collapsed
+		if (!$isExpanded) $appearanceStyleFields = ' style="display: none;"';
 
-			// set the appearance style of the records of this table
-		if (is_array($config['appearance']) && count($config['appearance'])) {
-			if ($config['appearance']['collapseAll']) $appearanceStyleFields = ' style="display: none;"';
-		}
-
+			// set the record container with data for output
 		$out = '<div id="'.$formFieldNames.'_header">'.$header.'</div>';
 		$out .= '<div id="'.$formFieldNames.'_fields"'.$appearanceStyleFields.'>'.$fields.$combination.'</div>';
 			// wrap the header, fields and combination part of a child record with a div container
@@ -616,8 +638,35 @@ class t3lib_TCEforms_inline {
 
 		return $itemsToSelect;
 	}
+	
 
+	/**
+	 * Creates a link/button to create new records
+	 *
+	 * @param	string		$objectPrefix: The "path" to the child record to create (e.g. '[parten_table][parent_uid][parent_field][child_table]')
+	 * @param	string		$style: If a style should be added to the link (e.g. 'display: none;')
+	 * @return	string		The HTML code for the new record link
+	 */
+	function getNewRecordLink($objectPrefix, $conf = array()) {
+		if ($conf['inline']['inlineNewButtonStyle']) $style = ' style="'.$style.'"';
 
+		$onClick = "return inline.createNewRecord('$objectPrefix')";
+		$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createnew',1);
+
+		if ($conf['appearance']['newRecordLinkAddTitle'])
+			$tableTitle .= ' '.$GLOBALS['LANG']->sL($GLOBALS['TCA'][$conf['foreign_table']]['ctrl']['title'],1);
+
+		$out = '
+				<div class="typo3-newRecordLink">
+					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$style.' title="'.$title.$tableTitle.'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$title.$tableTitle.'" />'.
+					$title.t3lib_div::fixed_lgd_cs($tableTitle, $this->fObj->titleLen).
+					'</a>
+				</div>';
+		return $out;
+	}
+	
+	
 	/**
 	 * Get the <script type="text/javascript" src="..."> tags of:
 	 * - prototype.js
@@ -634,6 +683,7 @@ class t3lib_TCEforms_inline {
 
 		return implode("\n", $jsCode);
 	}
+	
 
 	/**
 	 * Add Sortable functionality using script.acolo.us "Sortable".
@@ -659,8 +709,8 @@ class t3lib_TCEforms_inline {
 	 * Handle AJAX calls to show a new inline-record of the given table.
 	 * Normally this method is never called from inside TYPO3. Always from outside by AJAX.
 	 *
-	 * @param	mixed		$arguments: What to do and where to add, information from the calling browser.
-	 * @param	string		$foreignUid: If set, the new record should be inserted after that one
+	 * @param	string		$domObjectId: The calling object in hierarchy, that requested a new record.
+	 * @param	string		$foreignUid: If set, the new record should be inserted after that one.
 	 * @return	string		A JSON string
 	 */
 	function createNewRecord($domObjectId, $foreignUid = 0) {
@@ -747,46 +797,45 @@ class t3lib_TCEforms_inline {
 
 
 	/**
-	 * Creates recursively a JSON literal from a mulidimensional associative array.
-	 * Uses Services_JSON (http://mike.teczno.com/JSON/doc/)
+	 * Save the expanded/collapsed state of a child record in the BE_USER->uc.
 	 *
-	 * @param	array		$jsonArray: The array (or part of) to be transformed to JSON
-	 * @return	string		If $level>0: part of JSON literal; if $level==0: whole JSON literal wrapped with <script> tags
+	 * @param	string		$domObjectId: The calling object in hierarchy, that requested a new record.
+	 * @param	integer		$expanded: Whether this record is expanded or collapsed.
+	 * @return	void
 	 */
-	function getJSON($jsonArray) {
-		if (!$GLOBALS['JSON']) {
-			require_once('json.php');
-			$GLOBALS['JSON'] = t3lib_div::makeInstance('Services_JSON');
+	function setExpandedCollapsedState($domObjectId, $expand, $collapse) {
+			// parse the DOM identifier (string), add the levels to the structure stack (array), but don't load TCA config
+		$this->parseStructureString($domObjectId, false);
+			// the current table - for this table we should add/import records
+		$current = $this->inlineStructure['unstable'];
+			// the top parent table - this table embeds the current table
+		$top = $this->getStructureLevel(0);
+
+			// only do some action if the top record and the current record were saved before
+		if (t3lib_div::testInt($top['uid'])) {
+			$inlineView = unserialize($GLOBALS['BE_USER']->uc['inlineView']);
+			$inlineViewCurrent =& $inlineView[$top['table']][$top['uid']];
+			
+			$expandUid = t3lib_div::trimExplode(',', $expand);
+			$collapseUid = t3lib_div::trimExplode(',', $collapse);
+			
+				// set records to be expanded
+			foreach ($expandUid as $uid) {
+				$inlineViewCurrent[$current['table']][] = $uid;
+			}
+				// set records to be collapsed
+			foreach ($collapseUid as $uid) {
+				$inlineViewCurrent[$current['table']] = $this->removeFromArray($uid, $inlineViewCurrent[$current['table']]);
+			}
+			
+				// save states back to database
+			if (is_array($inlineViewCurrent[$current['table']])) {
+				$GLOBALS['BE_USER']->uc['inlineView'] = serialize($inlineView);
+				$GLOBALS['BE_USER']->writeUC();
+			}
 		}
-		return $GLOBALS['JSON']->encode($jsonArray);
 	}
-
-	/**
-	 * Creates a link/button to create new records
-	 *
-	 * @param	string		$objectPrefix: The "path" to the child record to create (e.g. '[parten_table][parent_uid][parent_field][child_table]')
-	 * @param	string		$style: If a style should be added to the link (e.g. 'display: none;')
-	 * @return	string		The HTML code for the new record link
-	 */
-	function getNewRecordLink($objectPrefix, $conf = array()) {
-		if ($conf['inline']['inlineNewButtonStyle']) $style = ' style="'.$style.'"';
-
-		$onClick = "return inline.createNewRecord('$objectPrefix')";
-		$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createnew',1);
-
-		if ($conf['appearance']['newRecordLinkAddTitle'])
-			$tableTitle .= ' '.$GLOBALS['LANG']->sL($GLOBALS['TCA'][$conf['foreign_table']]['ctrl']['title'],1);
-
-		$out = '
-				<div class="typo3-newRecordLink">
-					<a href="#" onClick="'.$onClick.'" class="inlineNewButton"'.$style.' title="'.$title.$tableTitle.'">'.
-					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif','width="11" height="12"').' alt="'.$title.$tableTitle.'" />'.
-					$title.t3lib_div::fixed_lgd_cs($tableTitle, $this->fObj->titleLen).
-					'</a>
-				</div>';
-		return $out;
-	}
-
+	
 
 	/*******************************************************
 	 *
@@ -1352,6 +1401,20 @@ class t3lib_TCEforms_inline {
 			? true
 			: false;
 	}
+	
+
+	/**
+	 * Remove an element from an array.
+	 *
+	 * @param	mixed	$needle: The element to be removed.
+	 * @param	array	$haystack: The array the element should be removed from.
+	 * @return	mixed	$strict: Search elements strictly.
+	 */
+	function removeFromArray($needle, $haystack, $strict=null) {
+		$pos = array_search($needle, $haystack, $strict);
+		if ($pos !== false) unset($haystack[$pos]);
+		return $haystack;
+	}
 
 
 	/**
@@ -1427,6 +1490,70 @@ class t3lib_TCEforms_inline {
 		}
 
 		return $skipThisField;
+	}
+	
+	
+	/**
+	 * Creates recursively a JSON literal from a mulidimensional associative array.
+	 * Uses Services_JSON (http://mike.teczno.com/JSON/doc/)
+	 *
+	 * @param	array		$jsonArray: The array (or part of) to be transformed to JSON
+	 * @return	string		If $level>0: part of JSON literal; if $level==0: whole JSON literal wrapped with <script> tags
+	 */
+	function getJSON($jsonArray) {
+		if (!$GLOBALS['JSON']) {
+			require_once('json.php');
+			$GLOBALS['JSON'] = t3lib_div::makeInstance('Services_JSON');
+		}
+		return $GLOBALS['JSON']->encode($jsonArray);
+	}
+
+	
+	/**
+	 * Checks if a uid of a child table is in the inline view settings.
+	 *
+	 * @param	string		$table: Name of the child table
+	 * @param	integer		$uid: uid of the the child record
+	 * @return	boolean		true=expand, false=collapse
+	 */
+	function getExpandedCollapsedState($table, $uid) {
+		if (is_array($this->inlineView) && is_array($this->inlineView[$table])) {
+			if (in_array($uid, $this->inlineView[$table]) !== false) return true;
+		}
+		return false;
+	}
+	
+	
+	/**
+	 * Update expanded/collapsed states on new inline records if any.
+	 *
+	 * @param	array		$uc: The uc array to be processed and saved (by reference)
+	 * @param	object		$tce: Instance of TCEmain that saved data before (by reference)
+	 * @return	void
+	 */
+	function updateInlineView(&$uc, &$tce) {
+		if (is_array($uc) && $uc['inlineView']) {
+			$inlineView = unserialize($GLOBALS['BE_USER']->uc['inlineView']);
+			
+			foreach ($uc['inlineView'] as $topTable => $topRecords) {
+				foreach ($topRecords as $topUid => $childElements) {
+					foreach ($childElements as $childTable => $childRecords) {
+						$uids = array_keys($tce->substNEWwithIDs_table, $childTable);
+						if (count($uids)) {
+							foreach ($childRecords as $childUid => $state) {
+								if ($state && in_array($childUid, $uids)) {
+									$newChildUid = $tce->substNEWwithIDs[$childUid];
+									$inlineView[$topTable][$topUid][$childTable][$newChildUid] = 1;
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			$GLOBALS['BE_USER']->uc['inlineView'] = serialize($inlineView);
+			$GLOBALS['BE_USER']->writeUC();
+		}
 	}
  }
 ?>
