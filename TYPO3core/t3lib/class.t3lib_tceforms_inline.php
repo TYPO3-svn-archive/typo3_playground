@@ -1033,11 +1033,17 @@ class t3lib_TCEforms_inline {
 	 */
 	function updateStructureNames() {
 		$current = $this->getStructureLevel(-1);
-		$lastItemName = $this->getStructureItemName($current);
-		$this->inlineNames = array(
-			'form' => $this->prependFormFieldNames.$lastItemName,
-			'object' => $this->prependNaming.'['.$this->inlineFirstPid.']'.$this->getStructurePath(),
-		);
+			// if there are still more inline levels available
+		if ($current !== false) {
+			$lastItemName = $this->getStructureItemName($current);
+			$this->inlineNames = array(
+				'form' => $this->prependFormFieldNames.$lastItemName,
+				'object' => $this->prependNaming.'['.$this->inlineFirstPid.']'.$this->getStructurePath(),
+			);
+			// if there are no more inline levels available
+		} else {
+			$this->inlineNames = array();
+		}
 	}
 
 
@@ -1048,9 +1054,12 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The name/id of that level, to be used for HTML output
 	 */
 	function getStructureItemName($levelData) {
-		return	'['.$levelData['table'].']' .
-				'['.$levelData['uid'].']' .
-				(isset($levelData['field']) ? '['.$levelData['field'].']' : '');
+		if (is_array($levelData)) {
+			$name =	'['.$levelData['table'].']' .
+					'['.$levelData['uid'].']' .
+					(isset($levelData['field']) ? '['.$levelData['field'].']' : '');
+		}
+		return $name;
 	}
 
 

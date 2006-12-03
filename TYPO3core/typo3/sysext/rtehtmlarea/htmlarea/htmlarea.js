@@ -887,8 +887,8 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 		height = parseInt(height) - diff;		
 		if (this.config.sizeIncludesToolbar) {
 			this._initialToolbarOffsetHeight = this._toolbar.offsetHeight;
-			height -= this._toolbar.offsetHeight;
-			height -= this._statusBar.offsetHeight;
+			height -= this.getDimensions(this._toolbar).height;
+			height -= this.getDimensions(this._statusBar).height;
 		}
 		if (height < 0) height = 0;
 		textareaHeight = (height - 4);
@@ -902,13 +902,49 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 	var iframeWidth = textareaWidth;
 	if(textareaWidth.indexOf("%") == -1) {
 		iframeWidth = parseInt(textareaWidth) + "px";
-		textareaWidth = parseInt(textareaWidth) - diff;
+		textareaWidth = parseInt(textareaWidth) - diff*(this.config.tceformsInlineLevel+1);
 		if (textareaWidth < 0) textareaWidth = 0;
 		textareaWidth += "px";
 	}
 	this._iframe.style.width = "100%";
 	if (HTMLArea.is_opera) this._iframe.style.width = iframeWidth;
 	this._textArea.style.width = textareaWidth;
+};
+
+/**
+ * Get the dimensions of an element and take care of possible hidden parent objects.
+ * If a parent object has the style "display: none", offsetWidth & offsetHeight are '0'.
+ *
+ * @params	object		element: The element to get dimensions of.
+ * @return	object		An object with the variables 'height' and 'width'
+ * @author	Oliver Hader <oh@inpublica.de>
+ */
+HTMLArea.prototype.getDimensions = function(element) {
+	var dimensions = {width: 0, height: 0};
+	var inlineObject = RTEarea[this._editorNumber].tceformsInlineObject;
+	
+	if (inlineObject) {
+		var inlineStyle = document.getElementById(inlineObject).style;
+		var showObject = inlineStyle.display == 'none';
+
+		if (showObject) {
+			var originalVisibility = inlineStyle.visibility;
+			var originalPosition = inlineStyle.position;
+			inlineStyle.visibility = 'hidden';
+			inlineStyle.position = 'absolute';
+			inlineStyle.display = '';
+		}
+		
+		dimensions = {width: element.offsetWidth, height: element.offsetHeight};
+		
+		if (showObject) {
+			inlineStyle.display = 'none';
+			inlineStyle.position = originalPosition;
+			inlineStyle.visibility = originalVisibility;
+		}
+	}
+	
+	return dimensions;
 };
 
 /*
