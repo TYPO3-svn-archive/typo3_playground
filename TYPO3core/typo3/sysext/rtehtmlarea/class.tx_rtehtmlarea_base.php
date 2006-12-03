@@ -924,7 +924,7 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 			RTEarea['.$number.']["useHTTPS"] = ' . ((trim(stristr($this->siteURL, 'https')) || $this->thisConfig['forceHTTPS'])?'true':'false') . ';
 			RTEarea['.$number.']["enableMozillaExtension"] = ' . (($this->client['BROWSER'] == 'gecko' && $TYPO3_CONF_VARS['EXTCONF'][$this->ID]['enableMozillaExtension'])?'true':'false') . ';
 			RTEarea['.$number.']["tceformsInlineObject"] = "' . ($inline->inlineNames['object'] ? $inline->inlineNames['object'].$inlineAdditional.'_fields' : '') . '";
-			RTEarea['.$number.']["tceformsInlineLevel"] = ' . ($inline->inlineCount > 0 ? $inline->inlineCount : 0) . ';';
+			RTEarea['.$number.']["tceformsInlineNegWidth"] = ' . ($inline->inlineCount > 0 ? $inline->inlineCount*$inline->inlineStyles['margin-right'] : 0) . ';';
 		
 			// The following properties apply only to the backend
 		if (!is_object($TSFE)) {

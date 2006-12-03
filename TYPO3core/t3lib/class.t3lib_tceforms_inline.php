@@ -95,6 +95,7 @@ class t3lib_TCEforms_inline {
 	var $inlineData = array();				// inline data array used for JSON output
 	var $inlineView = array();				// expanded/collapsed states for the current BE user
 	var $inlineCount = 0;					// count the number of inline types used
+	var $inlineStyles = array();
 
 	var $prependNaming = 'data';			// how the $this->fObj->prependFormFieldNames should be set ('data' is default)
 	var $prependFormFieldNames;				// reference to $this->fObj->prependFormFieldNames
@@ -112,6 +113,8 @@ class t3lib_TCEforms_inline {
 		$this->backPath =& $tceForms->backPath;
 		$this->prependFormFieldNames =& $this->fObj->prependFormFieldNames;
 		$this->prependCmdFieldNames =& $this->fObj->prependCmdFieldNames;
+		
+		$this->inlineStyles['margin-right'] = '5';
 	}
 
 
@@ -377,7 +380,7 @@ class t3lib_TCEforms_inline {
 
 			// @TODO: Check the table wrapping and the CSS definitions
 		$header =
-			'<table cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-right: 5px;"'.
+			'<table cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-right: '.$this->inlineStyles['margin-right'].'px;"'.
 			($this->fObj->borderStyle[2] ? ' background="'.htmlspecialchars($this->backPath.$this->fObj->borderStyle[2]).'"':'').
 			($this->fObj->borderStyle[3] ? ' class="'.htmlspecialchars($this->fObj->borderStyle[3]).'"':'').'>' .
 			'<tr class="class-main12"><td width="18">'.$iconImg.'</td><td align="left"><b>'.$label.'</b></td><td align="right">'.$ctrl.'</td></tr></table>';
@@ -1270,7 +1273,7 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The wrapped HTML code
 	 */
 	function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array()) {
-		if (!$styleAttrs['margin-right']) $styleAttrs['margin-right'] = '5px';
+		if (!$styleAttrs['margin-right']) $styleAttrs['margin-right'] = $this->inlineStyles['margin-right'].'px';
 
 		foreach ($styleAttrs as $key => $value) $style .= ($style?' ':'').$key.': '.htmlspecialchars($value).'; ';
 		if ($style) $style = ' style="'.$style.'"';

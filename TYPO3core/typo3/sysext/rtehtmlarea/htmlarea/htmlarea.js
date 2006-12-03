@@ -886,7 +886,7 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 	if(height.indexOf("%") == -1) {
 		height = parseInt(height) - diff;		
 		if (this.config.sizeIncludesToolbar) {
-			this._initialToolbarOffsetHeight = this._toolbar.offsetHeight;
+			this._initialToolbarOffsetHeight = this.getDimensions(this._toolbar).height;
 			height -= this.getDimensions(this._toolbar).height;
 			height -= this.getDimensions(this._statusBar).height;
 		}
@@ -902,7 +902,7 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 	var iframeWidth = textareaWidth;
 	if(textareaWidth.indexOf("%") == -1) {
 		iframeWidth = parseInt(textareaWidth) + "px";
-		textareaWidth = parseInt(textareaWidth) - diff*(this.config.tceformsInlineLevel+1);
+		textareaWidth = parseInt(textareaWidth) - (diff+RTEarea[this._editorNumber].tceformsInlineNegWidth);
 		if (textareaWidth < 0) textareaWidth = 0;
 		textareaWidth += "px";
 	}
