@@ -355,6 +355,8 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 		global $BE_USER,$LANG, $TYPO3_DB, $TYPO3_CONF_VARS;
 
 		$this->TCEform = $pObj;
+		$inline =& $this->TCEform->inline;
+		
 		$LANG->includeLLFile('EXT:' . $this->ID . '/locallang.xml');
 		$this->client = $this->clientInfo();
 		$this->typoVersion = t3lib_div::int_from_ver(TYPO3_version);
@@ -519,6 +521,7 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 			$RTEWidth = isset($BE_USER->userTS['options.']['RTESmallWidth']) ? $BE_USER->userTS['options.']['RTESmallWidth'] : '530';
 			$RTEHeight = isset($BE_USER->userTS['options.']['RTESmallHeight']) ? $BE_USER->userTS['options.']['RTESmallHeight'] : '380';
 			$RTEWidth  = $RTEWidth + ($pObj->docLarge ? (isset($BE_USER->userTS['options.']['RTELargeWidthIncrement']) ? $BE_USER->userTS['options.']['RTELargeWidthIncrement'] : '150') : 0);
+			$RTEWidth -= ($inline->inlineCount > 0 ? ($inline->inlineCount+1)*$inline->inlineStyles['margin-right'] : 0);
 			$RTEHeight = $RTEHeight + ($pObj->docLarge ?  (isset($BE_USER->userTS['options.']['RTELargeHeightIncrement']) ? $BE_USER->userTS['options.']['RTELargeHeightIncrement'] : 0) : 0);
 			$editorWrapWidth = $RTEWidth . 'px';
 			$editorWrapHeight = $RTEHeight . 'px';
@@ -923,8 +926,7 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 			RTEarea['.$number.']["showTagFreeClasses"] = ' . (trim($this->thisConfig['showTagFreeClasses'])?'true':'false') . ';
 			RTEarea['.$number.']["useHTTPS"] = ' . ((trim(stristr($this->siteURL, 'https')) || $this->thisConfig['forceHTTPS'])?'true':'false') . ';
 			RTEarea['.$number.']["enableMozillaExtension"] = ' . (($this->client['BROWSER'] == 'gecko' && $TYPO3_CONF_VARS['EXTCONF'][$this->ID]['enableMozillaExtension'])?'true':'false') . ';
-			RTEarea['.$number.']["tceformsInlineObject"] = "' . ($inline->inlineNames['object'] ? $inline->inlineNames['object'].$inlineAdditional.'_fields' : '') . '";
-			RTEarea['.$number.']["tceformsInlineNegWidth"] = ' . ($inline->inlineCount > 0 ? $inline->inlineCount*$inline->inlineStyles['margin-right'] : 0) . ';';
+			RTEarea['.$number.']["tceformsInlineObject"] = "' . ($inline->inlineNames['object'] ? $inline->inlineNames['object'].$inlineAdditional.'_fields' : '') . '";';
 		
 			// The following properties apply only to the backend
 		if (!is_object($TSFE)) {

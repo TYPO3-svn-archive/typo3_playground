@@ -883,12 +883,15 @@ HTMLArea.prototype.generate = function () {
 HTMLArea.prototype.sizeIframe = function(diff) {
 	var height = (this.config.height == "auto" ? (this._textArea.style.height) : this.config.height);
 	var textareaHeight = height;
+
+	var dimensions = this.accessInlineElement('this.getDimensions()');
+			
 	if(height.indexOf("%") == -1) {
 		height = parseInt(height) - diff;		
 		if (this.config.sizeIncludesToolbar) {
-			this._initialToolbarOffsetHeight = this.getDimensions(this._toolbar).height;
-			height -= this.getDimensions(this._toolbar).height;
-			height -= this.getDimensions(this._statusBar).height;
+			this._initialToolbarOffsetHeight = dimensions.toolbar.height;
+			height -= dimensions.toolbar.height;
+			height -= dimensions.statusbar.height;
 		}
 		if (height < 0) height = 0;
 		textareaHeight = (height - 4);
@@ -902,9 +905,9 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 	var iframeWidth = textareaWidth;
 	if(textareaWidth.indexOf("%") == -1) {
 		iframeWidth = parseInt(textareaWidth) + "px";
-		textareaWidth = parseInt(textareaWidth) - (diff+RTEarea[this._editorNumber].tceformsInlineNegWidth);
+		textareaWidth = parseInt(textareaWidth) - diff;
 		if (textareaWidth < 0) textareaWidth = 0;
-		textareaWidth += "px";
+		textareaWidth += 'px';
 	}
 	this._iframe.style.width = "100%";
 	if (HTMLArea.is_opera) this._iframe.style.width = iframeWidth;
@@ -912,15 +915,28 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 };
 
 /**
- * Get the dimensions of an element and take care of possible hidden parent objects.
- * If a parent object has the style "display: none", offsetWidth & offsetHeight are '0'.
+ * Get the dimensions of the toolbar and statusbar.
  *
- * @params	object		element: The element to get dimensions of.
- * @return	object		An object with the variables 'height' and 'width'
+ * @return	object		An object with width/height pairs for statusbar and toolbar.
  * @author	Oliver Hader <oh@inpublica.de>
  */
-HTMLArea.prototype.getDimensions = function(element) {
-	var dimensions = {width: 0, height: 0};
+HTMLArea.prototype.getDimensions = function() {
+	return {
+		toolbar: {width: this._toolbar.offsetWidth, height: this._toolbar.offsetHeight},
+		statusbar: {width: this._statusBar.offsetWidth, height: this._statusBar.offsetHeight}
+	};
+};
+
+/**
+ * Access an inline relational element and make it "accesible".
+ * If a parent object has the style "display: none", offsetWidth & offsetHeight are '0'.
+ *
+ * @params	object		callbackFunc: A function to be called, when the embedded objects are "accessible".
+ * @return	object		An object returned by the callbackFunc.
+ * @author	Oliver Hader <oh@inpublica.de>
+ */
+HTMLArea.prototype.accessInlineElement = function(callbackFunc) {
+	var result = {};
 	var inlineObject = RTEarea[this._editorNumber].tceformsInlineObject;
 	
 	if (inlineObject) {
@@ -935,7 +951,7 @@ HTMLArea.prototype.getDimensions = function(element) {
 			inlineStyle.display = '';
 		}
 		
-		dimensions = {width: element.offsetWidth, height: element.offsetHeight};
+		result = eval(callbackFunc);
 		
 		if (showObject) {
 			inlineStyle.display = 'none';
@@ -944,7 +960,7 @@ HTMLArea.prototype.getDimensions = function(element) {
 		}
 	}
 	
-	return dimensions;
+	return result;
 };
 
 /*
