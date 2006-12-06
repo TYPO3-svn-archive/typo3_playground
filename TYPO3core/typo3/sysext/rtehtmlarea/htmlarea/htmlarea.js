@@ -958,6 +958,8 @@ HTMLArea.prototype.accessInlineElement = function(callbackFunc) {
 			inlineStyle.position = originalPosition;
 			inlineStyle.visibility = originalVisibility;
 		}
+	} else {
+		result = eval(callbackFunc);		
 	}
 	
 	return result;
