@@ -400,16 +400,16 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code with the control-icons
 	 */
 	function renderForeignRecordHeaderControl($parentUid, $foreign_table, $rec, $config = array()) {
-			// Pre-Process:
-		$isPagesTable = $foreign_table == 'pages' ? true : false;
-		
 			// Initialize:
 		$cells=array();
 		$isNewItem = substr($rec['uid'], 0, 3) == 'NEW';
 
 		$tcaTableCtrl =& $GLOBALS['TCA'][$foreign_table]['ctrl'];
 		$tcaTableCols =& $GLOBALS['TCA'][$foreign_table]['columns'];
+		
+		$isPagesTable = $foreign_table == 'pages' ? true : false;
 		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
+		$enableManualSorting = $tcaTableCtrl['sortby'] || $config['MM'] || (!$isOnSymmetricSide && $config['foreign_sortby']) || ($isOnSymmetricSide && $config['symmetric_sortby']) ? true : false;
 		
 		$nameObjectFt = $this->inlineNames['object'].'['.$foreign_table.']';
 		$nameObjectFtId = $nameObjectFt.'['.$rec['uid'].']';
@@ -441,7 +441,7 @@ class t3lib_TCEforms_inline {
 		if (!$tcaTableCtrl['readOnly'])	{
 
 				// "New record after" link (ONLY if the records in the table are sorted by a "sortby"-row or if default values can depend on previous record):
-			if ($tcaTableCtrl['sortby'] || $tcaTableCtrl['useColumnsForDefaultValues'])	{
+			if ($enableManualSorting || $tcaTableCtrl['useColumnsForDefaultValues'])	{
 				if (
 					(!$isPagesTable && ($calcPerms&16)) || 	// For NON-pages, must have permission to edit content on this parent page
 					($isPagesTable && ($calcPerms&8))		// For pages, must have permission to create new pages here.
@@ -456,12 +456,12 @@ class t3lib_TCEforms_inline {
 			}
 
 				// Drag&Drop Sorting: Sortable handler for script.aculo.us
-			if ($permsEdit && $config['appearance']['useSortable'] && ($tcaTableCtrl['sortby'] || $config['MM']))	{
+			if ($permsEdit && $enableManualSorting && $config['appearance']['useSortable'])	{
 				$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16" hspace="2"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
 			}
 
 				// "Up/Down" links
-			if ($permsEdit && ($tcaTableCtrl['sortby'] || $config['foreign_sortby'] ||$config['MM']))	{
+			if ($permsEdit && $enableManualSorting)	{
 				$onClick = "return inline.changeSorting('".$nameObjectFtId."', '1')";	// Up
 				$style = $config['inline']['first'] == $rec['uid'] ? 'style="visibility: hidden;"' : '';
 				$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="sortingUp" '.$style.'>'.

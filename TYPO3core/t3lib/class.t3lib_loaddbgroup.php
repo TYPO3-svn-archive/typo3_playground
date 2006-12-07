@@ -167,6 +167,11 @@ class t3lib_loadDBGroup	{
 		} else {
 				// If not MM, then explode the itemlist by "," and traverse the list:
 			$this->readList($itemlist);
+				// get the correct default_sortby definition, if any
+			if (!$conf['foreign_sortby'] && $conf['foreign_default_sortby'])
+				$this->sortList($conf['foreign_default_sortby']);
+			elseif (!$conf['sortby'] && $conf['default_sortby'])
+				$this->sortList($conf['default_sortby']);
 		}
 	}
 
@@ -210,6 +215,38 @@ class t3lib_loadDBGroup	{
 					$this->itemArray[$key]['table'] = '_NO_TABLE';
 					$this->nonTableArray[] = $tempItemArray[$key];
 				}
+			}
+		}
+	}
+
+	/**
+	 * Does a sorting on $this->itemArray depending on a default sortby field.
+	 * This is only used for automatic sorting of comma separated lists.
+	 * This function is only relevant for data that is stored in comma separated lists!
+	 * 
+	 * @param	string		$sortby: The default_sortby field/command (e.g. 'price DESC')
+	 * @return	void
+	 */
+	function sortList($sortby) {
+			// sort directly without fetching addional data
+		if ($sortby == 'uid') {
+			usort($this->itemArray, create_function('$a,$b', 'return $a["id"] < $b["id"] ? -1 : 1;'));
+			// only useful if working on the same table
+		} elseif (count($this->tableArray) == 1) {
+			reset($this->tableArray);
+			$table = key($this->tableArray);
+			$uidList = implode(',', current($this->tableArray));
+
+			if ($uidList) {
+				$this->itemArray = array();
+				$this->tableArray = array();
+				
+				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('uid', $table, 'uid IN ('.$uidList.')', '', $sortby);
+				while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+					$this->itemArray[] = array('id' => $row['uid'], 'table' => $table);
+					$this->tableArray[$table][] = $row['uid'];
+				}
+				$GLOBALS['TYPO3_DB']->sql_free_result($res);
 			}
 		}
 	}
@@ -383,9 +420,11 @@ class t3lib_loadDBGroup	{
 		}
 		
 			// get the correct sorting field
-		if ($conf['foreign_sortby'])										// specific sortby for data handled by this field
+		if ($conf['foreign_sortby'])										// specific manual sortby for data handled by this field
 			$sortby = $conf['foreign_sortby'];
-		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// specific sortby for all table records
+		elseif ($conf['foreign_default_sortby'])							// specific default sortby for data handled by this field
+			$sortby = $conf['foreign_default_sortby'];
+		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// manual sortby for all table records
 			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
 		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby'])	// default sortby for all table records
 			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby'];
@@ -398,7 +437,15 @@ class t3lib_loadDBGroup	{
 
 			// Handle symmetric relations
 		if ($conf['symmetric_field']) {
-			$symSortby = $conf['symmetric_sortby'] ? $conf['symmetric_sortby'] : $sortby;
+				// get the correct sorting field for symmetric relations
+			if ($conf['symmetric_sortby'])									// specific manual sortby
+				$symSortby = $conf['symmetric_sortby'];
+			elseif ($conf['symmetric_default_sortby'])						// specific default sortby
+				$symSortby = $conf['symmetric_default_sortby'];
+			else															// sorting of non-symmetric behaviour is taken
+				$symSortby = $sortby;
+
+				// Fetch symmetric records from storage
 			$symRows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['symmetric_field'],$uid,'','',$symSortby,'',$useDeleteClause);
 
 			if (count($symRows)) {
@@ -504,10 +551,10 @@ class t3lib_loadDBGroup	{
 
 						// update sorting columns if not to be skipped
 					if (!$skipSorting) {
-							// specific sortby for data handled by this field
-						if ($conf['foreign_sortby']) {
+							// get the correct sorting field
+						if ($conf['foreign_sortby']) {									// specific manual sortby for data handled by this field 
 							$sortby = $conf['foreign_sortby'];
-						} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby']) { // specific sortby for all table records
+						} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby']) {	// manual sortby for all table records
 							$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
 						}
 							// strip a possible "ORDER BY" in front of the $sortby value
