@@ -312,11 +312,14 @@ class SC_alt_doc {
 					if(count($keys) > 0) {
 						foreach($keys as $key) {
 							$editId = $tce->substNEWwithIDs[$key];
-								// translate new id to the workspace version:
-							if ($versionRec = t3lib_BEfunc::getWorkspaceVersionOfRecord($GLOBALS['BE_USER']->workspace, $nTable, $editId,'uid'))	{
-								$editId = $versionRec['uid'];
+								// check if the $editId isn't a child record of an IRRE action
+							if (!(is_array($tce->newRelatedIDs[$tableName]) && in_array($editId, $tce->newRelatedIDs[$tableName]))) {
+									// translate new id to the workspace version:
+								if ($versionRec = t3lib_BEfunc::getWorkspaceVersionOfRecord($GLOBALS['BE_USER']->workspace, $nTable, $editId,'uid'))	{
+									$editId = $versionRec['uid'];
+								}
+								$newEditConf[$tableName][$editId] = 'edit';
 							}
-							$newEditConf[$tableName][$editId] = 'edit';
 	
 								// Traverse all new records and forge the content of ->editconf so we can continue to EDIT these records!
 							if ($tableName=='pages' && $this->retUrl!='dummy.php' && $this->returnNewPageId)	{
