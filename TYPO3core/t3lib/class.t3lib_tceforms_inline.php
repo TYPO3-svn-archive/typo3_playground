@@ -399,8 +399,9 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code with the control-icons
 	 */
 	function renderForeignRecordHeaderControl($table,$row,$config = array()) {
-		global $TCA, $SOBE;
-
+		$tcaTableCtrl =& $GLOBALS['TCA'][$table]['ctrl'];
+		$tcaTableCols =& $GLOBALS['TCA'][$table]['columns'];
+		
 			// Initialize:
 		$cells=array();
 		$isNewItem = substr($row['uid'], 0, 3) == 'NEW';
@@ -440,10 +441,10 @@ class t3lib_TCEforms_inline {
 				'</a>';
 
 			// If the table is NOT a read-only table, then show these links:
-		if (!$TCA[$table]['ctrl']['readOnly'])	{
+		if (!$tcaTableCtrl['readOnly'])	{
 
 				// "New record after" link (ONLY if the records in the table are sorted by a "sortby"-row or if default values can depend on previous record):
-			if ($TCA[$table]['ctrl']['sortby'] || $TCA[$table]['ctrl']['useColumnsForDefaultValues'])	{
+			if ($tcaTableCtrl['sortby'] || $tcaTableCtrl['useColumnsForDefaultValues'])	{
 				if (
 					($table!='pages' && ($calcPerms&16)) || 	// For NON-pages, must have permission to edit content on this parent page
 					($table=='pages' && ($calcPerms&8))		// For pages, must have permission to create new pages here.
@@ -459,12 +460,12 @@ class t3lib_TCEforms_inline {
 			}
 
 				// Drag&Drop Sorting: Sortable handler for script.aculo.us
-			if ($permsEdit && $config['appearance']['useSortable'] && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
+			if ($permsEdit && $config['appearance']['useSortable'] && ($tcaTableCtrl['sortby'] || $config['MM']))	{
 				$cells[] = '<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/move.gif','width="16" height="16" hspace="2"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.move',1).'" alt="" style="cursor: move;" class="sortableHandle" />';
 			}
 
 				// "Up/Down" links
-			if ($permsEdit && ($TCA[$table]['ctrl']['sortby'] || $config['MM']))	{
+			if ($permsEdit && ($tcaTableCtrl['sortby'] || $config['MM']))	{
 				$onClick = "return inline.changeSorting('".$nameObjectFtId."', '1')";	// Up
 				$style = $config['inline']['first'] == $row['uid'] ? 'style="visibility: hidden;"' : '';
 				$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="sortingUp" '.$style.'>'.
@@ -479,8 +480,8 @@ class t3lib_TCEforms_inline {
 			}
 
 				// "Hide/Unhide" links:
-			$hiddenField = $TCA[$table]['ctrl']['enablecolumns']['disabled'];
-			if ($permsEdit && $hiddenField && $TCA[$table]['columns'][$hiddenField] && (!$TCA[$table]['columns'][$hiddenField]['exclude'] || $GLOBALS['BE_USER']->check('non_exclude_fields',$table.':'.$hiddenField)))	{
+			$hiddenField = $tcaTableCtrl['enablecolumns']['disabled'];
+			if ($permsEdit && $hiddenField && $tcaTableCols[$hiddenField] && (!$tcaTableCols[$hiddenField]['exclude'] || $GLOBALS['BE_USER']->check('non_exclude_fields',$table.':'.$hiddenField)))	{
 				$onClick = "return inline.enableDisableRecord('".$nameObjectFtId."')";
 				if ($row[$hiddenField])	{
 					$params='&data['.$table.']['.$row['uid'].']['.$hiddenField.']=0';
@@ -717,8 +718,6 @@ class t3lib_TCEforms_inline {
 	 * @return	string		A JSON string
 	 */
 	function createNewRecord($domObjectId, $foreignUid = 0) {
-		global $TCA;
-
 			// parse the DOM identifier (string), add the levels to the structure stack (array) and load the TCA config
 		$this->parseStructureString($domObjectId, true);
 			// the current table - for this table we should add/import records
@@ -890,6 +889,8 @@ class t3lib_TCEforms_inline {
 	 * @return	array		Array of possible record items
 	 */
 	function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector') {
+			// ctrl configuration from TCA:
+		$tcaTableCtrl = $GLOBALS['TCA'][$table]['ctrl'];
 			// Field configuration from TCA:
 		$foreign_table = $conf['foreign_table'];
 		$foreign_check = $conf[$checkForConfField];
@@ -909,7 +910,7 @@ class t3lib_TCEforms_inline {
 		foreach($selItems as $tk => $p)	{
 
 				// Checking languages and authMode:
-			$languageDeny = $TCA[$table]['ctrl']['languageField'] && !strcmp($TCA[$table]['ctrl']['languageField'], $field) && !$GLOBALS['BE_USER']->checkLanguageAccess($p[1]);
+			$languageDeny = $tcaTableCtrl['languageField'] && !strcmp($tcaTableCtrl['languageField'], $field) && !$GLOBALS['BE_USER']->checkLanguageAccess($p[1]);
 			$authModeDeny = $config['form_type']=='select' && $config['authMode'] && !$GLOBALS['BE_USER']->checkAuthMode($table,$field,$p[1],$config['authMode']);
 			if (in_array($p[1],$removeItems) || $languageDeny || $authModeDeny)	{
 				unset($selItems[$tk]);
@@ -1117,8 +1118,6 @@ class t3lib_TCEforms_inline {
 	 * @return	void
 	 */
 	function parseStructureString($string, $loadConfig = false) {
-		global $TCA;
-
 		$unstable = array();
 		$vector = array('table', 'uid', 'field');
 		$pattern = '/^'.$this->prependNaming.'\[(.+?)\]\[(.+)\]$/';
@@ -1131,7 +1130,7 @@ class t3lib_TCEforms_inline {
 						// load the TCA configuration of the table field and store it in the stack
 					if ($loadConfig) {
 						t3lib_div::loadTCA($unstable['table']);
-						$unstable['config'] = $TCA[$unstable['table']]['columns'][$unstable['field']]['config'];
+						$unstable['config'] = $GLOBALS['TCA'][$unstable['table']]['columns'][$unstable['field']]['config'];
 					}
 					$this->inlineStructure['stable'][] = $unstable;
 					$unstable = array();
@@ -1183,8 +1182,6 @@ class t3lib_TCEforms_inline {
 	 * @return	boolean		Returns true is the user has access, or false if not
 	 */
 	function checkAccess($cmd, $table, $theUid) {
-		global $BE_USER;
-
 			// Checking if the user has permissions? (Only working as a precaution, because the final permission check is always down in TCE. But it's good to notify the user on beforehand...)
 			// First, resetting flags.
 		$hasAccess = 0;
@@ -1196,7 +1193,7 @@ class t3lib_TCEforms_inline {
 			if(!is_array($calcPRec)) {
 				return false;
 			}
-			$CALC_PERMS = $BE_USER->calcPerms($calcPRec);	// Permissions for the parent page
+			$CALC_PERMS = $GLOBALS['BE_USER']->calcPerms($calcPRec);	// Permissions for the parent page
 			if ($table=='pages')	{	// If pages:
 				$hasAccess = $CALC_PERMS&8 ? 1 : 0; // Are we allowed to create new subpages?
 			} else {
@@ -1207,26 +1204,26 @@ class t3lib_TCEforms_inline {
 			t3lib_BEfunc::fixVersioningPid($table,$calcPRec);
 			if (is_array($calcPRec))	{
 				if ($table=='pages')	{	// If pages:
-					$CALC_PERMS = $BE_USER->calcPerms($calcPRec);
+					$CALC_PERMS = $GLOBALS['BE_USER']->calcPerms($calcPRec);
 					$hasAccess = $CALC_PERMS&2 ? 1 : 0;
 				} else {
-					$CALC_PERMS = $BE_USER->calcPerms(t3lib_BEfunc::getRecord('pages',$calcPRec['pid']));	// Fetching pid-record first.
+					$CALC_PERMS = $GLOBALS['BE_USER']->calcPerms(t3lib_BEfunc::getRecord('pages',$calcPRec['pid']));	// Fetching pid-record first.
 					$hasAccess = $CALC_PERMS&16 ? 1 : 0;
 				}
 
 					// Check internals regarding access:
 				if ($hasAccess)	{
-					$hasAccess = $BE_USER->recordEditAccessInternals($table, $calcPRec);
+					$hasAccess = $GLOBALS['BE_USER']->recordEditAccessInternals($table, $calcPRec);
 				}
 			}
 		}
 
-		if(!$BE_USER->check('tables_modify', $table)) {
+		if(!$GLOBALS['BE_USER']->check('tables_modify', $table)) {
 			$hasAccess = 0;
 		}
 
 		if(!$hasAccess) {
-			$deniedAccessReason = $BE_USER->errorMsg;
+			$deniedAccessReason = $GLOBALS['BE_USER']->errorMsg;
 			if($deniedAccessReason) {
 				debug($deniedAccessReason);
 			}
