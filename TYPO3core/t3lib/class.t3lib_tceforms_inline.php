@@ -342,22 +342,36 @@ class t3lib_TCEforms_inline {
 	 * @return	string		The HTML code of the header
 	 */
 	function renderForeignRecordHeader($parentUid, $foreign_table, $rec, $config = array()) {
+			// Init:
 		$formFieldNames = $this->inlineNames['object'].'['.$foreign_table.']['.$rec['uid'].']';
 		$expandSingle = $config['appearance']['expandSingle'] ? 1 : 0;
 		$onClick = "return inline.expandCollapseRecord('".htmlspecialchars($formFieldNames)."', $expandSingle)";
 
-			// if an alternative label for the field we render is set, use it
+			// Pre-Processing:
 		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
-		if (!$isOnSymmetricSide && $config['foreign_label']) {
-			$titleCol = $config['foreign_label'];
-		} elseif ($isOnSymmetricSide && $config['symmetric_label']) {
-			$titleCol = $config['symmetric_label'];
-		}
-
+		$hasForeignLabel = !$isOnSymmetricSide && $config['foreign_label'] ? true : false;
+		$hasSymmetricLabel = $isOnSymmetricSide && $config['symmetric_label'] ? true : false;
+		
+			// Get the record title/label for a record:
+			
+			// render using a self-defined user function
+		if ($GLOBALS['TCA'][$foreign_table]['ctrl']['label_userFunc']) {
+			$params = array(
+				'table' => $foreign_table,
+				'row'	=> $rec,
+				'title'	=> '',
+				'isOnSymmetricSide' => $isOnSymmetricSide
+			);
+				// @TODO: On giving the userFunc a reference to $this, the userFunc could change the IRRE structure.
+			t3lib_div::callUserFunction($GLOBALS['TCA'][$foreign_table]['ctrl']['label_userFunc'], $params, $this);
+			$recTitle = $params['title'];
+			
 			// render the special alternative title
-		if (isset($titleCol)) {
+		} elseif ($hasForeignLabel || $hasSymmetricLabel) {
+			$titleCol = $hasForeignLabel ? $config['foreign_label'] : $config['symmetric_label'];
 			$recTitle = t3lib_BEfunc::getProcessedValueExtra($foreign_table, $titleCol, $rec[$titleCol]);
 			$recTitle = $this->fObj->noTitle($recTitle);
+			
 			// render the standard
 		} else {
 			$recTitle = t3lib_BEfunc::getRecordTitle($foreign_table, $rec, 1);
@@ -372,7 +386,6 @@ class t3lib_TCEforms_inline {
 
 		$label =
 			'<a href="#" onclick="'.htmlspecialchars($onClick).'" style="display: block;">'.
-			//	'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/button_down.gif','width="11" height="10"').' align="absmiddle" /> '.
 				'<span id="'.$formFieldNames.'_label">'.$recTitle.'</span>'.
 			'</a>';
 
