@@ -907,8 +907,10 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 	function registerRTEinJS($number, $table='', $uid='', $field='') {
 		global $TSFE, $TYPO3_CONF_VARS;
 
-		$inline =& $this->TCEform->inline;
-		if ($table && $uid) $inlineAdditional = '['.$table.']['.$uid.']';
+			// if this RTE is shown inline of an IRRE record, the JS functions need to know about that
+		if ($this->TCEform->inline->inlineNames['object']) {
+			$tceformsInlineObject = $this->TCEform->inline->inlineNames['object'].'['.$table.']['.$uid.']_fields';
+		}
 		
 		$registerRTEinJSString = (!is_object($TSFE) ? '' : '
 			' . '/*<![CDATA[*/') . '
@@ -926,7 +928,7 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 			RTEarea['.$number.']["showTagFreeClasses"] = ' . (trim($this->thisConfig['showTagFreeClasses'])?'true':'false') . ';
 			RTEarea['.$number.']["useHTTPS"] = ' . ((trim(stristr($this->siteURL, 'https')) || $this->thisConfig['forceHTTPS'])?'true':'false') . ';
 			RTEarea['.$number.']["enableMozillaExtension"] = ' . (($this->client['BROWSER'] == 'gecko' && $TYPO3_CONF_VARS['EXTCONF'][$this->ID]['enableMozillaExtension'])?'true':'false') . ';
-			RTEarea['.$number.']["tceformsInlineObject"] = "' . ($inline->inlineNames['object'] ? $inline->inlineNames['object'].$inlineAdditional.'_fields' : '') . '";';
+			RTEarea['.$number.']["tceformsInlineObject"] = "' . $tceformsInlineObject . '";';
 		
 			// The following properties apply only to the backend
 		if (!is_object($TSFE)) {

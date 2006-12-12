@@ -167,11 +167,10 @@ class t3lib_loadDBGroup	{
 		} else {
 				// If not MM, then explode the itemlist by "," and traverse the list:
 			$this->readList($itemlist);
-				// get the correct default_sortby definition, if any
-			if (!$conf['foreign_sortby'] && $conf['foreign_default_sortby'])
+				// do automatic default_sortby, if any
+			if ($conf['foreign_default_sortby']) {
 				$this->sortList($conf['foreign_default_sortby']);
-			elseif (!$conf['sortby'] && $conf['default_sortby'])
-				$this->sortList($conf['default_sortby']);
+			}
 		}
 	}
 
@@ -413,81 +412,48 @@ class t3lib_loadDBGroup	{
 		$foreign_table_field = $conf['foreign_table_field'];
 		$useDeleteClause = $this->undeleteRecord ? false : true;
 
+			// search for $uid in foreign_field, and if we have symmetric relations, do this also on symmetric_field
+		if ($conf['symmetric_field']) {
+			$whereClause = '('.$conf['foreign_field'].'='.$uid.' OR '.$conf['symmetric_field'].'='.$uid.')';
+		} else {
+			$whereClause = $conf['foreign_field'].'='.$uid;
+		}
+			// use the deleteClause (e.g. "deleted=0") on this table
+		if ($useDeleteClause) {
+			$whereClause .= t3lib_BEfunc::deleteClause($foreign_table);
+		}
 			// if it's requested to look for the parent uid AND the parent table,
 			// add an additional SQL-WHERE clause
 		if ($foreign_table_field && $this->currentTable) {
-			$whereClause = 'AND '.$foreign_table_field.'='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->currentTable, $foreign_table);
+			$whereClause .= ' AND '.$foreign_table_field.'='.$GLOBALS['TYPO3_DB']->fullQuoteStr($this->currentTable, $foreign_table);
 		}
 		
 			// get the correct sorting field
-		if ($conf['foreign_sortby'])										// specific manual sortby for data handled by this field
-			$sortby = $conf['foreign_sortby'];
-		elseif ($conf['foreign_default_sortby'])							// specific default sortby for data handled by this field
+		if ($conf['foreign_sortby']) {											// specific manual sortby for data handled by this field
+			if ($conf['symmetric_sortby'] && $conf['symmetric_field']) {
+					// sorting depends on, from which side of the relation we're looking at it
+				$sortby = '
+					CASE
+						WHEN '.$conf['foreign_field'].'='.$uid.'
+						THEN '.$conf['foreign_field'].'
+						ELSE '.$conf['symmetric_field'].'
+					END';
+			} else {
+					// regular single-side behaviour
+				$sortby = $conf['foreign_sortby'];
+			}
+		} elseif ($conf['foreign_default_sortby']) {							// specific default sortby for data handled by this field
 			$sortby = $conf['foreign_default_sortby'];
-		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'])			// manual sortby for all table records
+		} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['sortby']) {			// manual sortby for all table records
 			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['sortby'];
-		elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby'])	// default sortby for all table records
+		} elseif ($GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby']) {	// default sortby for all table records
 			$sortby = $GLOBALS['TCA'][$foreign_table]['ctrl']['default_sortby'];
+		}
 
 			// strip a possible "ORDER BY" in front of the $sortby value
 		$sortby = $GLOBALS['TYPO3_DB']->stripOrderBy($sortby);
-
 			// get the rows from storage
-		$rows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['foreign_field'],$uid,$whereClause,'',$sortby,'',$useDeleteClause);
-
-			// Handle symmetric relations
-		if ($conf['symmetric_field']) {
-				// get the correct sorting field for symmetric relations
-			if ($conf['symmetric_sortby'])									// specific manual sortby
-				$symSortby = $conf['symmetric_sortby'];
-			elseif ($conf['symmetric_default_sortby'])						// specific default sortby
-				$symSortby = $conf['symmetric_default_sortby'];
-			else															// sorting of non-symmetric behaviour is taken
-				$symSortby = $sortby;
-
-				// Fetch symmetric records from storage
-			$symRows = t3lib_BEfunc::getRecordsByField($foreign_table,$conf['symmetric_field'],$uid,'','',$symSortby,'',$useDeleteClause);
-
-			if (count($symRows)) {
-					// if there are rows and symRows, we have to merge them, but keeping the sorting order
-				if (count($rows)) {
-					$newRows = array();
-					reset($rows);
-					reset($symRows);
-
-					$row = current($rows);
-					$symRow = current($symRows);
-
-					while (is_array($row)) {
-							// if the sorting value of the symRow is lower than the row sorting value, insert symRow before
-						while (is_array($symRow) && $symRow[$symSortby] <= $row[$sortby]) {
-							$newRows[] = $symRow;
-							$symRow = next($symRows);
-						}
-
-							// all better sorted symRows have been processed, now add the row itself
-						$newRows[] = $row;
-						$row = next($rows);
-
-							// if there are no more rows, paste all remaining symRows
-						if ($row == false && $symRow != false) {
-							while (is_array($symRow)) {
-								$newRows[] = $symRow;
-								$symRow = next($symRows);
-							}
-						}
-					}
-
-						// set the rows value to the new ordered array
-					$rows = $newRows;
-
-					// there are no rows, just symRows, so we use them - sorting comes from database
-				} else {
-					$rows = $symRows;
-
-				}
-			}
-		}
+		$rows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('uid', $foreign_table, $whereClause, '', $sortby);
 
 		if (count($rows)) {
 			foreach ($rows as $row) {

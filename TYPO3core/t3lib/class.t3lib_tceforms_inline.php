@@ -303,7 +303,7 @@ class t3lib_TCEforms_inline {
 
 		if ($isNewRecord) {
 				// show this record expanded or collapsed
-			$isExpanded = is_array($config['appearance']) && $config['appearance']['collapseAll'] ? true : false;
+			$isExpanded = is_array($config['appearance']) && $config['appearance']['collapseAll'] ? 1 : 0;
 				// get the top parent table
 			$top = $this->getStructureLevel(0);
 			$ucFieldName = 'uc['.$top['table'].']['.$top['uid'].']'.$appendFormFieldNames;
@@ -362,8 +362,8 @@ class t3lib_TCEforms_inline {
 				'title'	=> '',
 				'isOnSymmetricSide' => $isOnSymmetricSide
 			);
-				// @TODO: On giving the userFunc a reference to $this, the userFunc could change the IRRE structure.
-			t3lib_div::callUserFunction($GLOBALS['TCA'][$foreign_table]['ctrl']['label_userFunc'], $params, $this);
+			$null = null;	// callUserFunction requires a third parameter, but we don't want to give $this as reference!
+			t3lib_div::callUserFunction($GLOBALS['TCA'][$foreign_table]['ctrl']['label_userFunc'], $params, $null);
 			$recTitle = $params['title'];
 			
 			// render the special alternative title
