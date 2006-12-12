@@ -435,8 +435,8 @@ class t3lib_loadDBGroup	{
 				$sortby = '
 					CASE
 						WHEN '.$conf['foreign_field'].'='.$uid.'
-						THEN '.$conf['foreign_field'].'
-						ELSE '.$conf['symmetric_field'].'
+						THEN '.$conf['foreign_sortby'].'
+						ELSE '.$conf['symmetric_sortby'].'
 					END';
 			} else {
 					// regular single-side behaviour
