@@ -281,13 +281,15 @@ class t3lib_BEfunc	{
 	 * @param	string		Table name (not necessarily in TCA)
 	 * @param	string		WHERE clause
 	 * @param	string		$fields is a list of fields to select, default is '*'
-	 * @return	array		First row found, if any
+	 * @return	array		First row found, if any, FALSE otherwise
 	 */
 	function getRecordRaw($table,$where='',$fields='*')	{
-		$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery($fields, $table, $where);
-		if ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res))	{
-			return $row;
+		$row = FALSE;
+		if (FALSE !== ($res = $GLOBALS['TYPO3_DB']->exec_SELECTquery($fields, $table, $where, '', '', '1')))	{
+			$row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
+			$GLOBALS['TYPO3_DB']->sql_free_result($res);
 		}
+		return $row;
 	}
 
 	/**
@@ -1608,20 +1610,25 @@ class t3lib_BEfunc	{
 					// use the original image if it's size fits to the thumbnail size
 				if ($max && $max<=(count($sizeParts)&&max($sizeParts)?max($sizeParts):56))	{
 					$theFile = $url = ($abs?'':'../').($uploaddir?$uploaddir.'/':'').trim($theFile);
-					$onClick='top.launchView(\''.$theFile.'\',\'\',\''.$backPath.'\');return false;';
-					$thumbData.='<a href="#" onclick="'.htmlspecialchars($onClick).'"><img src="'.$backPath.$url.'" '.$imgInfo[3].' hspace="2" border="0" title="'.trim($url).'"'.$tparams.' alt="" /></a> ';
+					$onClick = 'top.launchView(\''.$theFile.'\',\'\',\''.$backPath.'\');return false;';
+					$thumbData.= '<a href="#" onclick="'.htmlspecialchars($onClick).'"><img src="'.$backPath.$url.'" '.$imgInfo[3].' hspace="2" border="0" title="'.trim($url).'"'.$tparams.' alt="" /></a> ';
 						// New 190201 stop
 				} elseif ($ext=='ttf' || t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'],$ext)) {
+					$theFile_abs = PATH_site.($uploaddir?$uploaddir.'/':'').trim($theFile);
 					$theFile = ($abs?'':'../').($uploaddir?$uploaddir.'/':'').trim($theFile);
+
+					$check = basename($theFile_abs).':'.filemtime($theFile_abs).':'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
 					$params = '&file='.rawurlencode($theFile);
-					$params .= $size?'&size='.$size:'';
+					$params.= $size?'&size='.$size:'';
+					$params.= '&md5sum='.t3lib_div::shortMD5($check);
+
 					$url = $thumbScript.'?&dummy='.$GLOBALS['EXEC_TIME'].$params;
-					$onClick='top.launchView(\''.$theFile.'\',\'\',\''.$backPath.'\');return false;';
-					$thumbData.='<a href="#" onclick="'.htmlspecialchars($onClick).'"><img src="'.htmlspecialchars($backPath.$url).'" hspace="2" border="0" title="'.trim($theFile).'"'.$tparams.' alt="" /></a> ';
+					$onClick = 'top.launchView(\''.$theFile.'\',\'\',\''.$backPath.'\');return false;';
+					$thumbData.= '<a href="#" onclick="'.htmlspecialchars($onClick).'"><img src="'.htmlspecialchars($backPath.$url).'" hspace="2" border="0" title="'.trim($theFile).'"'.$tparams.' alt="" /></a> ';
 				} else {
 					$icon = t3lib_BEfunc::getFileIcon($ext);
 					$url = 'gfx/fileicons/'.$icon;
-					$thumbData.='<img src="'.$backPath.$url.'" hspace="2" border="0" title="'.trim($theFile).'"'.$tparams.' alt="" /> ';
+					$thumbData.= '<img src="'.$backPath.$url.'" hspace="2" border="0" title="'.trim($theFile).'"'.$tparams.' alt="" /> ';
 				}
 			}
 		}
@@ -1639,8 +1646,11 @@ class t3lib_BEfunc	{
 	 * @return	string		Image tag
 	 */
 	function getThumbNail($thumbScript,$theFile,$tparams='',$size='')	{
+		$check = basename($theFile).':'.filemtime($theFile).':'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
 		$params = '&file='.rawurlencode($theFile);
-		$params .= trim($size)?'&size='.trim($size):'';
+		$params.= trim($size)?'&size='.trim($size):'';
+		$params.= '&md5sum='.t3lib_div::shortMD5($check);
+
 		$url = $thumbScript.'?&dummy='.$GLOBALS['EXEC_TIME'].$params;
 		$th='<img src="'.htmlspecialchars($url).'" title="'.trim(basename($theFile)).'"'.($tparams?" ".$tparams:"").' alt="" />';
 		return $th;
@@ -1808,30 +1818,43 @@ class t3lib_BEfunc	{
 	 * @param	string		Table name, present in TCA
 	 * @param	array		Row from table
 	 * @param	boolean		If set, result is prepared for output: The output is cropped to a limited lenght (depending on BE_USER->uc['titleLen']) and if no value is found for the title, '<em>[No title]</em>' is returned (localized). Further, the output is htmlspecialchars()'ed
+	 * @param	boolean		If set, the function always returns an output. If no value is found for the title, '[No title]' is returned (localized).
 	 * @return	string
 	 */
-	function getRecordTitle($table,$row,$prep=0)	{
+	function getRecordTitle($table,$row,$prep=FALSE,$forceResult=TRUE)	{
 		global $TCA;
-		if (is_array($TCA[$table]))	{
-			$t = $row[$TCA[$table]['ctrl']['label']];
-			if ($TCA[$table]['ctrl']['label_alt'] && ($TCA[$table]['ctrl']['label_alt_force'] || !strcmp($t,'')))	{
-				$altFields=t3lib_div::trimExplode(',',$TCA[$table]['ctrl']['label_alt'],1);
-				$tA=array();
-				$tA[]=$t;
-				while(list(,$fN)=each($altFields))	{
-					$t = $tA[] = trim(strip_tags($row[$fN]));
-					if (strcmp($t,'') && !$TCA[$table]['ctrl']['label_alt_force'])	break;
+		if (is_array($TCA[$table]))	{			
+
+				// If configured, call userFunc
+			if ($TCA[$table]['ctrl']['label_userFunc'])	{
+				$params['table'] = $table;
+				$params['row'] = $row;
+				$params['title'] = '';
+
+				t3lib_div::callUserFunction($TCA[$table]['ctrl']['label_userFunc'],$params,$this);
+				$t = $params['title'];
+			} else {
+
+					// No userFunc: Build label
+				$t = $row[$TCA[$table]['ctrl']['label']];
+				if ($TCA[$table]['ctrl']['label_alt'] && ($TCA[$table]['ctrl']['label_alt_force'] || !strcmp($t,'')))	{
+					$altFields=t3lib_div::trimExplode(',',$TCA[$table]['ctrl']['label_alt'],1);
+					$tA=array();
+					$tA[]=$t;
+					foreach ($altFields as $fN)	{
+						$t = $tA[] = trim(strip_tags($row[$fN]));
+						if (strcmp($t,'') && !$TCA[$table]['ctrl']['label_alt_force'])	break;
+					}
+					if ($TCA[$table]['ctrl']['label_alt_force'])	$t=implode(', ',$tA);
 				}
-				if ($TCA[$table]['ctrl']['label_alt_force'])	$t=implode(', ',$tA);
 			}
-			if ($prep) 	{
-				$tOriginal = $t;
-				$t = htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen']));
-				if (!strcmp(trim($t),''))
-					$t='<em>['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']</em>';
-				elseif ($t != $tOriginal)
-					$t='<span title="'.htmlspecialchars($tOriginal).'">'.$t.'</span>';
+
+				// If the current result is empty, set it to '[No title]' (localized) and prepare for output if requested
+			if ($prep || $forceResult)	{
+				if (!strcmp(trim($t),''))	$t='['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']';
+				if ($prep)	$t = '<em>'.htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen'])).'</em>';				
 			}
+
 			return $t;
 		}
 	}
