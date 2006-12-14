@@ -375,7 +375,7 @@ class t3lib_TCEforms_inline {
 			
 			// render the standard
 		} else {
-			$recTitle = t3lib_BEfunc::getRecordTitle($foreign_table, $rec, 1);
+			$recTitle = t3lib_BEfunc::getRecordTitle($foreign_table, $rec, true);
 		}
 
 		$altText = t3lib_BEfunc::getRecordIconAltText($rec, $foreign_table);
