@@ -370,6 +370,7 @@ class t3lib_TCEforms_inline {
 		} elseif ($hasForeignLabel || $hasSymmetricLabel) {
 			$titleCol = $hasForeignLabel ? $config['foreign_label'] : $config['symmetric_label'];
 			$recTitle = t3lib_BEfunc::getProcessedValueExtra($foreign_table, $titleCol, $rec[$titleCol]);
+			$recTitle = t3lib_BEfunc::getRecordTitlePrep($recTitle);
 			$recTitle = $this->fObj->noTitle($recTitle);
 			
 			// render the standard
