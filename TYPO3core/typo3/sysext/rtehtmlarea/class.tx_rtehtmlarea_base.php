@@ -928,7 +928,8 @@ class tx_rtehtmlarea_base extends t3lib_rteapi {
 			RTEarea['.$number.']["showTagFreeClasses"] = ' . (trim($this->thisConfig['showTagFreeClasses'])?'true':'false') . ';
 			RTEarea['.$number.']["useHTTPS"] = ' . ((trim(stristr($this->siteURL, 'https')) || $this->thisConfig['forceHTTPS'])?'true':'false') . ';
 			RTEarea['.$number.']["enableMozillaExtension"] = ' . (($this->client['BROWSER'] == 'gecko' && $TYPO3_CONF_VARS['EXTCONF'][$this->ID]['enableMozillaExtension'])?'true':'false') . ';
-			RTEarea['.$number.']["tceformsInlineObject"] = "' . $tceformsInlineObject . '";';
+			RTEarea['.$number.']["tceformsInlineObject"] = "' . $tceformsInlineObject . '";
+			RTEarea['.$number.']["tceformsDynTabs"] = "' . $this->TCEform->getDynTabLevelState('-DIV') . '";';
 		
 			// The following properties apply only to the backend
 		if (!is_object($TSFE)) {

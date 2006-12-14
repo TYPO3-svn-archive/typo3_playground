@@ -881,10 +881,15 @@ HTMLArea.prototype.generate = function () {
  * Size the iframe according to user's prefs or initial textarea
  */
 HTMLArea.prototype.sizeIframe = function(diff) {
+	var i;
 	var height = (this.config.height == "auto" ? (this._textArea.style.height) : this.config.height);
 	var textareaHeight = height;
 
-	var dimensions = this.accessInlineElement('this.getDimensions()');
+	var inlineObject = RTEarea[this._editorNumber].tceformsInlineObject;
+	var parentElements = RTEarea[this._editorNumber].tceformsDynTabs.split(',');
+	if (inlineObject) parentElements.push(inlineObject);
+
+	var dimensions = this.accessParentElements(parentElements, 'this.getDimensions()');
 			
 	if(height.indexOf("%") == -1) {
 		height = parseInt(height) - diff;		
@@ -935,31 +940,33 @@ HTMLArea.prototype.getDimensions = function() {
  * @return	object		An object returned by the callbackFunc.
  * @author	Oliver Hader <oh@inpublica.de>
  */
-HTMLArea.prototype.accessInlineElement = function(callbackFunc) {
+HTMLArea.prototype.accessParentElements = function(parentElements, callbackFunc) {
 	var result = {};
-	var inlineObject = RTEarea[this._editorNumber].tceformsInlineObject;
 	
-	if (inlineObject) {
-		var inlineStyle = document.getElementById(inlineObject).style;
-		var showObject = inlineStyle.display == 'none';
-
-		if (showObject) {
-			var originalVisibility = inlineStyle.visibility;
-			var originalPosition = inlineStyle.position;
-			inlineStyle.visibility = 'hidden';
-			inlineStyle.position = 'absolute';
-			inlineStyle.display = '';
+	if (parentElements.length) {
+		var currentElement = parentElements.pop();
+		var elementStyle = document.getElementById(currentElement).style;
+		var actionRequired = elementStyle.display == 'none';
+		
+		if (actionRequired) {
+			var originalVisibility = elementStyle.visibility;
+			var originalPosition = elementStyle.position;
+			elementStyle.visibility = 'hidden';
+			elementStyle.position = 'absolute';
+			elementStyle.display = '';
 		}
 		
-		result = eval(callbackFunc);
+		result = this.accessParentElements(parentElements, callbackFunc);
 		
-		if (showObject) {
-			inlineStyle.display = 'none';
-			inlineStyle.position = originalPosition;
-			inlineStyle.visibility = originalVisibility;
+		if (actionRequired) {
+			elementStyle.display = 'none';
+			elementStyle.position = originalPosition;
+			elementStyle.visibility = originalVisibility;
 		}
+		
 	} else {
 		result = eval(callbackFunc);		
+
 	}
 	
 	return result;
