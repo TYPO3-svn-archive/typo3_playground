@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -428,7 +428,9 @@ class SC_show_item {
 				// Font files:
 			if ($ext=='ttf')	{
 				$thumbScript = 'thumbs.php';
+				$check = basename($this->file).':'.filemtime($this->file).':'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
 				$params = '&file='.rawurlencode($this->file);
+				$params.= '&md5sum='.t3lib_div::shortMD5($check);
 				$url = $thumbScript.'?&dummy='.$GLOBALS['EXEC_TIME'].$params;
 				$thumb = '<br />
 					<div align="center">'.$returnLinkTag.'<img src="'.htmlspecialchars($url).'" border="0" title="'.htmlspecialchars(trim($this->file)).'" alt="" /></a></div>';

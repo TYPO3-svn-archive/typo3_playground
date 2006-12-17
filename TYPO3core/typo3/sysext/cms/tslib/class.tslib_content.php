@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -2579,14 +2579,14 @@ class tslib_cObj {
 	function netprintApplication_offsiteLinkWrap($str,$imgConf,$conf)	{
 		if ($conf['url'] && @is_file($imgConf['origFile']))	{
 			$thisUrl = $conf['thisUrl'] ? $conf['thisUrl'] : t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR');
-			$origFile=$thisUrl.$imgConf['origFile'];
+			$origFile = $thisUrl.$imgConf['origFile'];
 				// Original file dimensions:
 			$gifCreator = t3lib_div::makeInstance('tslib_gifbuilder');
 			$gifCreator->init();
 			$origDim = $gifCreator->getImageDimensions($imgConf['origFile']);
 			if (!$conf['linkOnlyPixelsAbove'] || $origDim[0]*$origDim[1]>$conf['linkOnlyPixelsAbove'])	{
 					// Set parameters
-				$thumbFile=$thisUrl.$imgConf['3'].'|'.$imgConf[0].'x'.$imgConf[1].'|'.$origDim[0].'x'.$origDim[1].'|'.filesize($imgConf['origFile']).'|'.filemtime($imgConf['origFile']);
+				$thumbFile = $thisUrl.$imgConf['3'].'|'.$imgConf[0].'x'.$imgConf[1].'|'.$origDim[0].'x'.$origDim[1].'|'.filesize($imgConf['origFile']).'|'.filemtime($imgConf['origFile']);
 					// Set url:
 				$url = $conf['url']
 					.'&NP[offsite][1]='.rawurlencode($origFile)
@@ -3902,7 +3902,9 @@ class tslib_cObj {
 						if ($GLOBALS['TYPO3_CONF_VARS']['GFX']['thumbnails'])	{
 							$thumbSize = '';
 							if ($conf['icon_thumbSize'] || $conf['icon_thumbSize.'])	{ $thumbSize = '&size='.$this->stdWrap($conf['icon_thumbSize'], $conf['icon_thumbSize.']); }
-							$icon = 't3lib/thumbs.php?dummy='.$GLOBALS['EXEC_TIME'].'&file='.rawurlencode('../'.$theFile).$thumbSize;
+							$check = basename($theFile).':'.filemtime($theFile).':'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
+							$md5sum = '&md5sum='.t3lib_div::shortMD5($check);
+							$icon = 't3lib/thumbs.php?dummy='.$GLOBALS['EXEC_TIME'].'&file='.rawurlencode('../'.$theFile).$thumbSize.$md5sum;
 						} else {
 							$icon = t3lib_extMgm::siteRelPath('cms').'tslib/media/miscicons/notfound_thumb.gif';
 						}
@@ -5087,6 +5089,14 @@ class tslib_cObj {
 		$this->lastTypoLinkTarget = '';
 		if ($link_param)	{
 			$link_paramA = t3lib_div::unQuoteFilenames($link_param,true);
+			
+				// Check for link-handler keyword:
+			list($linkHandlerKeyword,$linkHandlerValue) = explode(':',trim($link_paramA[0]),2);
+			if ($TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_content.php']['typolinkLinkHandler'][$linkHandlerKeyword] && strcmp($linkHandlerValue,"")) {
+				$linkHandlerObj = &t3lib_div::getUserObj($TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_content.php']['typolinkLinkHandler'][$linkHandlerKeyword]);
+				return $linkHandlerObj->main($linktxt, $conf, $linkHandlerKeyword, $linkHandlerValue, $link_param, $this);
+			}
+			
 			$link_param = trim($link_paramA[0]);	// Link parameter value
 			$linkClass = trim($link_paramA[2]);		// Link class
 			if ($linkClass=='-')	$linkClass = '';	// The '-' character means 'no class'. Necessary in order to specify a title as fourth parameter without setting the target or class!
@@ -5228,17 +5238,6 @@ class tslib_cObj {
 							// Query Params:
 						$addQueryParams = $conf['addQueryString'] ? $this->getQueryArguments($conf['addQueryString.']) : '';
 						$addQueryParams .= trim($this->stdWrap($conf['additionalParams'],$conf['additionalParams.']));
-							
-							// Adjust type setting for simulateStaticDocuments:
-							// if a type value was set in additionalParams and no type was defined in the parameter pair
-							// take the type from additionalParams and make it behave like it was set in the parameter pair
-							// (it has to be done here instead of in t3lib_tstemplate::linkData, because of cHash)
-						if ($GLOBALS['TSFE']->config['config']['simulateStaticDocuments'] && strpos($addQueryParams, '&type=') !== false && !isset($theTypeP)) {
-							preg_match('/&type=(.+)(&|$)/', $addQueryParams, $match);
-							$theTypeP = $match[1];
-							$addQueryParams = str_replace('&type='.$theTypeP, '', $addQueryParams);
-						}
-							
 						if (substr($addQueryParams,0,1)!='&')		{
 							$addQueryParams = '';
 						} elseif ($conf['useCacheHash']) {	// cache hashing:
@@ -7544,9 +7543,6 @@ class tslib_controlTable	{
 		}
 	}
 }
-
-
-
 
 
 if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['tslib/class.tslib_content.php'])	{

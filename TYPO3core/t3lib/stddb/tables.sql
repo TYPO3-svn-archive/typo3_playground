@@ -4,7 +4,7 @@
 #--------------------------------------------------------
 # Server version	3.22.27
 #
-# TYPO3 CVS ID: $Id: tables.sql 1794 2006-11-16 21:33:17Z masi $
+# TYPO3 CVS ID: $Id: tables.sql 1883 2006-12-15 11:14:15Z k-fish $
 
 #
 # Table structure for table 'be_groups'
@@ -13,7 +13,7 @@ CREATE TABLE be_groups (
   uid int(11) unsigned NOT NULL auto_increment,
   pid int(11) unsigned DEFAULT '0' NOT NULL,
   tstamp int(11) unsigned DEFAULT '0' NOT NULL,
-  title varchar(20) DEFAULT '' NOT NULL,
+  title varchar(50) DEFAULT '' NOT NULL,
   non_exclude_fields text NOT NULL,
   explicit_allowdeny text NOT NULL,
   allowed_languages tinytext NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE be_users (
   uid int(11) unsigned NOT NULL auto_increment,
   pid int(11) unsigned DEFAULT '0' NOT NULL,
   tstamp int(11) unsigned DEFAULT '0' NOT NULL,
-  username varchar(20) DEFAULT '' NOT NULL,
+  username varchar(50) DEFAULT '' NOT NULL,
   password varchar(40) DEFAULT '' NOT NULL,
   admin tinyint(4) unsigned DEFAULT '0' NOT NULL,
   usergroup tinytext NOT NULL,
@@ -93,6 +93,33 @@ CREATE TABLE be_users (
   PRIMARY KEY (uid),
   KEY parent (pid),
   KEY username (username)
+);
+
+#
+# Table structure for table 'cache_extensions'
+#
+CREATE TABLE cache_extensions (
+  extkey varchar(60) NOT NULL default '',
+  version varchar(10) NOT NULL default '',
+  alldownloadcounter int(11) unsigned NOT NULL default '0',
+  downloadcounter int(11) unsigned NOT NULL default '0',
+  title varchar(150) NOT NULL default '',
+  description mediumtext NOT NULL,
+  state int(4) NOT NULL default '0',
+  reviewstate int(4) unsigned NOT NULL default '0',
+  category int(4) NOT NULL default '0',
+  lastuploaddate int(11) unsigned NOT NULL default '0',
+  dependencies mediumtext NOT NULL,
+  authorname varchar(100) NOT NULL default '',
+  authoremail varchar(100) NOT NULL default '',
+  ownerusername varchar(50) NOT NULL default '',
+  t3xfilemd5 varchar(35) NOT NULL default '',
+  uploadcomment mediumtext NOT NULL,
+  authorcompany varchar(100) NOT NULL default '',
+  intversion int(11) NOT NULL default '0',
+  lastversion int(3) NOT NULL default '0',
+  lastreviewedversion int(3) NOT NULL default '0',
+  PRIMARY KEY (extkey,version)
 );
 
 #

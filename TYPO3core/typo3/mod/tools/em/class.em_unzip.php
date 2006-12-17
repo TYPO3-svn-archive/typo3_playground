@@ -26,7 +26,7 @@
 /**
  * Module: Extension manager
  *
- * $Id: class.em_unzip.php 1421 2006-04-10 09:27:15Z mundaun $
+ * $Id: class.em_unzip.php 1869 2006-12-12 11:57:52Z k-fish $
  *
  * @author	Vincent Blavet <vincent@phpconcept.net>
  * @author	Karsten Dambekalns <karsten@typo3.org>
@@ -507,6 +507,7 @@ class em_unzip {
 		$v_result=1;
 
 		// Read the file header
+		$v_header = '';
 		if (($v_result = $this->_readFileHeader($v_header)) != 1)
 		{
 			// Return

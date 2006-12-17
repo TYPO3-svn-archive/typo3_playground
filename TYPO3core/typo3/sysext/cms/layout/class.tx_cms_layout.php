@@ -384,7 +384,7 @@ class tx_cms_layout extends recordList {
 		$RTE = $GLOBALS['BE_USER']->isRTE();
 		$lMarg=1;
 		$showHidden = $this->tt_contentConfig['showHidden']?'':t3lib_BEfunc::BEenableFields('tt_content');
-		$pageTitleParamForAltDoc='&recTitle='.rawurlencode(t3lib_BEfunc::getRecordTitle('pages',t3lib_BEfunc::getRecordWSOL('pages',$id),1));
+		$pageTitleParamForAltDoc='&recTitle='.rawurlencode(t3lib_BEfunc::getRecordTitle('pages',t3lib_BEfunc::getRecordWSOL('pages',$id),TRUE));
 
 			// Get labels for CTypes and tt_content element fields in general:
 		$this->CType_labels =array();
@@ -1165,6 +1165,11 @@ class tx_cms_layout extends recordList {
 				// Header line is drawn
 			$theData = array();
 			$theData = $this->headerFields($this->fieldArray,$table,$theData);
+			if ($this->doEdit)	{
+				$theData['__cmds__'] = '<a href="#" onclick="'.htmlspecialchars(t3lib_BEfunc::editOnClick('&edit['.$table.']['.$this->id.']=new',$this->backPath)).'">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_el.gif').' title="'.$GLOBALS['LANG']->getLL('new',1).'" alt="" />'.
+					'</a>';
+			}
 			$out.= $this->addelement(1,'',$theData,' class="c-headLine"',15);
 
 				// Render Items

@@ -29,7 +29,7 @@
  * Used from TCEFORMS an other elements
  * In other words: This is the ELEMENT BROWSER!
  *
- * $Id: class.browse_links.php 1811 2006-11-23 18:44:52Z masi $
+ * $Id: class.browse_links.php 1868 2006-12-12 11:24:10Z ingmars $
  * Revised for TYPO3 3.6 November/2003 by Kasper Skaarhoj
  * XHTML compliant
  *
@@ -218,7 +218,7 @@ class TBE_browser_recordList extends localRecordList {
 			$code = htmlspecialchars(t3lib_div::fixed_lgd_cs($code,$this->fixedL));
 		}
 
-		$title = t3lib_BEfunc::getRecordTitle($table,$row);
+		$title = t3lib_BEfunc::getRecordTitle($table,$row,FALSE,TRUE);
 		$ficon = t3lib_iconWorks::getIcon($table,$row);
 		$aOnClick = "return insertElement('".$table."', '".$row['uid']."', 'db', ".t3lib_div::quoteJSvalue($title).", '', '', '".$ficon."');";
 		$ATag = '<a href="#" onclick="'.$aOnClick.'">';
@@ -1458,7 +1458,7 @@ class browse_links {
 		} else {
 			$thumbNailCheck='';
 		}
-		$noThumbs = $noThumbs?$noThumbs:!$_MOD_SETTINGS['displayThumbs'];
+		$noThumbs = $noThumbs ? $noThumbs : !$_MOD_SETTINGS['displayThumbs'];
 
 			// Create folder tree:
 		$foldertree = t3lib_div::makeInstance('TBE_FolderTree');
@@ -1487,7 +1487,7 @@ class browse_links {
 				</tr>
 			</table>
 			';
-		$content.=$thumbNailCheck;
+		$content.= $thumbNailCheck;
 
 			// Adding create folder + upload forms if applicable:
 		if (!$BE_USER->getTSConfigVal('options.uploadFieldsInTopOfEB'))	$content.=$uploadForm;

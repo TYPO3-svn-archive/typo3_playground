@@ -1851,42 +1851,14 @@ class t3lib_BEfunc	{
 
 				// If the current result is empty, set it to '[No title]' (localized) and prepare for output if requested
 			if ($prep || $forceResult)	{
-				if ($prep) {
-					$t = t3lib_BEfunc::getRecordTitlePrep($t);
-				}
-				if (!strcmp(trim($t),'')) {
-					$t = '['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']';
-					if ($prep) $t = '<em>'.htmlspecialchars($t).'</em>';
-				}
+				if (!strcmp(trim($t),''))	$t='['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']';
+				if ($prep)	$t = '<em>'.htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen'])).'</em>';				
 			}
 
 			return $t;
 		}
 	}
 
- 	/**
-	 * A title is prepared for output: The output is cropped to a limited lenght
-	 * (depending on BE_USER->uc['titleLen']). Further, the output is htmlspecialchars()'ed.
-	 *
-	 * @param	string		$title: The title string
-	 * @param	integer		$titleLen: The length the title is limited to, if zero, BE_USER->uc['titleLen']) is used
-	 * @return	string		The prepared, cropped title string.
-	 */
-	function getRecordTitlePrep($title, $titleLen = 0) {
-		if (!$titleLen) $titleLen = $GLOBALS['BE_USER']->uc['titleLen'];
-		
-		$titleFixed = t3lib_div::fixed_lgd_cs($title, $titleLen);
-			// If the title stayes the same after fixing length:
-		if ($title == $titleFixed) {
-			$title = htmlspecialchars($title);
-			// If the title was cropped, add the original title as a tooltip-title of <em>:
-		} else {
-			$title = '<span title="'.htmlspecialchars($title).'">'.htmlspecialchars($titleFixed).'</span>';
-		}
-
-		return $title;
-	}
-	
 	/**
 	 * Returns a human readable output of a value from a record
 	 * For instance a database record relation would be looked up to display the title-value of that record. A checkbox with a "1" value would be "Yes", etc.

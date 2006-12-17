@@ -2,7 +2,7 @@
 #
 # Host: TYPO3_host    Database: t3_testsite
 #--------------------------------------------------------
-# TYPO3 CVS ID: $Id: ext_tables.sql 1753 2006-10-11 13:08:26Z masi $
+# TYPO3 CVS ID: $Id: ext_tables.sql 1843 2006-12-03 16:26:43Z ingmars $
 
 
 #
@@ -81,7 +81,7 @@ CREATE TABLE fe_groups (
   uid int(11) unsigned NOT NULL auto_increment,
   pid int(11) unsigned DEFAULT '0' NOT NULL,
   tstamp int(11) unsigned DEFAULT '0' NOT NULL,
-  title varchar(20) DEFAULT '' NOT NULL,
+  title varchar(50) DEFAULT '' NOT NULL,
   hidden tinyint(3) unsigned DEFAULT '0' NOT NULL,
   lockToDomain varchar(50) DEFAULT '' NOT NULL,
   deleted tinyint(3) unsigned DEFAULT '0' NOT NULL,

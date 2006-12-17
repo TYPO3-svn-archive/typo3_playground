@@ -80,7 +80,6 @@
 
 
 
-
 /**
  * Class for rendering of Web>List module
  *
@@ -581,14 +580,11 @@ class localRecordList extends recordList {
 			// Overriding with versions background color if any:
 		$row_bgColor = $row['_CSSCLASS'] ? ' class="'.$row['_CSSCLASS'].'"' : $row_bgColor;
 
-			// Initialization
-		$alttext = t3lib_BEfunc::getRecordIconAltText($row,$table);
-		$recTitle = t3lib_BEfunc::getRecordTitle($table,$row);
-
 			// Incr. counter.
 		$this->counter++;
 
 			// The icon with link
+		$alttext = t3lib_BEfunc::getRecordIconAltText($row,$table);
 		$iconImg = t3lib_iconWorks::getIconImage($table,$row,$this->backPath,'title="'.htmlspecialchars($alttext).'"'.($indent ? ' style="margin-left: '.$indent.'px;"' : ''));
 		$theIcon = $this->clickMenuEnabled ? $GLOBALS['SOBE']->doc->wrapClickMenuOnIcon($iconImg,$table,$row['uid']) : $iconImg;
 
@@ -596,21 +592,7 @@ class localRecordList extends recordList {
 		$theData = Array();
 		foreach($this->fieldArray as $fCol)	{
 			if ($fCol==$titleCol)	{
-				if ($GLOBALS['TCA'][$table]['ctrl']['label_alt'] && ($GLOBALS['TCA'][$table]['ctrl']['label_alt_force'] || !strcmp($row[$fCol],'')))	{
-					$altFields=t3lib_div::trimExplode(',',$GLOBALS['TCA'][$table]['ctrl']['label_alt'],1);
-					$tA=array();
-					if ($row[$fCol])	{
-						$tA[] = t3lib_BEfunc::getProcessedValueExtra($table,$fCol,$row[$fCol],$GLOBALS['BE_USER']->uc['titleLen'],$row['uid']);
-					}
-					while(list(,$fN)=each($altFields))	{
-						$t = t3lib_BEfunc::getProcessedValueExtra($table,$fN,$row[$fN],$GLOBALS['BE_USER']->uc['titleLen'],$row['uid']);
-						if($t)	{ $tA[] = $t; }
-					}
-					if ($GLOBALS['TCA'][$table]['ctrl']['label_alt_force'])	{ $t=implode(', ',$tA); }
-					if ($t)	{ $recTitle = $t; }
-				} else {
-					$recTitle = t3lib_BEfunc::getProcessedValueExtra($table,$fCol,$row[$fCol],$GLOBALS['BE_USER']->uc['titleLen'],$row['uid']);
-				}
+				$recTitle = t3lib_BEfunc::getRecordTitle($table,$row,FALSE,TRUE);
 				$theData[$fCol] = $this->linkWrapItems($table,$row['uid'],$recTitle,$row);
 			} elseif ($fCol=='pid') {
 				$theData[$fCol]=$row[$fCol];
@@ -622,6 +604,8 @@ class localRecordList extends recordList {
 				$theData[$fCol]=$this->makeControl($table,$row);
 			} elseif ($fCol=='_CLIPBOARD_') {
 				$theData[$fCol]=$this->makeClip($table,$row);
+#				$t3lib_transl8tools = new t3lib_transl8tools;
+#				$theData[$fCol].=t3lib_div::view_array($t3lib_transl8tools->translationInfo($table,$row['uid']));
 			} elseif ($fCol=='_LOCALIZATION_') {
 				list($lC1, $lC2) = $this->makeLocalizationPanel($table,$row);
 				$theData[$fCol] = $lC1;
@@ -1106,50 +1090,36 @@ class localRecordList extends recordList {
 			0 => '',
 			1 => '',
 		);
-		if ($TCA[$table]['ctrl']['languageField'] && $TCA[$table]['ctrl']['transOrigPointerField'] && !$TCA[$table]['ctrl']['transOrigPointerTable'])	{
+		
+		$t8Tools = t3lib_div::makeInstance('t3lib_transl8tools');
+		$translations = $t8Tools->translationInfo($table,$row['uid']);
 
-				// Language title and icon:
-			$out[0] = $this->languageFlag($row[$TCA[$table]['ctrl']['languageField']]);
+			// Language title and icon:
+		$out[0] = $this->languageFlag($row[$TCA[$table]['ctrl']['languageField']]);
 
-				// Create new localizations links:
-			if ($row[$TCA[$table]['ctrl']['languageField']] <=0)	{
+		if (is_array($translations))	{
 
-					// Look for translations of this record, index by language field value:
-				$translations = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
-					'uid,'.$TCA[$table]['ctrl']['languageField'],
-					$table,
-					'pid='.intval($this->id).
-						' AND '.$TCA[$table]['ctrl']['languageField'].'>0'.
-						' AND '.$TCA[$table]['ctrl']['transOrigPointerField'].'='.intval($row['uid']).
-						t3lib_BEfunc::deleteClause($table).
-						t3lib_BEfunc::versioningPlaceholderClause($table),
-					'',
-					'',
-					'',
-					$TCA[$table]['ctrl']['languageField']
-				);
+				// Traverse page translations and add icon for each language that does NOT yet exist:
+			$lNew = '';
+			foreach($this->pageOverlays as $lUid_OnPage => $lsysRec)	{
+				if (!isset($translations['translations'][$lUid_OnPage]) && $GLOBALS['BE_USER']->checkLanguageAccess($lUid_OnPage))	{
+					$href = $GLOBALS['TBE_TEMPLATE']->issueCommand(
+						'&cmd['.$table.']['.$row['uid'].'][localize]='.$lUid_OnPage,
+						$this->listURL().'&justLocalized='.rawurlencode($table.':'.$row['uid'].':'.$lUid_OnPage)
+					);
 
-					// Traverse page translations and add icon for each language that does NOT yet exist:
-				$lNew = '';
-				foreach($this->pageOverlays as $lUid_OnPage => $lsysRec)	{
-					if (!isset($translations[$lUid_OnPage]) && $GLOBALS['BE_USER']->checkLanguageAccess($lUid_OnPage))	{
-						$href = $GLOBALS['TBE_TEMPLATE']->issueCommand(
-							'&cmd['.$table.']['.$row['uid'].'][localize]='.$lUid_OnPage,
-							$this->listURL().'&justLocalized='.rawurlencode($table.':'.$row['uid'].':'.$lUid_OnPage)
-						);
+					$lC = ($this->languageIconTitles[$lUid_OnPage]['flagIcon'] ? '<img src="'.$this->languageIconTitles[$lUid_OnPage]['flagIcon'].'" class="absmiddle" alt="" />' : $this->languageIconTitles[$lUid_OnPage]['title']);
+					$lC = '<a href="'.htmlspecialchars($href).'">'.$lC.'</a> ';
 
-						$lC = ($this->languageIconTitles[$lUid_OnPage]['flagIcon'] ? '<img src="'.$this->languageIconTitles[$lUid_OnPage]['flagIcon'].'" class="absmiddle" alt="" />' : $this->languageIconTitles[$lUid_OnPage]['title']);
-						$lC = '<a href="'.htmlspecialchars($href).'">'.$lC.'</a> ';
-
-						$lNew.=$lC;
-					}
+					$lNew.=$lC;
 				}
-
-				if ($lNew)	$out[1].= $lNew;
-			} else {
-				$out[0] = '&nbsp;&nbsp;&nbsp;&nbsp;'.$out[0];
 			}
+			
+			if ($lNew)	$out[1].= $lNew;
+		} else {
+			$out[0] = '&nbsp;&nbsp;&nbsp;&nbsp;'.$out[0];
 		}
+		
 
 		return $out;
 	}

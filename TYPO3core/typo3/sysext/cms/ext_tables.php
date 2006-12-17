@@ -87,6 +87,7 @@ if (TYPO3_MODE=='BE')	{
 
 	// Adding default value columns:
 	$TCA['pages']['ctrl']['useColumnsForDefaultValues'].=',fe_group,hidden';
+	$TCA['pages']['ctrl']['transForeignTable'] = 'pages_language_overlay';
 
 	// Adding new columns:
 	$TCA['pages']['columns'] = array_merge($TCA['pages']['columns'],Array(
@@ -513,7 +514,7 @@ $TCA['tt_content'] = Array (
 		'prependAtCopy' => 'LLL:EXT:lang/locallang_general.php:LGL.prependAtCopy',
 		'copyAfterDuplFields' => 'colPos,sys_language_uid',
 		'useColumnsForDefaultValues' => 'colPos,sys_language_uid',
-		'shadowColumnsForNewPlaceholders' => 'sys_language_uid,l18n_parent,colPos,header',
+		'shadowColumnsForNewPlaceholders' => 'colPos',
 		'transOrigPointerField' => 'l18n_parent',
 		'transOrigDiffSourceField' => 'l18n_diffsource',
 		'languageField' => 'sys_language_uid',
@@ -633,7 +634,7 @@ $TCA['pages_language_overlay'] = Array (
 		'transOrigPointerField' => 'pid',
 		'transOrigPointerTable' => 'pages',
 		'transOrigDiffSourceField' => 'l18n_diffsource',
-		'shadowColumnsForNewPlaceholders' => 'sys_language_uid,title',
+		'shadowColumnsForNewPlaceholders' => 'title',
 		'languageField' => 'sys_language_uid',
 		'mainpalette' => 1,
 		'dynamicConfigFile' => t3lib_extMgm::extPath($_EXTKEY).'tbl_cms.php'

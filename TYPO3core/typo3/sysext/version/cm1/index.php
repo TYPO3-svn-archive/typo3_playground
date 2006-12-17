@@ -383,7 +383,7 @@ class tx_version_cm1 extends t3lib_SCbase {
 			// Element:
 		$record = t3lib_BEfunc::getRecord($this->table,$this->uid);
 		$recordIcon = t3lib_iconWorks::getIconImage($this->table,$record,$this->doc->backPath,'class="absmiddle"');
-		$recTitle = t3lib_BEfunc::getRecordTitle($this->table,$record,1);
+		$recTitle = t3lib_BEfunc::getRecordTitle($this->table,$record,TRUE);
 
 			// Display versions:
 		$content.='
@@ -399,7 +399,7 @@ class tx_version_cm1 extends t3lib_SCbase {
 					<td title="t3ver_oid - Reference to live version UID">oid</td>
 					<td title="t3ver_id - Version number, incremental integer">id</td>
 					<td title="t3ver_wsid - Workspace ID. There can be only one version of an element per ID (except ID zero).">wsid</td>
-					<td title="t3ver_state - Special states of a version: 1=Placeholder for "New". 2=Marked deleted.">state</td>
+					<td title="t3ver_state - Special states of a version: 1=Placeholder for &quot;New&quot;. 2=Marked deleted.">state</td>
 					<td title="t3ver_stage - Publishing stage: Editing (0), review (1), publish (10), rejected (-1).">stage</td>
 					<td title="t3ver_count - Life cycle counter. Incremented each time element is unpublished.">count</td>
 					<td>pid</td>
@@ -424,7 +424,7 @@ class tx_version_cm1 extends t3lib_SCbase {
 						'<img'.t3lib_iconWorks::skinImg($this->doc->backPath,'gfx/insert4.gif','width="14" height="14"').' alt="" title="Publish page AND content! - AND ALL SUBPAGES!" />'.
 						'</a>' : '') */ : '<img'.t3lib_iconWorks::skinImg($this->doc->backPath,'gfx/blinkarrow_left.gif','width="5" height="9"').' alt="" title="CURRENT ONLINE VERSION!"/>').'</td>
 					<td nowrap="nowrap">'.$adminLinks.'</td>
-					<td nowrap="nowrap">'.t3lib_BEfunc::getRecordTitle($this->table,$row,1).'</td>
+					<td nowrap="nowrap">'.t3lib_BEfunc::getRecordTitle($this->table,$row,TRUE).'</td>
 					<td>'.$row['uid'].'</td>
 					<td>'.$row['t3ver_oid'].'</td>
 					<td>'.$row['t3ver_id'].'</td>
@@ -512,7 +512,7 @@ class tx_version_cm1 extends t3lib_SCbase {
 								<td>'.$this->adminLinks($tN,$subrow).'</td>
 								<td>'.$subrow['uid'].'</td>
 								'.($ownVer>1 ? '<td style="font-weight: bold; background-color: yellow;"><a href="index.php?table='.rawurlencode($tN).'&uid='.$subrow['uid'].'">'.($ownVer-1).'</a></td>' : '<td></td>').'
-								<td width="98%">'.t3lib_BEfunc::getRecordTitle($tN,$subrow,1).'</td>
+								<td width="98%">'.t3lib_BEfunc::getRecordTitle($tN,$subrow,TRUE).'</td>
 							</tr>';
 
 						if ($tN == 'pages' && $c<100)	{
@@ -1744,6 +1744,8 @@ class tx_version_cm1 extends t3lib_SCbase {
 				$tce->stripslashes_values = 0;
 				$tce->start(array(), $cmd);
 				$tce->process_cmdmap();
+
+				t3lib_BEfunc::getSetUpdateSignal('updatePageTree');
 
 				return $tce->errorLog;
 			}

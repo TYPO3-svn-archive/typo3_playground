@@ -787,6 +787,7 @@ class t3lib_DB {
 	 * @return	integer		Number of resulting rows.
 	 */
 	function sql_num_rows($res)	{
+		$this->debug_check_recordset($res);
 		return mysql_num_rows($res);
 	}
 
@@ -799,6 +800,7 @@ class t3lib_DB {
 	 * @return	array		Associative array of result row.
 	 */
 	function sql_fetch_assoc($res)	{
+		$this->debug_check_recordset($res);
 		return mysql_fetch_assoc($res);
 	}
 
@@ -812,6 +814,7 @@ class t3lib_DB {
 	 * @return	array		Array with result rows.
 	 */
 	function sql_fetch_row($res)	{
+		$this->debug_check_recordset($res);
 		return mysql_fetch_row($res);
 	}
 
@@ -824,6 +827,7 @@ class t3lib_DB {
 	 * @return	boolean		Returns TRUE on success or FALSE on failure.
 	 */
 	function sql_free_result($res)	{
+		$this->debug_check_recordset($res);
 		return mysql_free_result($res);
 	}
 
@@ -859,6 +863,7 @@ class t3lib_DB {
 	 * @return	boolean		Returns TRUE on success or FALSE on failure.
 	 */
 	function sql_data_seek($res,$seek)	{
+		$this->debug_check_recordset($res);
 		return mysql_data_seek($res,$seek);
 	}
 
@@ -872,6 +877,7 @@ class t3lib_DB {
 	 * @return	string		Returns the name of the specified field index
 	 */
 	function sql_field_type($res,$pointer)	{
+		$this->debug_check_recordset($res);
 		return mysql_field_type($res,$pointer);
 	}
 
@@ -1096,6 +1102,35 @@ class t3lib_DB {
 			));
 		}
 	}
+
+	/**
+	 * Checks if recordset is valid and writes debugging inormation into devLog if not.
+	 * 
+	 * @param	resource	$res	Recordset
+	 * @return	boolean	<code>false</code> if recordset is not valid
+	 */
+	function debug_check_recordset($res) {
+		if (!$res) {
+			$trace = FALSE;
+			$msg = 'Invalid database result resource detected';
+			if (version_compare(phpversion(), '4.3.0', '>=')) {
+  				$trace = debug_backtrace();
+				array_shift($trace);
+				$cnt = count($trace);
+				for ($i=0; $i<$cnt; $i++)	{
+						// complete objects are too large for the log
+					if (isset($trace['object']))	unset($trace['object']);
+				}
+				$msg .= ': function t3lib_DB->' . $trace[0]['function'] . ' called from file ' . substr($trace[0]['file'],strlen(PATH_site)+2) . ' in line ' . $trace[0]['line'];
+			}
+			t3lib_div::sysLog($msg.'. Use a devLog extension to get more details.', 'Core/t3lib_db', 3);
+			t3lib_div::devLog($msg.'.', 'Core/t3lib_db', 3, $trace);
+
+			return FALSE;
+		}
+		return TRUE;
+	}
+
 }
 
 

@@ -82,8 +82,6 @@ require(PATH_t3lib.'config_default.php');
 if (!defined ('TYPO3_db')) 	die ('The configuration file was not included.');
 if (!$TYPO3_CONF_VARS['GFX']['image_processing'])	die ('ImageProcessing was disabled!');
 
-require_once(PATH_t3lib.'class.t3lib_db.php');		// The database library
-$TYPO3_DB = t3lib_div::makeInstance('t3lib_DB');
 
 
 
@@ -113,18 +111,19 @@ $TYPO3_DB = t3lib_div::makeInstance('t3lib_DB');
  * @subpackage t3lib
  */
 class SC_t3lib_thumbs {
-	var $include_once=array();
+	var $include_once = array();
 
 	var $outdir = 'typo3temp/';		// The output directory of temporary files in PATH_site
 	var $output = '';
 	var $sizeDefault='56x56';
 
-	var $imageList;	// Coming from $TYPO3_CONF_VARS['GFX']['imagefile_ext']
+	var $imageList;		// Coming from $TYPO3_CONF_VARS['GFX']['imagefile_ext']
 	var $input;		// Contains the absolute path to the file for which to make a thumbnail (after init())
 
 		// Internal, static: GPvar:
 	var $file;		// Holds the input filename (GET: file)
 	var $size;		// Holds the input size (GET: size)
+	var $mtime = 0;		// Last modification time of the supplied file
 
 
 	/**
@@ -137,23 +136,41 @@ class SC_t3lib_thumbs {
 		global $TYPO3_CONF_VARS;
 
 			// Setting GPvars:
-		$this->file = t3lib_div::_GP('file');
-		$this->size = t3lib_div::_GP('size');
+		$file = t3lib_div::_GP('file');
+		$size = t3lib_div::_GP('size');
+		$md5sum = t3lib_div::_GP('md5sum');
 
 			// Image extension list is set:
 		$this->imageList = $TYPO3_CONF_VARS['GFX']['imagefile_ext'];			// valid extensions. OBS: No spaces in the list, all lowercase...
 
-			// if the filereference $this->file is relative, we correct the path
-		if (substr($this->file,0,3)=='../')	{
-			$this->input = PATH_site.substr($this->file,3);
-		} else {
-			$this->input = $this->file;
+			// If the filereference $this->file is relative, we correct the path
+		if (substr($file,0,3)=='../')	{
+			$file = PATH_site.substr($file,3);
 		}
 
 			// Now the path is absolute.
 			// Checking for backpath and double slashes + the thumbnail can be made from files which are in the PATH_site OR the lockRootPath only!
-		if (!t3lib_div::isAllowedAbsPath($this->input))	{
-			$this->input='';
+		if (t3lib_div::isAllowedAbsPath($file))	{
+			$mtime = filemtime($file);
+		}
+
+			// Do an MD5 check to prevent viewing of images without permission
+		$OK = FALSE;
+		if ($mtime)	{
+				// Always use the absolute path for this check!
+			$check = basename($file).':'.$mtime.':'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
+			$md5_real = t3lib_div::shortMD5($check);
+			if (!strcmp($md5_real,$md5sum))	{
+				$OK = TRUE;
+			}
+		}
+
+		if ($OK)	{
+			$this->input = $file;
+			$this->size = $size;
+			$this->mtime = $mtime;
+		} else {
+			die('Error: Image does not exist and/or MD5 checksum did not match.');
 		}
 	}
 
@@ -184,7 +201,7 @@ class SC_t3lib_thumbs {
 			}
 
 				// ... so we passed the extension test meaning that we are going to make a thumbnail here:
-			$this->size = $this->size ? $this->size : $this->sizeDefault;	// default
+			if (!$this->size) 	$this->size = $this->sizeDefault;	// default
 
 				// I added extra check, so that the size input option could not be fooled to pass other values. That means the value is exploded, evaluated to an integer and the imploded to [value]x[value]. Furthermore you can specify: size=340 and it'll be translated to 340x340.
 			$sizeParts = explode('x', $this->size.'x'.$this->size);	// explodes the input size (and if no "x" is found this will add size again so it is the same for both dimensions)
@@ -193,7 +210,6 @@ class SC_t3lib_thumbs {
 			$sizeMax = max($sizeParts);	// Getting max value
 
 				// Init
-			$mtime = filemtime($this->input);
 			$outpath = PATH_site.$this->outdir;
 
 				// Should be - ? 'png' : 'gif' - , but doesn't work (ImageMagick prob.?)
@@ -201,7 +217,7 @@ class SC_t3lib_thumbs {
 			$thmMode = t3lib_div::intInRange($TYPO3_CONF_VARS['GFX']['thumbnails_png'],0);
 			$outext = ($ext!='jpg' || ($thmMode & 2)) ? ($thmMode & 1 ? 'png' : 'gif') : 'jpg';
 
-			$outfile = 'tmb_'.substr(md5($this->input.$mtime.$this->size),0,10).'.'.$outext;
+			$outfile = 'tmb_'.substr(md5($this->input.$this->mtime.$this->size),0,10).'.'.$outext;
 			$this->output = $outpath.$outfile;
 
 			if ($TYPO3_CONF_VARS['GFX']['im'])	{
@@ -226,7 +242,7 @@ class SC_t3lib_thumbs {
 				}
 					// The thumbnail is read and output to the browser
 				if($fd = @fopen($this->output,'rb'))	{
-					Header('Content-type: image/'.$outext);
+					header('Content-type: image/'.$outext);
 					while (!feof($fd))	{
 						echo fread($fd, 10000);
 					}
@@ -273,30 +289,30 @@ class SC_t3lib_thumbs {
 
 			// Creates the basis for the error image
 		if ($TYPO3_CONF_VARS['GFX']['gdlib_png'])	{
-			Header('Content-type: image/png');
+			header('Content-type: image/png');
 			$im = imagecreatefrompng(PATH_typo3.'gfx/notfound_thumb.png');
 		} else {
-			Header('Content-type: image/gif');
+			header('Content-type: image/gif');
 			$im = imagecreatefromgif(PATH_typo3.'gfx/notfound_thumb.gif');
 		}
 			// Sets background color and print color.
-	    $white = ImageColorAllocate($im, 0,0,0);
-	    $black = ImageColorAllocate($im, 255,255,0);
+		$white = imageColorAllocate($im, 0,0,0);
+		$black = imageColorAllocate($im, 255,255,0);
 
 			// Prints the text strings with the build-in font functions of GD
 		$x=0;
 		$font=0;
 		if ($l1)	{
 			imagefilledrectangle($im, $x, 9, 56, 16, $black);
-	    	ImageString($im,$font,$x,9,$l1,$white);
+			imageString($im,$font,$x,9,$l1,$white);
 		}
 		if ($l2)	{
 			imagefilledrectangle($im, $x, 19, 56, 26, $black);
-	    	ImageString($im,$font,$x,19,$l2,$white);
+			imageString($im,$font,$x,19,$l2,$white);
 		}
 		if ($l3)	{
 			imagefilledrectangle($im, $x, 29, 56, 36, $black);
-	    	ImageString($im,$font,$x,29,substr($l3,-14),$white);
+			imageString($im,$font,$x,29,substr($l3,-14),$white);
 		}
 
 			// Outputting the image stream and exit
@@ -324,9 +340,9 @@ class SC_t3lib_thumbs {
 		if (!$TYPO3_CONF_VARS['GFX']['gdlib'])	die('');
 
 			// Create image and set background color to white.
-		$im = ImageCreate(250,76);
-	    $white = ImageColorAllocate($im, 255,255,255);
-	    $col = ImageColorAllocate($im, 0,0,0);
+		$im = imageCreate(250,76);
+		$white = imageColorAllocate($im, 255,255,255);
+		$col = imageColorAllocate($im, 0,0,0);
 
 			// The test string and offset in x-axis.
 		$string = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz∆Êÿ¯≈Âƒ‰÷ˆ‹¸ﬂ';
@@ -348,10 +364,10 @@ class SC_t3lib_thumbs {
 
 			// Output PNG or GIF based on $TYPO3_CONF_VARS['GFX']['gdlib_png']
 		if ($TYPO3_CONF_VARS['GFX']['gdlib_png'])	{
-			Header('Content-type: image/png');
+			header('Content-type: image/png');
 			imagePng($im);
 		} else {
-			Header('Content-type: image/gif');
+			header('Content-type: image/gif');
 			imageGif($im);
 		}
 		imagedestroy($im);
