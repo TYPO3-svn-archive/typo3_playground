@@ -549,7 +549,7 @@ var inline = {
 		var formObj = document.getElementsByName(objectName);
 
 		if (this.data.config && this.data.config[objectPrefix] && formObj.length) {
-			var recordCount = formObj[0].value.split(',').length;
+			var recordCount = formObj[0].value ? formObj[0].value.split(',').length : 0;
 			if (recordCount >= this.data.config[objectPrefix].max) isBelowMax = false;
 		}
 		if (isBelowMax && this.data.unique && this.data.unique[objectPrefix]) {
