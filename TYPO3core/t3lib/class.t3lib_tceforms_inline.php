@@ -688,9 +688,9 @@ class t3lib_TCEforms_inline {
 	 */
 	function addJavaScript() {
 		$jsCode = array(
-			'<script src="prototype.js" type="text/javascript"></script>',
-			'<script src="scriptaculous/scriptaculous.js" type="text/javascript"></script>',
-			'<script src="../t3lib/jsfunc.inline.js" type="text/javascript"></script>',
+		//	'<script src="'.$this->backPath.'prototype.js" type="text/javascript"></script>',
+			'<script src="'.$this->backPath.'scriptaculous/scriptaculous.js" type="text/javascript"></script>',
+			'<script src="'.$this->backPath.'../t3lib/jsfunc.inline.js" type="text/javascript"></script>',
 		);
 
 		return implode("\n", $jsCode);
@@ -787,9 +787,8 @@ class t3lib_TCEforms_inline {
 			);
 		}
 
-			// if a new level of child records (child of children) was created, send the JSON array
-		if (count($this->inlineData))
-			$jsonArray['scriptCall'][] = 'inline.addToDataArray('.$this->getJSON($this->inlineData).');';
+			// add the JavaScript data that would have been added at the bottom of a regular TCEforms calls
+		$jsonArray['scriptCall'][] = $this->fObj->JSbottom($this->fObj->formName, true);
 			// if script.aculo.us Sortable is used, update the Observer to know the the record
 		if ($config['appearance']['useSortable'])
 			$jsonArray['scriptCall'][] = "inline.createDragAndDropSorting('".$this->inlineNames['object']."_records');";

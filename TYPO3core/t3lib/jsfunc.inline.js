@@ -29,7 +29,7 @@
 var inline = {
 	prependFormFieldNames: 'data',
 	noTitleString: '[No title]',
-	data: [],
+	data: {},
 	
 	addToDataArray: function(object) {
 		for (var i in object) {
@@ -447,6 +447,11 @@ var inline = {
 		} else {
 			document.getElementsByName('cmd'+shortName+'[delete]')[0].disabled = false;
 			new Effect.Fade(objectId+'_div');
+		}
+		
+			// remove from TBE_EDITOR (required fields, required range, etc.):
+		if (TBE_EDITOR && TBE_EDITOR.removeElement) {
+			TBE_EDITOR.removeElement(this.prependFormFieldNames+shortName);
 		}
 
 		var recordCount = this.memorizeRemoveRecord(
