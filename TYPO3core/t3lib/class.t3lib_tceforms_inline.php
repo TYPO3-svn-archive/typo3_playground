@@ -1571,5 +1571,16 @@ class t3lib_TCEforms_inline {
 			$GLOBALS['BE_USER']->writeUC();
 		}
 	}
+	
+	
+	/**
+	 * Returns the the margin in pixels, that is used for each new inline level.
+	 *
+	 * @return	integer		A pixel value for the margin of each new inline level.
+	 */
+	function getLevelMargin() {
+		$margin = $this->inlineStyles['margin-right'];
+		return $margin;
+	}
  }
 ?>
