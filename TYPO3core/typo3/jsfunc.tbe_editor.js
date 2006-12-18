@@ -108,7 +108,15 @@ var TBE_EDITOR = {
 					TBE_EDITOR.setImage('req_'+elementData.requiredImg, TBE_EDITOR.images.req);
 				}
 			} else if (type == 'range' && elementData.range) {
-				if (!TBE_EDITOR.checkRange(document[TBE_EDITOR.formname][elementName+'_list'], elementData.range[0], elementData.range[1])) {
+				var formObj = document[TBE_EDITOR.formname][elementName+'_list'];
+				if (!formObj) {
+						// special treatment for IRRE fields:
+					var tempObj = document[TBE_EDITOR.formname][elementName];
+					if (tempObj && Element.hasClassName(tempObj, 'inlineRecord')) {
+						formObj = tempObj.value ? tempObj.value.split(',') : [];
+					}
+				}
+				if (!TBE_EDITOR.checkRange(formObj, elementData.range[0], elementData.range[1])) {
 					result = 0;
 					TBE_EDITOR.setImage('req_'+elementData.rangeImg, TBE_EDITOR.images.req);
 				}

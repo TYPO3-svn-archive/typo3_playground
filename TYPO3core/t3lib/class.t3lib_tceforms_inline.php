@@ -139,11 +139,13 @@ class t3lib_TCEforms_inline {
 		$config = $PA['fieldConf']['config'];
 		$foreign_table = $config['foreign_table'];
 
-		// @TODO: Minitems müssen unterstüzt werden und intInRange mit maxitems immer mindestens minItems
 		$minitems = t3lib_div::intInRange($config['minitems'],0);
 		$maxitems = t3lib_div::intInRange($config['maxitems'],0);
 		if (!$maxitems)	$maxitems=100000;
 
+			// Register the required number of elements:
+		$this->fObj->requiredElements[$PA['itemFormElName']] = array($minitems,$maxitems,'imgName'=>$table.'_'.$row['uid'].'_'.$field);
+		
 			// remember the page id (pid of record) where inline editing started first
 			// we need that pid for ajax calls, so that they would know where the action takes place on the page structure
 		if (!isset($this->inlineFirstPid)) {
@@ -217,9 +219,9 @@ class t3lib_TCEforms_inline {
 		$item .= '<div id="'.$nameObject.'">';
 
 			// define how to show the "Create new record" link - if there are more than maxitems, hide it
-		if (count($recordList) >= $maxitems || ($uniqueMax > 0 && count($recordList) >= $uniqueMax))
+		if (count($recordList) >= $maxitems || ($uniqueMax > 0 && count($recordList) >= $uniqueMax)) {
 			$config['inline']['inlineNewButtonStyle'] = 'display: none;';
-
+		}
 			// add the "Create new record" link before all child records
 		if ($config['appearance']['newRecordLinkPosition'] != 'bottom') {
 			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
@@ -244,7 +246,7 @@ class t3lib_TCEforms_inline {
 		if (count($relationList) > 1 && $config['appearance']['useSortable'])
 			$this->addJavaScriptSortable($nameObject.'_records');
 			// publish the uids of the child records in the given order to the browser
-		$item .= '<input type="hidden" name="'.$nameForm.'" value="'.implode(',', $relationList).'" />';
+		$item .= '<input type="hidden" name="'.$nameForm.'" value="'.implode(',', $relationList).'" class="inlineRecord" />';
 			// close the wrap for all inline fields (container)
 		$item .= '</div>';
 
@@ -462,7 +464,8 @@ class t3lib_TCEforms_inline {
 					)	{
 					if ($showNewRecLink)	{
 						$onClick = "return inline.createNewRecord('".$nameObjectFt."','".$rec['uid']."')";
-						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="inlineNewButton"'.$config['inline']['inlineNewButtonStyle'].'>'.
+						if ($config['inline']['inlineNewButtonStyle']) $style = ' style="'.$config['inline']['inlineNewButtonStyle'].'"';
+						$cells[]='<a href="#" onclick="'.htmlspecialchars($onClick).'" class="inlineNewButton"'.$style.'>'.
 								'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/new_'.($isPagesTable?'page':'el').'.gif','width="'.($isPagesTable?13:11).'" height="12"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_mod_web_list.xml:new'.($isPagesTable?'Page':'Record'),1).'" alt="" />'.
 								'</a>';
 					}
@@ -656,11 +659,11 @@ class t3lib_TCEforms_inline {
 	 * Creates a link/button to create new records
 	 *
 	 * @param	string		$objectPrefix: The "path" to the child record to create (e.g. '[parten_table][parent_uid][parent_field][child_table]')
-	 * @param	string		$style: If a style should be added to the link (e.g. 'display: none;')
+	 * @param	array		$conf: TCA configuration of the parent(!) field
 	 * @return	string		The HTML code for the new record link
 	 */
 	function getNewRecordLink($objectPrefix, $conf = array()) {
-		if ($conf['inline']['inlineNewButtonStyle']) $style = ' style="'.$style.'"';
+		if ($conf['inline']['inlineNewButtonStyle']) $style = ' style="'.$conf['inline']['inlineNewButtonStyle'].'"';
 
 		$onClick = "return inline.createNewRecord('$objectPrefix')";
 		$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createnew',1);

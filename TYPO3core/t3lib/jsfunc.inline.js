@@ -339,6 +339,8 @@ var inline = {
 			// if we reached the maximum off possible records after this action, hide the new buttons
 		if (!this.isBelowMax(objectPrefix))
 			this.hideElementsWithClassName('inlineNewButton',  this.parseFormElementName('full', objectPrefix, 0 , 1));
+		
+		if (TBE_EDITOR) TBE_EDITOR.fieldChanged_fName(objectName, formObj);
 	},
 	
 	memorizeRemoveRecord: function(objectName, removeUid) {
@@ -349,6 +351,7 @@ var inline = {
 				parts = formObj[0].value.split(',');
 				parts = parts.without(removeUid);
 				formObj[0].value = parts.join(',');
+				if (TBE_EDITOR) TBE_EDITOR.fieldChanged_fName(objectName, formObj);
 				return parts.length;
 			}
 		}
