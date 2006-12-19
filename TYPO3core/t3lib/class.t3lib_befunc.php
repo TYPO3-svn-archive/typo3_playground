@@ -1851,8 +1851,10 @@ class t3lib_BEfunc	{
 
 				// If the current result is empty, set it to '[No title]' (localized) and prepare for output if requested
 			if ($prep || $forceResult)	{
-				if (!strcmp(trim($t),''))	$t='['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']';
-				if ($prep)	$t = '<em>'.htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen'])).'</em>';				
+				if ($prep)	$t = htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen']));
+				if (!strcmp(trim($t),'')) {
+					$t='<em>['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']</em>';
+				}
 			}
 
 			return $t;
