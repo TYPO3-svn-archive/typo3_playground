@@ -63,7 +63,7 @@ var TBE_EDITOR = {
 	prependFormFieldNamesUENC: 'data',
 	prependFormFieldNamesCnt: 0,
 	
-	isPalettedoc: '',
+	isPalettedoc: null,
 	doSaveFieldName: 0,
 	
 	labels: {},
@@ -228,6 +228,7 @@ var TBE_EDITOR = {
 		if (TBE_EDITOR.isPalettedoc) { TBE_EDITOR.setOriginalFormFieldValue(theField) };
 	},
 	setOriginalFormFieldValue: function(theField) {
+		alert(TBE_EDITOR.isPalettedoc);
 		if (TBE_EDITOR.isPalettedoc && (TBE_EDITOR.isPalettedoc).document[TBE_EDITOR.formname] && (TBE_EDITOR.isPalettedoc).document[TBE_EDITOR.formname][theField]) {
 			(TBE_EDITOR.isPalettedoc).document[TBE_EDITOR.formname][theField].value = document[TBE_EDITOR.formname][theField].value;
 		}
@@ -408,6 +409,7 @@ var TBE_EDITOR_palUrl = TBE_EDITOR.palUrl;
 var TBE_EDITOR_curSelected = TBE_EDITOR.curSelected;
 var TBE_EDITOR_rawurlencode = TBE_EDITOR.rawurlencode;
 var TBE_EDITOR_str_replace = TBE_EDITOR.str_replace;
+var TBE_EDITOR_isChanged = TBE_EDITOR.isChanged;
 
 
 var typo3 = {
