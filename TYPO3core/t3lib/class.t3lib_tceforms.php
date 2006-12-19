@@ -4600,7 +4600,7 @@ class t3lib_TCEforms	{
 				$jsFile[] = '<script src="'.$this->backPath.'../t3lib/jsfunc.inline.js" type="text/javascript"></script>';
 				$out .= '
 				inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
-				inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
+				inline.setNoTitleString("'.addslashes(t3lib_BEfunc::getNoRecordTitle(true)).'");
 				';
 			}
 
