@@ -27,6 +27,8 @@
 /**
  * The Inline-Relational-Record-Editing (IRRE) functions as part of the TCEforms.
  *
+ * $Id: $
+ *
  * @author	Oliver Hader <oh@inpublica.de>
  */
 /**
@@ -34,54 +36,58 @@
  *
  *
  *
- *   88: class t3lib_TCEforms_inline
- *  109:     function init(&$tceForms)
- *  127:     function getSingleField_typeInline($table,$field,$row,&$PA)
+ *   94: class t3lib_TCEforms_inline
+ *  117:     function init(&$tceForms)
+ *  137:     function getSingleField_typeInline($table,$field,$row,&$PA)
  *
  *              SECTION: Regular rendering of forms, fields, etc.
- *  263:     function renderForeignRecord($parentUid, $rec, $config = array())
- *  319:     function renderForeignRecordHeader($parentUid, $foreign_table,$rec,$config = array())
- *  375:     function renderForeignRecordHeaderControl($table,$row,$config = array())
- *  506:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
- *  560:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
- *  627:     function addJavaScript()
- *  643:     function addJavaScriptSortable($objectId)
+ *  286:     function renderForeignRecord($parentUid, $rec, $config = array())
+ *  352:     function renderForeignRecordHeader($parentUid, $foreign_table, $rec, $config = array())
+ *  424:     function renderForeignRecordHeaderControl($parentUid, $foreign_table, $rec, $config = array())
+ *  550:     function renderCombinationTable(&$rec, $appendFormFieldNames, $config = array())
+ *  604:     function renderPossibleRecordsSelector($selItems, $conf, $uniqueIds=array())
+ *  671:     function getNewRecordLink($objectPrefix, $conf = array())
+ *  697:     function addJavaScriptSortable($objectId)
  *
  *              SECTION: Handling of AJAX calls
- *  665:     function createNewRecord($domObjectId, $foreignUid = 0)
- *  755:     function getJSON($jsonArray)
- *  770:     function getNewRecordLink($objectPrefix, $conf = array())
+ *  719:     function createNewRecord($domObjectId, $foreignUid = 0)
+ *  807:     function setExpandedCollapsedState($domObjectId, $expand, $collapse)
  *
  *              SECTION: Get data from database and handle relations
- *  807:     function getRelatedRecords($table,$field,$row,&$PA,$config)
- *  839:     function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
- *  885:     function getUniqueIds($records, $conf=array())
- *  905:     function getRecord($pid, $table, $uid, $cmd='')
- *  929:     function getNewRecord($pid, $table)
+ *  858:     function getRelatedRecords($table,$field,$row,&$PA,$config)
+ *  890:     function getPossibleRecords($table,$field,$row,$conf,$checkForConfField='foreign_selector')
+ *  938:     function getUniqueIds($records, $conf=array())
+ *  958:     function getRecord($pid, $table, $uid, $cmd='')
+ *  982:     function getNewRecord($pid, $table)
  *
  *              SECTION: Structure stack for handling inline objects/levels
- *  951:     function pushStructure($table, $uid, $field = '', $config = array())
- *  967:     function popStructure()
- *  984:     function updateStructureNames()
- * 1000:     function getStructureItemName($levelData)
- * 1015:     function getStructureLevel($level)
- * 1032:     function getStructurePath($structureDepth = -1)
- * 1057:     function parseStructureString($string, $loadConfig = false)
+ * 1004:     function pushStructure($table, $uid, $field = '', $config = array())
+ * 1020:     function popStructure()
+ * 1037:     function updateStructureNames()
+ * 1059:     function getStructureItemName($levelData)
+ * 1077:     function getStructureLevel($level)
+ * 1094:     function getStructurePath($structureDepth = -1)
+ * 1119:     function parseStructureString($string, $loadConfig = false)
  *
  *              SECTION: Helper functions
- * 1098:     function checkConfiguration(&$config)
- * 1123:     function checkAccess($cmd, $table, $theUid)
- * 1185:     function compareStructureConfiguration($compare)
- * 1199:     function normalizeUid($string)
- * 1213:     function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
- * 1242:     function isInlineChildAndLabelField($table, $field)
- * 1258:     function getStructureDepth()
- * 1295:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
- * 1349:     function isAssociativeArray($object)
- * 1364:     function getPossibleRecordsFlat($possibleRecords)
- * 1383:     function skipField($table, $field, $row, $config)
+ * 1158:     function checkConfiguration(&$config)
+ * 1183:     function checkAccess($cmd, $table, $theUid)
+ * 1243:     function compareStructureConfiguration($compare)
+ * 1257:     function normalizeUid($string)
+ * 1271:     function wrapFormsSection($section, $styleAttrs = array(), $tableAttrs = array())
+ * 1300:     function isInlineChildAndLabelField($table, $field)
+ * 1316:     function getStructureDepth()
+ * 1353:     function arrayCompareComplex($subjectArray, $searchArray, $type = '')
+ * 1407:     function isAssociativeArray($object)
+ * 1422:     function removeFromArray($needle, $haystack, $strict=null)
+ * 1437:     function getPossibleRecordsFlat($possibleRecords)
+ * 1456:     function skipField($table, $field, $row, $config)
+ * 1512:     function getJSON($jsonArray)
+ * 1528:     function getExpandedCollapsedState($table, $uid)
+ * 1543:     function updateInlineView(&$uc, &$tce)
+ * 1574:     function getLevelMargin()
  *
- * TOTAL FUNCTIONS: 35
+ * TOTAL FUNCTIONS: 39
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -113,7 +119,7 @@ class t3lib_TCEforms_inline {
 		$this->backPath =& $tceForms->backPath;
 		$this->prependFormFieldNames =& $this->fObj->prependFormFieldNames;
 		$this->prependCmdFieldNames =& $this->fObj->prependCmdFieldNames;
-		
+
 		$this->inlineStyles['margin-right'] = '5';
 	}
 
@@ -145,7 +151,7 @@ class t3lib_TCEforms_inline {
 
 			// Register the required number of elements:
 		$this->fObj->requiredElements[$PA['itemFormElName']] = array($minitems,$maxitems,'imgName'=>$table.'_'.$row['uid'].'_'.$field);
-		
+
 			// remember the page id (pid of record) where inline editing started first
 			// we need that pid for ajax calls, so that they would know where the action takes place on the page structure
 		if (!isset($this->inlineFirstPid)) {
@@ -319,7 +325,7 @@ class t3lib_TCEforms_inline {
 				// set additional field for processing for saving
 			$fields .= '<input type="hidden" name="'.$this->prependCmdFieldNames.$appendFormFieldNames.'[delete]" value="1" disabled="disabled" />';
 		}
-		
+
 			// if this record should be shown collapsed
 		if (!$isExpanded) $appearanceStyleFields = ' style="display: none;"';
 
@@ -353,9 +359,9 @@ class t3lib_TCEforms_inline {
 		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
 		$hasForeignLabel = !$isOnSymmetricSide && $config['foreign_label'] ? true : false;
 		$hasSymmetricLabel = $isOnSymmetricSide && $config['symmetric_label'] ? true : false;
-		
+
 			// Get the record title/label for a record:
-			
+
 			// render using a self-defined user function
 		if ($GLOBALS['TCA'][$foreign_table]['ctrl']['label_userFunc']) {
 			$params = array(
@@ -367,14 +373,14 @@ class t3lib_TCEforms_inline {
 			$null = null;	// callUserFunction requires a third parameter, but we don't want to give $this as reference!
 			t3lib_div::callUserFunction($GLOBALS['TCA'][$foreign_table]['ctrl']['label_userFunc'], $params, $null);
 			$recTitle = $params['title'];
-			
+
 			// render the special alternative title
 		} elseif ($hasForeignLabel || $hasSymmetricLabel) {
 			$titleCol = $hasForeignLabel ? $config['foreign_label'] : $config['symmetric_label'];
 			$recTitle = t3lib_BEfunc::getProcessedValueExtra($foreign_table, $titleCol, $rec[$titleCol]);
 			$recTitle = t3lib_BEfunc::getRecordTitlePrep($recTitle);
 			$recTitle = $this->fObj->noTitle($recTitle);
-			
+
 			// render the standard
 		} else {
 			$recTitle = t3lib_BEfunc::getRecordTitle($foreign_table, $rec, true);
@@ -422,11 +428,11 @@ class t3lib_TCEforms_inline {
 
 		$tcaTableCtrl =& $GLOBALS['TCA'][$foreign_table]['ctrl'];
 		$tcaTableCols =& $GLOBALS['TCA'][$foreign_table]['columns'];
-		
+
 		$isPagesTable = $foreign_table == 'pages' ? true : false;
 		$isOnSymmetricSide = t3lib_loadDBGroup::isOnSymmetricSide($parentUid, $config, $rec);
 		$enableManualSorting = $tcaTableCtrl['sortby'] || $config['MM'] || (!$isOnSymmetricSide && $config['foreign_sortby']) || ($isOnSymmetricSide && $config['symmetric_sortby']) ? true : false;
-		
+
 		$nameObjectFt = $this->inlineNames['object'].'['.$foreign_table.']';
 		$nameObjectFtId = $nameObjectFt.'['.$rec['uid'].']';
 
@@ -653,7 +659,7 @@ class t3lib_TCEforms_inline {
 
 		return $itemsToSelect;
 	}
-	
+
 
 	/**
 	 * Creates a link/button to create new records
@@ -680,25 +686,7 @@ class t3lib_TCEforms_inline {
 				</div>';
 		return $out;
 	}
-	
-	
-	/**
-	 * Get the <script type="text/javascript" src="..."> tags of:
-	 * - prototype.js
-	 * - script.acolo.us
-	 *
-	 * @return	string		The HTML code of the <script type="text/javascript" src="..."> tags
-	 */
-	function addJavaScript() {
-		$jsCode = array(
-		//	'<script src="'.$this->backPath.'prototype.js" type="text/javascript"></script>',
-			'<script src="'.$this->backPath.'scriptaculous/scriptaculous.js" type="text/javascript"></script>',
-			'<script src="'.$this->backPath.'../t3lib/jsfunc.inline.js" type="text/javascript"></script>',
-		);
 
-		return implode("\n", $jsCode);
-	}
-	
 
 	/**
 	 * Add Sortable functionality using script.acolo.us "Sortable".
@@ -813,6 +801,7 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	string		$domObjectId: The calling object in hierarchy, that requested a new record.
 	 * @param	integer		$expanded: Whether this record is expanded or collapsed.
+	 * @param	[type]		$collapse: ...
 	 * @return	void
 	 */
 	function setExpandedCollapsedState($domObjectId, $expand, $collapse) {
@@ -827,10 +816,10 @@ class t3lib_TCEforms_inline {
 		if (t3lib_div::testInt($top['uid'])) {
 			$inlineView = unserialize($GLOBALS['BE_USER']->uc['inlineView']);
 			$inlineViewCurrent =& $inlineView[$top['table']][$top['uid']];
-			
+
 			$expandUid = t3lib_div::trimExplode(',', $expand);
 			$collapseUid = t3lib_div::trimExplode(',', $collapse);
-			
+
 				// set records to be expanded
 			foreach ($expandUid as $uid) {
 				$inlineViewCurrent[$current['table']][] = $uid;
@@ -839,7 +828,7 @@ class t3lib_TCEforms_inline {
 			foreach ($collapseUid as $uid) {
 				$inlineViewCurrent[$current['table']] = $this->removeFromArray($uid, $inlineViewCurrent[$current['table']]);
 			}
-			
+
 				// save states back to database
 			if (is_array($inlineViewCurrent[$current['table']])) {
 				$GLOBALS['BE_USER']->uc['inlineView'] = serialize($inlineView);
@@ -847,7 +836,7 @@ class t3lib_TCEforms_inline {
 			}
 		}
 	}
-	
+
 
 	/*******************************************************
 	 *
@@ -1420,14 +1409,15 @@ class t3lib_TCEforms_inline {
 			? true
 			: false;
 	}
-	
+
 
 	/**
 	 * Remove an element from an array.
 	 *
-	 * @param	mixed	$needle: The element to be removed.
-	 * @param	array	$haystack: The array the element should be removed from.
-	 * @return	mixed	$strict: Search elements strictly.
+	 * @param	mixed		$needle: The element to be removed.
+	 * @param	array		$haystack: The array the element should be removed from.
+	 * @param	[type]		$strict: ...
+	 * @return	mixed		$strict: Search elements strictly.
 	 */
 	function removeFromArray($needle, $haystack, $strict=null) {
 		$pos = array_search($needle, $haystack, $strict);
@@ -1510,8 +1500,8 @@ class t3lib_TCEforms_inline {
 
 		return $skipThisField;
 	}
-	
-	
+
+
 	/**
 	 * Creates recursively a JSON literal from a mulidimensional associative array.
 	 * Uses Services_JSON (http://mike.teczno.com/JSON/doc/)
@@ -1527,7 +1517,7 @@ class t3lib_TCEforms_inline {
 		return $GLOBALS['JSON']->encode($jsonArray);
 	}
 
-	
+
 	/**
 	 * Checks if a uid of a child table is in the inline view settings.
 	 *
@@ -1541,8 +1531,8 @@ class t3lib_TCEforms_inline {
 		}
 		return false;
 	}
-	
-	
+
+
 	/**
 	 * Update expanded/collapsed states on new inline records if any.
 	 *
@@ -1553,7 +1543,7 @@ class t3lib_TCEforms_inline {
 	function updateInlineView(&$uc, &$tce) {
 		if (is_array($uc) && $uc['inlineView']) {
 			$inlineView = unserialize($GLOBALS['BE_USER']->uc['inlineView']);
-			
+
 			foreach ($uc['inlineView'] as $topTable => $topRecords) {
 				foreach ($topRecords as $topUid => $childElements) {
 					foreach ($childElements as $childTable => $childRecords) {
@@ -1569,13 +1559,13 @@ class t3lib_TCEforms_inline {
 					}
 				}
 			}
-			
+
 			$GLOBALS['BE_USER']->uc['inlineView'] = serialize($inlineView);
 			$GLOBALS['BE_USER']->writeUC();
 		}
 	}
-	
-	
+
+
 	/**
 	 * Returns the the margin in pixels, that is used for each new inline level.
 	 *

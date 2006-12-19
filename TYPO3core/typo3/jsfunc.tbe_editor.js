@@ -1,5 +1,40 @@
+/***************************************************************
+*  Copyright notice
+*
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
+*  All rights reserved
+*
+*  This script is part of the TYPO3 project. The TYPO3 project is
+*  free software; you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation; either version 2 of the License, or
+*  (at your option) any later version.
+*
+*  The GNU General Public License can be found at
+*  http://www.gnu.org/copyleft/gpl.html.
+*  A copy is found in the textfile GPL.txt and important notices to the license
+*  from the author is found in LICENSE.txt distributed with these scripts.
+*
+*
+*  This script is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  This copyright notice MUST APPEAR in all copies of the script!
+***************************************************************/
+/**
+ * Contains JavaScript for TYPO3 Core Form generator - AKA "TCEforms"
+ *
+ * $Id: $
+ *
+ * @author	Kasper Skaarhoj <kasperYYYY@typo3.com>
+ * @coauthor	Oliver Hader <oh@inpublica.de>
+ */
+
+
 var TBE_EDITOR = {
-	/*
+	/* Example:
 		elements: {
 			'data[table][uid]': {
 				'field': {
@@ -62,7 +97,6 @@ var TBE_EDITOR = {
 			}
 		}
 		
-		// alert(result);
 		return result;
 	},
 	checkElements: function(type, recentUpdated, record, field) {
@@ -129,7 +163,6 @@ var TBE_EDITOR = {
 		TBE_EDITOR.actionChecks[type].push(checks);
 	},
 	
-	
 	// Regular TCEforms JSbottom scripts:
 	loginRefreshed: function() {
 		var date = new Date();
@@ -147,7 +180,6 @@ var TBE_EDITOR = {
 		document[TBE_EDITOR.formname][theField].value = RTEcontent;
 		alert(document[TBE_EDITOR.formname][theField].value);
 	},
-
 	fieldChanged_fName: function(fName,el) {
 		var idx=2+TBE_EDITOR.prependFormFieldNamesCnt;
 		var table = TBE_EDITOR.split(fName, "[", idx);
@@ -209,7 +241,6 @@ var TBE_EDITOR = {
 	checkAndDoSubmit: function(sendAlert) {
 		if (TBE_EDITOR.checkSubmit(sendAlert)) { TBE_EDITOR.submitForm(); }
 	},
-
 	/**
 	 * Checks if the form can be submitted according to any possible restrains like required values, item numbers etc.
 	 * Returns true if the form can be submitted, otherwise false (and might issue an alert message, if "sendAlert" is 1)
@@ -239,13 +270,11 @@ var TBE_EDITOR = {
 				OK = 1;
 			}
 		}
-
 		// $reqLinesCheck
 		if (!TBE_EDITOR.checkElements('required', false)) { OK = 0; }
-
 		// $reqRangeCheck
 		if (!TBE_EDITOR.checkElements('range', false)) { OK = 0; }
-		
+				
 		if (OK || sendAlert==-1) {
 			return true;
 		} else {

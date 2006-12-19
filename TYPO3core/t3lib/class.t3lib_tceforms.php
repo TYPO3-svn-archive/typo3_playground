@@ -4559,7 +4559,6 @@ class t3lib_TCEforms	{
 	 * @return	string		A section with JavaScript - if $update is false, embedded in <script></script>
 	 */
 	function JSbottom($formname='forms[0]', $update = false)	{
-		$jsCode = array();
 		$jsFile = array();
 		$elements = array();
 
@@ -4590,63 +4589,75 @@ class t3lib_TCEforms	{
 			if ($this->loadMD5_JS) {
 				$jsFile[] =	'<script type="text/javascript" src="'.$this->backPath.'md5.js"></script>';
 			}
+
 			$jsFile[] = '<script type="text/javascript" src="'.$this->backPath.'prototype.js"></script>';
 			$jsFile[] =	'<script type="text/javascript" src="'.$this->backPath.'../t3lib/jsfunc.evalfield.js"></script>';
 			$jsFile[] =	'<script type="text/javascript" src="'.$this->backPath.'jsfunc.tbe_editor.js"></script>';
-			$jsFile[] = $this->inline->addJavaScript();
 
-			$jsCode[] = 'inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");';
-			$jsCode[] =	'inline.setNoTitleString("'.addslashes($this->noTitle('')).'");';
-			
-			$jsCode[] = 'TBE_EDITOR.images.req.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/required_h.gif','',1).'";';
-			$jsCode[] = 'TBE_EDITOR.images.cm.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/content_client.gif','',1).'";';
-			$jsCode[] = 'TBE_EDITOR.images.sel.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/content_selected.gif','',1).'";';
-			$jsCode[] = 'TBE_EDITOR.images.clear.src = "'.$this->backPath.'clear.gif";';
-			
-			$jsCode[] = 'TBE_EDITOR.auth_timeout_field = '.intval($GLOBALS['BE_USER']->auth_timeout_field).';';
-			$jsCode[] = 'TBE_EDITOR.formname = "'.$formname.'";';
-			$jsCode[] = 'TBE_EDITOR.formnameUENC = "'.rawurlencode($formname).'";';
-			$jsCode[] = 'TBE_EDITOR.backPath = "'.addslashes($this->backPath).'";';
-			$jsCode[] = 'TBE_EDITOR.prependFormFieldNames = "'.$this->prependFormFieldNames.'";';
-			$jsCode[] = 'TBE_EDITOR.prependFormFieldNamesUENC = "'.rawurlencode($this->prependFormFieldNames).'";';
-			$jsCode[] = 'TBE_EDITOR.prependFormFieldNamesCnt = '.substr_count($this->prependFormFieldNames,'[').';';
-			$jsCode[] = 'TBE_EDITOR.isPalettedoc = "'.($this->isPalettedoc ? addslashes($this->isPalettedoc) : '').'";';
-			$jsCode[] = 'TBE_EDITOR.doSaveFieldName = "'.($this->doSaveFieldName ? addslashes($this->doSaveFieldName) : '').'";';
-			$jsCode[] = 'TBE_EDITOR.labels.fieldsChanged = '.$GLOBALS['LANG']->JScharCode($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.fieldsChanged')).';';
-			$jsCode[] = 'TBE_EDITOR.labels.fieldsMissing = '.$GLOBALS['LANG']->JScharCode($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.fieldsMissing')).';';
-			$jsCode[] = 'TBE_EDITOR.labels.refresh_login = '.$GLOBALS['LANG']->JScharCode($this->getLL('m_refresh_login')).';';
-			$jsCode[] = 'TBE_EDITOR.labels.onChangeAlert = '.$GLOBALS['LANG']->JScharCode($this->getLL('m_onChangeAlert')).';';
-			$jsCode[] = 'evalFunc.USmode = '.($GLOBALS['TYPO3_CONF_VARS']['SYS']['USdateFormat']?'1':'0').';';
+				// if IRRE fields were processed, add the JavaScript functions:
+			if ($this->inline->inlineCount) {
+				$jsFile[] = '<script src="'.$this->backPath.'scriptaculous/scriptaculous.js" type="text/javascript"></script>';
+				$jsFile[] = '<script src="'.$this->backPath.'../t3lib/jsfunc.inline.js" type="text/javascript"></script>';
+			}
+
+			$out .= '
+			inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
+			inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
+
+			TBE_EDITOR.images.req.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/required_h.gif','',1).'";
+			TBE_EDITOR.images.cm.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/content_client.gif','',1).'";
+			TBE_EDITOR.images.sel.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/content_selected.gif','',1).'";
+			TBE_EDITOR.images.clear.src = "'.$this->backPath.'clear.gif";
+
+			TBE_EDITOR.auth_timeout_field = '.intval($GLOBALS['BE_USER']->auth_timeout_field).';
+			TBE_EDITOR.formname = "'.$formname.'";
+			TBE_EDITOR.formnameUENC = "'.rawurlencode($formname).'";
+			TBE_EDITOR.backPath = "'.addslashes($this->backPath).'";
+			TBE_EDITOR.prependFormFieldNames = "'.$this->prependFormFieldNames.'";
+			TBE_EDITOR.prependFormFieldNamesUENC = "'.rawurlencode($this->prependFormFieldNames).'";
+			TBE_EDITOR.prependFormFieldNamesCnt = '.substr_count($this->prependFormFieldNames,'[').';
+			TBE_EDITOR.isPalettedoc = "'.($this->isPalettedoc ? addslashes($this->isPalettedoc) : '').'";
+			TBE_EDITOR.doSaveFieldName = "'.($this->doSaveFieldName ? addslashes($this->doSaveFieldName) : '').'";
+			TBE_EDITOR.labels.fieldsChanged = '.$GLOBALS['LANG']->JScharCode($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.fieldsChanged')).';
+			TBE_EDITOR.labels.fieldsMissing = '.$GLOBALS['LANG']->JScharCode($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.fieldsMissing')).';
+			TBE_EDITOR.labels.refresh_login = '.$GLOBALS['LANG']->JScharCode($this->getLL('m_refresh_login')).';
+			TBE_EDITOR.labels.onChangeAlert = '.$GLOBALS['LANG']->JScharCode($this->getLL('m_onChangeAlert')).';
+			evalFunc.USmode = '.($GLOBALS['TYPO3_CONF_VARS']['SYS']['USdateFormat']?'1':'0').';
+			';
 		}
 
 			// add JS required for inline fields
 		if (count($this->inline->inlineData)) {
-			$jsCode[] =	'inline.addToDataArray('.$this->inline->getJSON($this->inline->inlineData).');';
+			$out .=	'
+			inline.addToDataArray('.$this->inline->getJSON($this->inline->inlineData).');
+			';
 		}
 			// elements which are required or have a range definition:
 		if (count($elements)) {
-			$jsCode[] = 'TBE_EDITOR.addElements('.$this->inline->getJSON($elements).');';
-			$jsCode[] = 'TBE_EDITOR.initRequired()';
+			$out .= '
+			TBE_EDITOR.addElements('.$this->inline->getJSON($elements).');
+			TBE_EDITOR.initRequired()
+			';
 		}
 			// $this->additionalJS_post:
 		if ($this->additionalJS_submit) {
 			$additionalJS_submit = implode('', $this->additionalJS_submit);
 			$additionalJS_submit = str_replace("\r", '', $additionalJS_submit);
 			$additionalJS_submit = str_replace("\n", '', $additionalJS_submit);
-			$jsCode[] = 'TBE_EDITOR.addActionChecks("submit", "'.addslashes($additionalJS_submit).'");';
+			$out .= '
+			TBE_EDITOR.addActionChecks("submit", "'.addslashes($additionalJS_submit).'");
+			';
 		}
 		
-		$jsCode[] = implode(chr(10),$this->additionalJS_post);
-		$jsCode[] = $this->extJSCODE;
-		$jsCode[] = 'TBE_EDITOR.loginRefreshed();';
+		$out .= chr(10).implode(chr(10),$this->additionalJS_post).chr(10).$this->extJSCODE;
+		$out .= '
+			TBE_EDITOR.loginRefreshed();
+		';
 		
 			// Regular direct output:
 		if (!$update) {
-			$out  = implode(chr(10), $jsFile);
-			$out .= t3lib_div::wrapJS(implode(chr(10), $jsCode));
-			// Update output (e.g. for AJAX calls):
-		} else {
-			$out  = implode(chr(10), $jsCode);
+			$spacer = chr(10).chr(9);
+			$out  = $spacer.implode($spacer, $jsFile).t3lib_div::wrapJS($out);
 		}
 
 		return $out;
@@ -4659,6 +4670,7 @@ class t3lib_TCEforms	{
 	 * @return	string		JavaScript functions/code (NOT contained in a <script>-element)
 	 */
 	function dbFileCon($formObj='document.forms[0]')	{
+			// @TODO: Export this to an own file, it is more static than dynamic JavaScript -- olly
 		$str='
 
 			// ***************
