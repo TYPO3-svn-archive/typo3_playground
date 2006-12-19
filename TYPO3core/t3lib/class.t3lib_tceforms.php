@@ -4598,12 +4598,13 @@ class t3lib_TCEforms	{
 			if ($this->inline->inlineCount) {
 				$jsFile[] = '<script src="'.$this->backPath.'scriptaculous/scriptaculous.js" type="text/javascript"></script>';
 				$jsFile[] = '<script src="'.$this->backPath.'../t3lib/jsfunc.inline.js" type="text/javascript"></script>';
+				$out .= '
+				inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
+				inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
+				';
 			}
 
 			$out .= '
-			inline.setPrependFormFieldNames("'.$this->inline->prependNaming.'");
-			inline.setNoTitleString("'.addslashes($this->noTitle('')).'");
-
 			TBE_EDITOR.images.req.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/required_h.gif','',1).'";
 			TBE_EDITOR.images.cm.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/content_client.gif','',1).'";
 			TBE_EDITOR.images.sel.src = "'.t3lib_iconWorks::skinImg($this->backPath,'gfx/content_selected.gif','',1).'";
