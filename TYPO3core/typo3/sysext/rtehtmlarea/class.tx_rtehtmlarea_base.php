@@ -32,7 +32,7 @@
  * @author	Philipp Borgmann <philipp.borgmann@gmx.de>
  * @author	Stanislas Rolland <stanislas.rolland(arobas)fructifor.ca>
  *
- * $Id: class.tx_rtehtmlarea_base.php 1881 2006-12-14 20:01:29Z ingmars $  *
+ * $Id: class.tx_rtehtmlarea_base.php 1884 2006-12-19 12:59:10Z ingmars $  *
  */
 
 require_once(PATH_t3lib.'class.t3lib_rteapi.php');
