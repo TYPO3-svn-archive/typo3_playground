@@ -29,7 +29,7 @@
 var inline = {
 	prependFormFieldNames: 'data',
 	noTitleString: '[No title]',
-	data: [],
+	data: {},
 	
 	addToDataArray: function(object) {
 		for (var i in object) {
@@ -339,6 +339,8 @@ var inline = {
 			// if we reached the maximum off possible records after this action, hide the new buttons
 		if (!this.isBelowMax(objectPrefix))
 			this.hideElementsWithClassName('inlineNewButton',  this.parseFormElementName('full', objectPrefix, 0 , 1));
+		
+		if (TBE_EDITOR) TBE_EDITOR.fieldChanged_fName(objectName, formObj);
 	},
 	
 	memorizeRemoveRecord: function(objectName, removeUid) {
@@ -349,6 +351,7 @@ var inline = {
 				parts = formObj[0].value.split(',');
 				parts = parts.without(removeUid);
 				formObj[0].value = parts.join(',');
+				if (TBE_EDITOR) TBE_EDITOR.fieldChanged_fName(objectName, formObj);
 				return parts.length;
 			}
 		}
@@ -448,6 +451,11 @@ var inline = {
 			document.getElementsByName('cmd'+shortName+'[delete]')[0].disabled = false;
 			new Effect.Fade(objectId+'_div');
 		}
+		
+			// remove from TBE_EDITOR (required fields, required range, etc.):
+		if (TBE_EDITOR && TBE_EDITOR.removeElement) {
+			TBE_EDITOR.removeElement(this.prependFormFieldNames+shortName);
+		}
 
 		var recordCount = this.memorizeRemoveRecord(
 			this.prependFormFieldNames+this.parseFormElementName('parts', objectId, 3, 2),
@@ -523,7 +531,7 @@ var inline = {
 			var value;
 			if (formObj.nodeName == 'SELECT') value = formObj.options[formObj.selectedIndex].text;
 			else value = formObj.value;
-			$(objectId+'_label').innerHTML = value != undefined ? value : this.noTitleString;
+			$(objectId+'_label').innerHTML = value.length ? value : this.noTitleString;
 		}
 		return true;
 	},
@@ -544,7 +552,7 @@ var inline = {
 		var formObj = document.getElementsByName(objectName);
 
 		if (this.data.config && this.data.config[objectPrefix] && formObj.length) {
-			var recordCount = formObj[0].value.split(',').length;
+			var recordCount = formObj[0].value ? formObj[0].value.split(',').length : 0;
 			if (recordCount >= this.data.config[objectPrefix].max) isBelowMax = false;
 		}
 		if (isBelowMax && this.data.unique && this.data.unique[objectPrefix]) {
