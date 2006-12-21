@@ -1852,7 +1852,11 @@ class t3lib_BEfunc	{
 				// If the current result is empty, set it to '[No title]' (localized) and prepare for output if requested
 			if ($prep || $forceResult)	{
 				if ($prep) {
+					$tOrig = htmlspecialchars($t);
 					$t = htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen']));
+					if ($tOrig != $t) {
+						$t = '<span title="'.$tOrig.'">'.$t.'</span>';
+					}
 				}
 				if (!strcmp(trim($t),'')) {
 					$t = t3lib_BEfunc::getNoRecordTitle($prep);

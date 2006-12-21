@@ -1029,16 +1029,16 @@ class t3lib_TCEforms	{
 			$checkSetValue = in_array('date',$evalList) ? $thisMidnight : '';
 			$checkSetValue = in_array('datetime',$evalList) ? time() : $checkSetValue;
 
-			$cOnClick = 'typo3FormFieldGet('.$paramsList.',1,\''.$checkSetValue.'\');'.implode('',$PA['fieldChangeFunc']);
+			$cOnClick = 'typo3form.fieldGet('.$paramsList.',1,\''.$checkSetValue.'\');'.implode('',$PA['fieldChangeFunc']);
 			$item.='<input type="checkbox"'.$this->insertDefStyle('check').' name="'.$PA['itemFormElName'].'_cb" onclick="'.htmlspecialchars($cOnClick).'" />';
 		}
 
-		$PA['fieldChangeFunc'] = array_merge(array('typo3FormFieldGet'=>'typo3FormFieldGet('.$paramsList.');'), $PA['fieldChangeFunc']);
+		$PA['fieldChangeFunc'] = array_merge(array('typo3form.fieldGet'=>'typo3form.fieldGet('.$paramsList.');'), $PA['fieldChangeFunc']);
 		$mLgd = ($config['max']?$config['max']:256);
 		$iOnChange = implode('',$PA['fieldChangeFunc']);
 		$item.='<input type="text" name="'.$PA['itemFormElName'].'_hr" value=""'.$this->formWidth($size).' maxlength="'.$mLgd.'" onchange="'.htmlspecialchars($iOnChange).'"'.$PA['onFocus'].' />';	// This is the EDITABLE form field.
 		$item.='<input type="hidden" name="'.$PA['itemFormElName'].'" value="'.htmlspecialchars($PA['itemFormElValue']).'" />';			// This is the ACTUAL form field - values from the EDITABLE field must be transferred to this field which is the one that is written to the database.
-		$this->extJSCODE.='typo3FormFieldSet('.$paramsList.');';
+		$this->extJSCODE.='typo3form.fieldSet('.$paramsList.');';
 
 			// going through all custom evaluations configured for this field
 		foreach ($evalList as $evalData) {
@@ -4549,8 +4549,8 @@ class t3lib_TCEforms	{
 	 *
 	 * 		Example use:
 	 *
-	 * 		$msg.='Distribution time (hh:mm dd-mm-yy):<br /><input type="text" name="send_mail_datetime_hr" onchange="typo3FormFieldGet(\'send_mail_datetime\', \'datetime\', \'\', 0,0);"'.$GLOBALS['TBE_TEMPLATE']->formWidth(20).' /><input type="hidden" value="'.time().'" name="send_mail_datetime" /><br />';
-	 * 		$this->extJSCODE.='typo3FormFieldSet("send_mail_datetime", "datetime", "", 0,0);';
+	 * 		$msg.='Distribution time (hh:mm dd-mm-yy):<br /><input type="text" name="send_mail_datetime_hr" onchange="typo3form.fieldGet(\'send_mail_datetime\', \'datetime\', \'\', 0,0);"'.$GLOBALS['TBE_TEMPLATE']->formWidth(20).' /><input type="hidden" value="'.time().'" name="send_mail_datetime" /><br />';
+	 * 		$this->extJSCODE.='typo3form.fieldSet("send_mail_datetime", "datetime", "", 0,0);';
 	 *
 	 * 		... and then include the result of this function after the form
 	 *
@@ -4563,8 +4563,7 @@ class t3lib_TCEforms	{
 		$elements = array();
 
 			// required:
-		reset($this->requiredFields);
-		while(list($itemImgName,$itemName)=each($this->requiredFields))	{
+		foreach ($this->requiredFields as $itemImgName => $itemName) {
 			if (preg_match('/^(.+)\[((\w|\d|_)+)\]$/', $itemName, $match)) {
 				$record = $match[1];
 				$field = $match[2];
@@ -4573,8 +4572,7 @@ class t3lib_TCEforms	{
 			}
 		}
 			// range:
-		reset($this->requiredElements);
-		while(list($itemName,$range)=each($this->requiredElements))	{
+		foreach ($this->requiredElements as $itemName => $range) {
 			if (preg_match('/^(.+)\[((\w|\d|_)+)\]$/', $itemName, $match)) {
 				$record = $match[1];
 				$field = $match[2];

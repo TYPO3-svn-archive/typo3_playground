@@ -800,8 +800,8 @@ class t3lib_TCEforms_inline {
 	 * Save the expanded/collapsed state of a child record in the BE_USER->uc.
 	 *
 	 * @param	string		$domObjectId: The calling object in hierarchy, that requested a new record.
-	 * @param	integer		$expanded: Whether this record is expanded or collapsed.
-	 * @param	[type]		$collapse: ...
+	 * @param	string		$expand: Whether this record is expanded.
+	 * @param	string		$collapse: Whether this record is collapsed.
 	 * @return	void
 	 */
 	function setExpandedCollapsedState($domObjectId, $expand, $collapse) {
@@ -817,15 +817,15 @@ class t3lib_TCEforms_inline {
 			$inlineView = unserialize($GLOBALS['BE_USER']->uc['inlineView']);
 			$inlineViewCurrent =& $inlineView[$top['table']][$top['uid']];
 
-			$expandUid = t3lib_div::trimExplode(',', $expand);
-			$collapseUid = t3lib_div::trimExplode(',', $collapse);
+			$expandUids = t3lib_div::trimExplode(',', $expand);
+			$collapseUids = t3lib_div::trimExplode(',', $collapse);
 
 				// set records to be expanded
-			foreach ($expandUid as $uid) {
+			foreach ($expandUids as $uid) {
 				$inlineViewCurrent[$current['table']][] = $uid;
 			}
 				// set records to be collapsed
-			foreach ($collapseUid as $uid) {
+			foreach ($collapseUids as $uid) {
 				$inlineViewCurrent[$current['table']] = $this->removeFromArray($uid, $inlineViewCurrent[$current['table']]);
 			}
 
@@ -1416,8 +1416,8 @@ class t3lib_TCEforms_inline {
 	 *
 	 * @param	mixed		$needle: The element to be removed.
 	 * @param	array		$haystack: The array the element should be removed from.
-	 * @param	[type]		$strict: ...
-	 * @return	mixed		$strict: Search elements strictly.
+	 * @param	mixed		$strict: Search elements strictly.
+	 * @return	array		The array $haystack without the $needle
 	 */
 	function removeFromArray($needle, $haystack, $strict=null) {
 		$pos = array_search($needle, $haystack, $strict);

@@ -835,6 +835,7 @@ function typoSetup	() {
 var TS = new typoSetup();
 var evalFunc = new evalFunc();
 
+// backwards compatibility for extensions
 var TBE_EDITOR_loginRefreshed = TBE_EDITOR.loginRefreshed;
 var TBE_EDITOR_checkLoginTimeout = TBE_EDITOR.checkLoginTimeout;
 var TBE_EDITOR_setHiddenContent = TBE_EDITOR.setHiddenContent;
@@ -854,11 +855,10 @@ var TBE_EDITOR_palUrl = TBE_EDITOR.palUrl;
 var TBE_EDITOR_curSelected = TBE_EDITOR.curSelected;
 var TBE_EDITOR_rawurlencode = TBE_EDITOR.rawurlencode;
 var TBE_EDITOR_str_replace = TBE_EDITOR.str_replace;
-var TBE_EDITOR_isChanged = TBE_EDITOR.isChanged;
 
 
-var typo3 = {
-	formFieldSet: function(theField, evallist, is_in, checkbox, checkboxValue) {
+var typo3form = {
+	fieldSet: function(theField, evallist, is_in, checkbox, checkboxValue) {
 		if (document[TBE_EDITOR.formname][theField])	{
 			var theFObj = new evalFunc_dummy (evallist,is_in, checkbox, checkboxValue);
 			var theValue = document[TBE_EDITOR.formname][theField].value;
@@ -871,7 +871,7 @@ var typo3 = {
 			}
 		}
 	},
-	formFieldGet: function(theField, evallist, is_in, checkbox, checkboxValue, checkbox_off, checkSetValue) {
+	fieldGet: function(theField, evallist, is_in, checkbox, checkboxValue, checkbox_off, checkSetValue) {
 		if (document[TBE_EDITOR.formname][theField])	{
 			var theFObj = new evalFunc_dummy (evallist,is_in, checkbox, checkboxValue);
 			if (checkbox_off)	{
@@ -888,5 +888,6 @@ var typo3 = {
 	}
 };
 
-var typo3FormFieldSet = typo3.formFieldSet;
-var typo3FormFieldGet = typo3.formFieldGet;
+// backwards compatibility for extensions
+var typo3FormFieldSet = typo3form.fieldSet;
+var typo3FormFieldGet = typo3form.fieldGet;
