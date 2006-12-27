@@ -1480,8 +1480,6 @@ class tx_impexp {
 		$tce->dontProcessTransformations = 1;
 		$tce->enableLogging = $this->enableLogging;
 		$tce->alternativeFileName = $this->alternativeFileName;
-			// tell TCEmain that it was called from an import/export action
-		$tce->callFromImpExp = true;
 		return $tce;
 	}
 
@@ -2657,7 +2655,7 @@ class tx_impexp {
 					$pInfo['updateMode'] = $this->renderSelectBox('tx_impexp[import_mode]['.$table.':'.$uid.']',$this->import_mode[$table.':'.$uid],$optValues);
 				}
 
-					// Diff view:
+					// Diff vieiw:
 				if ($this->showDiff)	{
 						// For IMPORTS, get new id:
 					if ($newUid = $this->import_mapId[$table][$uid])	{
@@ -2694,7 +2692,7 @@ class tx_impexp {
 
 			// DB relations
 		if (is_array($record['rels']))	{
-			$this->addRelations($record['rels'],$lines,$preCode,array($table.':'.$uid));
+			$this->addRelations($record['rels'],$lines,$preCode);
 		}
 
 			// Soft ref
@@ -2756,18 +2754,7 @@ class tx_impexp {
 	 * @see singleRecordLines()
 	 */
 	function addRelations($rels,&$lines,$preCode,$recurCheck=array(),$htmlColorClass='')	{
-			// defines if the next deeper tree level should be rendered
-			// Pre-Processing:
-		$allowNextLevel = true;
-		foreach ($rels as $dat) {
-				// if top element is this relation, don't step down the tree and break, because we have the information we want
-			if (is_array($recurCheck) && $recurCheck[0] == $dat['table'].':'.$dat['id']) {
-				$allowNextLevel = false;
-				break;
-			}
-		}
 
-			// Processing:
 		foreach($rels as $dat)	{
 			$table = $dat['table'];
 			$uid = $dat['id'];
@@ -2775,8 +2762,7 @@ class tx_impexp {
 			$Iprepend = '';
 			$staticFixed = FALSE;
 			$pInfo['ref'] = $table.':'.$uid;
-				// allowNextLevel=false also means, to show this level but don't walk down the tree
-			if (!in_array($pInfo['ref'],$recurCheck) || !$allowNextLevel)	{
+			if (!in_array($pInfo['ref'],$recurCheck))	{
 				if ($uid > 0)	{
 					$record = $this->dat['header']['records'][$table][$uid];
 					if (!is_array($record))	{
@@ -2812,7 +2798,7 @@ class tx_impexp {
 
 				if (!$staticFixed || $this->showStaticRelations)	{
 					$lines[] = $pInfo;
-					if (is_array($record) && is_array($record['rels']) && $allowNextLevel)	{
+					if (is_array($record) && is_array($record['rels']))	{
 						$this->addRelations($record['rels'], $lines, $preCode.'&nbsp;&nbsp;', array_merge($recurCheck,array($pInfo['ref'])), $htmlColorClass);
 					}
 				}

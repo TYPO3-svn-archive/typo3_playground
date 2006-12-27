@@ -1851,34 +1851,14 @@ class t3lib_BEfunc	{
 
 				// If the current result is empty, set it to '[No title]' (localized) and prepare for output if requested
 			if ($prep || $forceResult)	{
-				if ($prep) {
-					$tOrig = htmlspecialchars($t);
-					$t = htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen']));
-					if ($tOrig != $t) {
-						$t = '<span title="'.$tOrig.'">'.$t.'</span>';
-					}
-				}
-				if (!strcmp(trim($t),'')) {
-					$t = t3lib_BEfunc::getNoRecordTitle($prep);
-				}
+				if (!strcmp(trim($t),''))	$t='['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']';
+				if ($prep)	$t = '<em>'.htmlspecialchars(t3lib_div::fixed_lgd_cs($t,$GLOBALS['BE_USER']->uc['titleLen'])).'</em>';				
 			}
 
 			return $t;
 		}
 	}
 
-	/**
-	 * Get a localized [No title] string, wrapped in <em>|</em> if $prep is true.
-	 *
-	 * @param	boolean		$prep: Wrap result in <em>|</em>
-	 * @return	string		Localized [No title] string
-	 */
-	function getNoRecordTitle($prep=FALSE) {
-		$noTitle = '['.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:labels.no_title',1).']';
-		if ($prep) $noTitle = '<em>'.$noTitle.'</em>';
-		return $noTitle;
-	}
-	
 	/**
 	 * Returns a human readable output of a value from a record
 	 * For instance a database record relation would be looked up to display the title-value of that record. A checkbox with a "1" value would be "Yes", etc.
