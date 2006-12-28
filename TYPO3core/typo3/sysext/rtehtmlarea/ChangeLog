@@ -1,3 +1,8 @@
+2006-12-28  Oliver Hader  <oh@inpublica.de>
+
+	* Bugfix for using IRRE with tabs ("nested tabs") on Gecko browsers - hidden IFrames (on hidden tabs) were not editable
+	* this.dynTabs in htmlarea.js has a list of all tabs a IFrame is embedded in
+
 2006-12-20  Peter Niederlag  <peter@niederlag.de>
 
 	* Version 1.5.1dev
@@ -304,7 +309,7 @@
 	* Correction: the  editor failed to initialize correctly when Page TSConfig property hideTableOperationsInToolbar was set to 1.
 	* Addition of Toggle borders in the context memu.
 	* Correction: updating a link did not work when the link was set on an image and on multiple elements.
-	* Problem with Firefox extension “All-in-One Gestures” documented as Known problem.
+	* Problem with Firefox extension "All-in-One Gestures" documented as Known problem.
 	* Blue-look and xp-blue skins moved to separate extensions: sr_rtehtmlarea_bluelook and sr_rtehtmlarea_xpblue respectively.
 	* Update to Finnish and Norwegian translations.
 
