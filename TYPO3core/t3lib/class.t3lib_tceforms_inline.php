@@ -453,7 +453,26 @@ class t3lib_TCEforms_inline {
 
 			// If the table is NOT a read-only table, then show these links:
 		if (!$tcaTableCtrl['readOnly'])	{
-
+			
+				// Versioning:
+	  		if (t3lib_extMgm::isLoaded('version'))	{
+	  			if (!$isNewItem) {
+		  			$origUid = $rec['_ORIG_uid'] ? $rec['_ORIG_uid'] : $rec['uid'];
+		  			$vers = t3lib_BEfunc::selectVersionsOfRecord($foreign_table, $origUid, 'uid', $GLOBALS['BE_USER']->workspace);
+	  			}
+					// If table can be versionized, or if it's a new workspace record.
+	  			if (is_array($vers) || ($isNewItem && $GLOBALS['BE_USER']->workspace !== 0)) {
+	  				if (count($vers)>1 || $isNewItem)	{
+	  					$st = 'background-color: #FFFF00; font-weight: bold; height: 12px;';
+	  					$lab = $isNewItem ? 1 : count($vers)-1;
+	  				} else {
+	  					$st = 'background-color: #9999cc; font-weight: bold; height: 12px;';
+	  					$lab = 'V';
+					}
+					$cells[]='<span style="'.htmlspecialchars($st).'">'.$lab.'</span>';
+				}
+			}
+			
 				// "New record after" link (ONLY if the records in the table are sorted by a "sortby"-row or if default values can depend on previous record):
 			if ($enableManualSorting || $tcaTableCtrl['useColumnsForDefaultValues'])	{
 				if (
@@ -967,7 +986,6 @@ class t3lib_TCEforms_inline {
 	function getRecord($pid, $table, $uid, $cmd='') {
 		$trData = t3lib_div::makeInstance('t3lib_transferData');
 		$trData->addRawData = TRUE;
-		# $trData->defVals = $this->defVals;
 		$trData->lockRecords=1;
 		$trData->disableRTE = $GLOBALS['SOBE']->MOD_SETTINGS['disableRTE'];
 			// if a new record should be created
@@ -975,8 +993,21 @@ class t3lib_TCEforms_inline {
 		reset($trData->regTableItems_data);
 		$rec = current($trData->regTableItems_data);
 		$rec['uid'] = $cmd == 'new' ? uniqid('NEW') : $uid;
-		if ($cmd=='new') $rec['pid'] = $pid;
 
+		if ($cmd=='new') {
+			$rec['pid'] = $pid;
+		} else {
+			$wsId = $GLOBALS['BE_USER']->workspace;
+			if ($wsId !== 0 && $GLOBALS['TCA'][$table]['ctrl']['versioningWS'] && $rec['pid'] !== -1) {
+				$wsRec = t3lib_BEfunc::getWorkspaceVersionOfRecord($wsId, $table, $rec['uid'], implode(',',array_keys($rec)));
+				if (is_array($wsRec)) {
+					$wsRec['_ORIG_pid'] = $rec['pid'];
+					$wsRec['_ORIG_uid'] = $rec['uid'];
+					$rec = $wsRec;
+				}
+			}
+		}
+		
 		return $rec;
 	}
 

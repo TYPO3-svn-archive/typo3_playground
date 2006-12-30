@@ -816,51 +816,8 @@ class t3lib_TCEmain	{
 			}
 		}
 
-		// call_user_func_array
-
 			// Process the stack of relations to remap/correct
-		if(is_array($this->remapStack)) {
-			foreach($this->remapStack as $remapAction) {
-					// if no position index for the arguments was set, skip this remap action
-				if (!is_array($remapAction['pos'])) continue;
-
-					// load values from the argument array in remapAction
-				$field = $remapAction['field'];
-				$id = $remapAction['args'][$remapAction['pos']['id']];
-				$table = $remapAction['args'][$remapAction['pos']['table']];
-				$valueArray = $remapAction['args'][$remapAction['pos']['valueArray']];
-				$tcaFieldConf = $remapAction['args'][$remapAction['pos']['tcaFieldConf']];
-
-					// Replace NEW... IDs with real uids.
-				if(strpos($id, 'NEW') !== false) {
-					$id = $this->substNEWwithIDs[$id];
-					$remapAction['args'][$remapAction['pos']['id']] = $id;
-				}
-
-					// Replace relations to NEW...-IDs in values
-				if(is_array($valueArray)) {
-					foreach($valueArray as $key => $value) {
-						if(strpos($value, 'NEW') !== false) {
-								// fetch the proper uid as integer for the NEW...-ID
-							$valueArray[$key] = $this->substNEWwithIDs[$value];
-								// set a hint that this was a new child record
-							$this->newRelatedIDs[$table][] = $valueArray[$key];
-						}
-					}
-					$remapAction['args'][$remapAction['pos']['valueArray']] = $valueArray;
-				}
-
-					// process the arguments with the defined function
-				$remapAction['args'][$remapAction['pos']['valueArray']] = call_user_func_array(
-					array($this, $remapAction['func']),
-					$remapAction['args']
-				);
-
-					// @TODO: Add option to disable count-field
-				$newVal = $this->checkValue_checkMax($tcaFieldConf, $remapAction['args'][$remapAction['pos']['valueArray']]);
-				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
-			}
-		}
+		$this->processRemapStack();
 
 		$this->dbAnalysisStoreExec();
 		$this->removeRegisteredFiles();
@@ -2631,7 +2588,7 @@ class t3lib_TCEmain	{
 							$conf = $TCA[$table]['columns'][$field]['config'];
 							if (is_array($conf))	{
 									// Processing based on the TCA config field type (files, references, flexforms...)
-								$value = $this->copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf);
+								$value = $this->copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf,true);
 							}
 
 								// Add value to array.
@@ -2726,6 +2683,8 @@ class t3lib_TCEmain	{
 
 			// Finally, insert record:
 		$this->insertDB($table,$id,$fieldArray, TRUE);
+			// Process the remap stack in case we dealed with relations:
+		$this->processRemapStack();
 
 			// Return new id:
 		return $this->substNEWwithIDs[$id];
@@ -2734,17 +2693,18 @@ class t3lib_TCEmain	{
 	/**
 	 * Processing/Preparing content for copyRecord() function
 	 *
-	 * @param	string		Table name
-	 * @param	integer		Record uid
-	 * @param	string		Field name being processed
-	 * @param	string		Input value to be processed.
-	 * @param	array		Record array
-	 * @param	array		TCA field configuration
+	 * @param	string		$table: Table name
+	 * @param	integer		$uid: Record uid
+	 * @param	string		$field: Field name being processed
+	 * @param	string		$value: Input value to be processed.
+	 * @param	array		$row: Record array
+	 * @param	array		$conf: TCA field configuration
+	 * @param 	boolean		$versionize: If child records should be versionized (happens, when called from copyRecord_raw)
 	 * @return	mixed		Processed value. Normally a string/integer, but can be an array for flexforms!
 	 * @access private
 	 * @see copyRecord()
 	 */
-	function copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf)	{
+	function copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf,$versionize=false)	{
 		global $TCA;
 
 			// Process references and files, currently that means only the files, prepending absolute paths (so the TCEmain engine will detect the file as new and one that should be made into a copy)
@@ -2771,7 +2731,9 @@ class t3lib_TCEmain	{
 
 				// walk through the items, copy them and remember the new id
 			foreach ($dbAnalysis->itemArray as $k => $v) {
-				$newId = $this->copyRecord($v['table'], $v['id'], -$v['id']);
+				$newId = $versionize == false
+					? $this->copyRecord($v['table'], $v['id'], -$v['id'])
+					: $this->versionizeRecord($v['table'],$v['id'],'child record');
 				$dbAnalysis->itemArray[$k]['id'] = $newId;
 			}
 
@@ -3916,6 +3878,15 @@ class t3lib_TCEmain	{
 										$swapVersion['t3ver_tstamp'] = time();
 										$swapVersion['t3ver_stage'] = $swapVersion['t3ver_state'] = 0;
 
+/*											// Take care of relations (e.g. IRRE):
+										if (is_array($GLOBALS['TCA'][$table]['columns'])) {
+											foreach ($GLOBALS['TCA'][$table]['columns'] as $fN => $field) {
+												if ($field['config']['type'] == 'inline') {
+													echo $fN.': IRRE!';
+												}
+											}
+										}
+*/
 											// Modify online version to become offline:
 										unset($curVersion['uid']);
 										$curVersion['pid'] = -1;	// Set pid for OFFLINE
@@ -4254,7 +4225,56 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 		}
 	}
 
+	/**
+	 * Processes the $this->remapStack at the end of copying, inserting, etc. actions.
+	 * The remapStack takes care about the correct mapping of new and old uids in case of relational data.
+	 *
+	 * @return	void
+	 */
+	function processRemapStack() {
+		if(is_array($this->remapStack)) {
+			foreach($this->remapStack as $remapAction) {
+					// if no position index for the arguments was set, skip this remap action
+				if (!is_array($remapAction['pos'])) continue;
 
+					// load values from the argument array in remapAction
+				$field = $remapAction['field'];
+				$id = $remapAction['args'][$remapAction['pos']['id']];
+				$table = $remapAction['args'][$remapAction['pos']['table']];
+				$valueArray = $remapAction['args'][$remapAction['pos']['valueArray']];
+				$tcaFieldConf = $remapAction['args'][$remapAction['pos']['tcaFieldConf']];
+
+					// Replace NEW... IDs with real uids.
+				if(strpos($id, 'NEW') !== false) {
+					$id = $this->substNEWwithIDs[$id];
+					$remapAction['args'][$remapAction['pos']['id']] = $id;
+				}
+
+					// Replace relations to NEW...-IDs in values
+				if(is_array($valueArray)) {
+					foreach($valueArray as $key => $value) {
+						if(strpos($value, 'NEW') !== false) {
+								// fetch the proper uid as integer for the NEW...-ID
+							$valueArray[$key] = $this->substNEWwithIDs[$value];
+								// set a hint that this was a new child record
+							$this->newRelatedIDs[$table][] = $valueArray[$key];
+						}
+					}
+					$remapAction['args'][$remapAction['pos']['valueArray']] = $valueArray;
+				}
+
+					// process the arguments with the defined function
+				$remapAction['args'][$remapAction['pos']['valueArray']] = call_user_func_array(
+					array($this, $remapAction['func']),
+					$remapAction['args']
+				);
+
+					// @TODO: Add option to disable count-field
+				$newVal = $this->checkValue_checkMax($tcaFieldConf, $remapAction['args'][$remapAction['pos']['valueArray']]);
+				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
+			}
+		}
+	}
 
 
 

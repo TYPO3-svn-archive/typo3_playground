@@ -665,7 +665,7 @@ class t3lib_userAuthGroup extends t3lib_userAuth {
 			if (is_array($recData))	{
 				if ((int)$recData['pid']===-1)	{	// We are testing a "version" (identified by a pid of -1): it can be edited provided that workspace matches and versioning is enabled for the table.
 					if (!$GLOBALS['TCA'][$table]['ctrl']['versioningWS'])	{	// No versioning, basic error, inconsistency even! Such records should not have a pid of -1!
-						return 'Versioning disabled for table';
+						return 'Versioning disabled for table "'.$table.'"';
 					} elseif ((int)$recData['t3ver_wsid']!==$this->workspace)	{	// So does workspace match?
 						return 'Workspace ID of record didn\'t match current workspace';
 					} else {	// So what about the stage of the version, does that allow editing for this user?
@@ -676,7 +676,7 @@ class t3lib_userAuthGroup extends t3lib_userAuth {
 							// Live records are OK in this branch, but what about the stage of branch point, if any:
 						return $res>0 ? FALSE : 'Stage for versioning root point and users access level did not allow for editing';	// OK
 					} else {	// If not offline and not in versionized branch, output error:
-						return 'Online record was not in versionized branch!';
+						return 'Online record of table "'.$table.'" was not in versionized branch!';
 					}
 				}
 			} else return 'No record';
