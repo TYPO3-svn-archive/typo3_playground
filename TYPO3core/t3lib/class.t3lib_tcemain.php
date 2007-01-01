@@ -330,6 +330,7 @@ class t3lib_TCEmain	{
 	var $registerDBList=array();				// Used for tracking references that might need correction after operations
 	var $copyMappingArray = Array();			// Used by the copy action to track the ids of new pages so subpages are correctly inserted! THIS is internally cleared for each executed copy operation! DO NOT USE THIS FROM OUTSIDE! Read from copyMappingArray_merged instead which is accumulating this information.
 	var $remapStack = array();					// array used for remapping uids and values at the end of process_datamap
+	var $remapStackChildren = array();			// child-records {table;uid}, pointing to an item on the remap stack
 	var $updateRefIndexStack = array();			// array used for additional calls to $this->updateRefIndex
 	var $callFromImpExp = false;				// tells, that this TCEmain was called from tx_impext - this variable is set by tx_impexp
 	
@@ -683,8 +684,15 @@ class t3lib_TCEmain	{
 										$resetRejected = TRUE;
 									}
 
+										// Use the new id of the versionized record we're trying to write to:
+										// (This record is a child record of a parent and has already been versionized.)
+									if ($this->autoVersionIdMap[$table][$id]) {
+										$id = $this->autoVersionIdMap[$table][$id];
+										$recordAccess = TRUE;
+										$this->autoVersioningUpdate = TRUE;
+										
 										// Checking access in case of offline workspace:
-									if (!$this->bypassWorkspaceRestrictions && $errorCode = $this->BE_USER->workspaceCannotEditRecord($table,$tempdata))	{
+									} elseif (!$this->bypassWorkspaceRestrictions && $errorCode = $this->BE_USER->workspaceCannotEditRecord($table,$tempdata))	{
 										$recordAccess = FALSE;		// Versioning is required and it must be offline version!
 
 											// Auto-creation of version: In offline workspace, test if versioning is enabled and look for workspace version of input record. If there is no versionized record found we will create one and save to that.
@@ -703,9 +711,24 @@ class t3lib_TCEmain	{
 											$tce->process_cmdmap();
 											$this->errorLog = array_merge($this->errorLog,$tce->errorLog);
 
-											if ($tce->copyMappingArray[$table][$id])	{
-												$this->uploadedFileArray[$table][$tce->copyMappingArray[$table][$id]] = $this->uploadedFileArray[$table][$id];
-												$id = $this->autoVersionIdMap[$table][$id] = $tce->copyMappingArray[$table][$id];
+												// For the reason that creating a new version of this record, automatically
+												// created related child records (e.g. "IRRE"), update the accordant field:
+											if (is_array($tce->registerDBList[$table][$id])) {
+												foreach ($tce->registerDBList[$table][$id] as $changeField => $changedValue) {
+													$incomingFieldArray[$changeField] = $changedValue;
+												}
+											}
+											
+											if ($tce->copyMappingArray[$table][$id]) {
+												foreach ($tce->copyMappingArray as $origTable => $origIdArray) {
+													foreach ($origIdArray as $origId => $newId) {
+														$this->uploadedFileArray[$origTable][$newId] = $this->uploadedFileArray[$origTable][$origId];
+														$this->autoVersionIdMap[$origTable][$origId] = $newId;
+													}
+												}
+
+													// Use the new id of the copied/versionized record:
+												$id = $this->autoVersionIdMap[$table][$id];
 												$recordAccess = TRUE;
 												$this->autoVersioningUpdate = TRUE;
 											} else $this->newlog("Could not be edited in offline workspace in the branch where found (failure state: '".$errorCode."'). Auto-creation of version failed!",1);
@@ -793,6 +816,13 @@ class t3lib_TCEmain	{
 											$phShadowId = $this->insertDB($table,$id,$fieldArray,TRUE,0,TRUE);	// When inserted, $this->substNEWwithIDs[$id] will be changed to the uid of THIS version and so the interface will pick it up just nice!
 											if ($phShadowId)	{
 												$this->placeholderShadowing($table,$phShadowId);
+												if (isset($this->remapStackChildren[$table][$id])) {
+													$pos = $this->remapStackChildren[$table][$id];
+													if (!is_array($this->remapStack[$pos]['map'])) {
+														$this->remapStack[$pos]['map'] = array();
+													}
+													$this->remapStack[$pos]['map'][$id] = $phShadowId;
+												}
 											}
 										} else $this->newlog('Versioning type "'.$versioningType.'" was not allowed, so could not create new record.',1);
 									} else {
@@ -817,6 +847,8 @@ class t3lib_TCEmain	{
 		}
 
 			// Process the stack of relations to remap/correct
+#			print_r($this->remapStack);
+#			print_r($this->remapStackChildren);
 		$this->processRemapStack();
 
 		$this->dbAnalysisStoreExec();
@@ -1366,12 +1398,17 @@ class t3lib_TCEmain	{
 		if ($tcaFieldConf['type']=='select' && $tcaFieldConf['foreign_table'])	{
 				// check, if there is a NEW... id in the value, that should be substituded later
 			if (strpos($value, 'NEW') !== false) {
+				$remapStackPos = count($this->remapStack);
 				$this->remapStack[] = array(
 					'func' => 'checkValue_group_select_processDBdata',
 					'args' => array($valueArray,$tcaFieldConf,$id,$status,'select',$table),
 					'pos' => array('valueArray' => 0, 'tcaFieldConf' => 1, 'id' => 2, 'table' => 5),
 					'field' => $field
 				);
+					// Setting up children-map, that point back to an item of remapStack:
+				foreach ($valueArray as $childId) {
+					$this->remapStackChildren[$tcaFieldConf['foreign_table']][$childId] = $remapStackPos;
+				}
 				$unsetResult = true;
 			} else {
 				$valueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'select', $table);
@@ -1744,12 +1781,17 @@ class t3lib_TCEmain	{
 			// $value = 45,NEW4555fdf59d154,12,123
 			// We need to decide whether we use the stack or can save the relation directly.
 		if(strpos($value, 'NEW') !== false || !t3lib_div::testInt($id)) {
+			$remapStackPos = count($this->remapStack);
 			$this->remapStack[] = array(
 				'func' => 'checkValue_group_select_processDBdata',
 				'args' => array($valueArray,$tcaFieldConf,$id,$status,'inline',$table),
 				'pos' => array('valueArray' => 0, 'tcaFieldConf' => 1, 'id' => 2, 'table' => 5),
 				'field' => $field
 			);
+				// Setting up children-map, that point back to an item of remapStack:
+			foreach ($valueArray as $childId) {
+				$this->remapStackChildren[$tcaFieldConf['foreign_table']][$childId] = $remapStackPos;
+			}
 			unset($res['value']);
 		} elseif($value || t3lib_div::testInt($id)) {
 			$newValueArray = $this->checkValue_group_select_processDBdata($valueArray,$tcaFieldConf,$id,$status,'inline', $table);
@@ -2733,13 +2775,16 @@ class t3lib_TCEmain	{
 			foreach ($dbAnalysis->itemArray as $k => $v) {
 				$newId = $versionize == false
 					? $this->copyRecord($v['table'], $v['id'], -$v['id'])
-					: $this->versionizeRecord($v['table'],$v['id'],'child record');
+					: $this->versionizeRecord($v['table'], $v['id'], 'Auto-created for WS #'.$this->BE_USER->workspace);
 				$dbAnalysis->itemArray[$k]['id'] = $newId;
 			}
 
 				// store the new values, we will set up the uids for the subtype later on
 			$value = implode(',',$dbAnalysis->getValueArray());
-			$this->registerDBList[$table][$uid][$field] = $value;
+				// if sub type is list (comma separated value list), no relation table is affected
+			if ($inlineSubType != 'list') {
+				$this->registerDBList[$table][$uid][$field] = $value;
+			}
 		}
 
 			// For "flex" fieldtypes we need to traverse the structure for two reasons: If there are file references they have to be prepended with absolute paths and if there are database reference they MIGHT need to be remapped (still done in remapListedDBRecords())
@@ -4255,7 +4300,11 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 					foreach($valueArray as $key => $value) {
 						if(strpos($value, 'NEW') !== false) {
 								// fetch the proper uid as integer for the NEW...-ID
-							$valueArray[$key] = $this->substNEWwithIDs[$value];
+							if (is_array($remapAction['map']) && isset($remapAction['map'][$value]))
+								$valueArray[$key] = $remapAction['map'][$value];
+							else
+								$valueArray[$key] = $this->substNEWwithIDs[$value];
+								
 								// set a hint that this was a new child record
 							$this->newRelatedIDs[$table][] = $valueArray[$key];
 						}
@@ -4274,6 +4323,29 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 				$this->updateDB($table,$id,array($field => implode(',', $newVal)));
 			}
 		}
+			// Reset:
+		$this->remapStack = array();
+		$this->remapStackChildren = array();
+	}
+	
+	/**
+	 * Get information of the function argument list of an item on the remap stack.
+	 * This could be used to make changes, before the remapStack is processed and flushed.
+	 *
+	 * @param	integer		$position: The array position/index of the item to get
+	 * @return	array		An asociative array, containing the available information (like 'id', 'table', etc.)
+	 */
+	function getRemapStackInformation($position) {
+		$info = array();
+		
+		if (is_array($this->remapStack) && $position > 0 && $position < count($this->remapStack)) {
+			$remapAction = $this->remapStack[$position];
+			foreach ($remapAction['pos'] as $key => $value) {
+				$info[$key] = $remapAction['args'][$value];
+			}
+		}
+		
+		return $info;
 	}
 
 

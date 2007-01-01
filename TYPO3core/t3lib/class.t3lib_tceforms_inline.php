@@ -454,7 +454,8 @@ class t3lib_TCEforms_inline {
 			// If the table is NOT a read-only table, then show these links:
 		if (!$tcaTableCtrl['readOnly'])	{
 			
-				// Versioning:
+			// @TODO: Check if this is required anymore
+/*				// Versioning:
 	  		if (t3lib_extMgm::isLoaded('version'))	{
 	  			if (!$isNewItem) {
 		  			$origUid = $rec['_ORIG_uid'] ? $rec['_ORIG_uid'] : $rec['uid'];
@@ -472,7 +473,7 @@ class t3lib_TCEforms_inline {
 					$cells[]='<span style="'.htmlspecialchars($st).'">'.$lab.'</span>';
 				}
 			}
-			
+*/			
 				// "New record after" link (ONLY if the records in the table are sorted by a "sortby"-row or if default values can depend on previous record):
 			if ($enableManualSorting || $tcaTableCtrl['useColumnsForDefaultValues'])	{
 				if (
@@ -895,9 +896,8 @@ class t3lib_TCEforms_inline {
 			// Perform modification of the selected items array:
 		$itemArray = t3lib_div::trimExplode(',',$PA['itemFormElValue'],1);
 		foreach($itemArray as $tk => $tv) {
-			$tvP = explode('|',$tv,2);
 				// get the records for this uid using t3lib_transferdata
-			$records[] = $this->getRecord($row['pid'], $config['foreign_table'], $tvP[0]);
+			$records[] = $this->getRecord($row['pid'], $config['foreign_table'], $this->normalizeUid($tv));
 		}
 
 		return $records;
@@ -997,7 +997,8 @@ class t3lib_TCEforms_inline {
 		if ($cmd=='new') {
 			$rec['pid'] = $pid;
 		} else {
-			$wsId = $GLOBALS['BE_USER']->workspace;
+			// @TODO: Check if required anymore:
+/*			$wsId = $GLOBALS['BE_USER']->workspace;
 			if ($wsId !== 0 && $GLOBALS['TCA'][$table]['ctrl']['versioningWS'] && $rec['pid'] !== -1) {
 				$wsRec = t3lib_BEfunc::getWorkspaceVersionOfRecord($wsId, $table, $rec['uid'], implode(',',array_keys($rec)));
 				if (is_array($wsRec)) {
@@ -1006,7 +1007,7 @@ class t3lib_TCEforms_inline {
 					$rec = $wsRec;
 				}
 			}
-		}
+*/		}
 		
 		return $rec;
 	}
