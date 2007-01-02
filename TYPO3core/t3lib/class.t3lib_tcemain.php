@@ -711,14 +711,6 @@ class t3lib_TCEmain	{
 											$tce->process_cmdmap();
 											$this->errorLog = array_merge($this->errorLog,$tce->errorLog);
 
-												// For the reason that creating a new version of this record, automatically
-												// created related child records (e.g. "IRRE"), update the accordant field:
-											if (is_array($tce->registerDBList[$table][$id])) {
-												foreach ($tce->registerDBList[$table][$id] as $changeField => $changedValue) {
-													$incomingFieldArray[$changeField] = $changedValue;
-												}
-											}
-											
 											if ($tce->copyMappingArray[$table][$id]) {
 												foreach ($tce->copyMappingArray as $origTable => $origIdArray) {
 													foreach ($origIdArray as $origId => $newId) {
@@ -728,9 +720,30 @@ class t3lib_TCEmain	{
 												}
 
 													// Use the new id of the copied/versionized record:
+												$oId = $id;
 												$id = $this->autoVersionIdMap[$table][$id];
 												$recordAccess = TRUE;
 												$this->autoVersioningUpdate = TRUE;
+												
+													// For the reason that creating a new version of this record, automatically
+													// created related child records (e.g. "IRRE"), update the accordant field:
+												if (is_array($tce->registerDBList[$table][$oId])) {
+													foreach ($incomingFieldArray as $field => $value) {
+														$fieldConf = $TCA[$table]['columns'][$field]['config'];
+														if ($tce->registerDBList[$table][$oId][$field] && $foreignTable = $fieldConf['foreign_table']) {
+															$newValueArray = array();
+															$origValueArray = explode(',', $value);
+																// Update the uids of the copied records, but also take care about new records:
+															foreach ($origValueArray as $childId) {
+																$newValueArray[] = $this->autoVersionIdMap[$foreignTable][$childId]
+																	? $this->autoVersionIdMap[$foreignTable][$childId]
+																	: $childId;
+															}
+																// Set the changed value to the $incomingFieldArray
+															$incomingFieldArray[$field] = implode(',', $newValueArray);
+														}
+													}
+												}												
 											} else $this->newlog("Could not be edited in offline workspace in the branch where found (failure state: '".$errorCode."'). Auto-creation of version failed!",1);
 										} else $this->newlog("Could not be edited in offline workspace in the branch where found (failure state: '".$errorCode."'). Auto-creation of version not allowed in workspace!",1);
 									}
