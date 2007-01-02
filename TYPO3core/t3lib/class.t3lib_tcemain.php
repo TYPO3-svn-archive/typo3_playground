@@ -853,8 +853,6 @@ class t3lib_TCEmain	{
 		}
 
 			// Process the stack of relations to remap/correct
-#			print_r($this->remapStack);
-#			print_r($this->remapStackChildren);
 		$this->processRemapStack();
 
 		$this->dbAnalysisStoreExec();
@@ -3938,11 +3936,7 @@ class t3lib_TCEmain	{
 										if (is_array($GLOBALS['TCA'][$table]['columns'])) {
 											foreach ($GLOBALS['TCA'][$table]['columns'] as $field => $fieldConf) {
 												$this->version_swap_procBasedOnFieldType(
-													$table,
-													$field,
-													$fieldConf['config'],
-													$curVersion,
-													$swapVersion
+													$table, $field, $fieldConf['config'], $curVersion, $swapVersion
 												);
 											}
 										}
@@ -4099,6 +4093,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	 * @param	array		$conf: TCA configuration of current field
 	 * @param	string		$curVersion: Reference to the current (original) record
 	 * @param	string		$swapVersion: Reference to the record (workspace/versionized) to publish in or swap with
+	 * @return 	void
 	 */
 	function version_swap_procBasedOnFieldType($table,$field,$conf,&$curVersion,&$swapVersion) {
 		$inlineType = $this->getInlineFieldType($conf);
@@ -4429,10 +4424,6 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 			if (!count($registerDBList[$table])) unset($registerDBList[$table]);
 		}												
 	}
-
-
-
-
 
 
 
