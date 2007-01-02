@@ -2643,7 +2643,7 @@ class t3lib_TCEmain	{
 							$conf = $TCA[$table]['columns'][$field]['config'];
 							if (is_array($conf))	{
 									// Processing based on the TCA config field type (files, references, flexforms...)
-								$value = $this->copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf,true);
+								$value = $this->copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf,$pid);
 							}
 
 								// Add value to array.
@@ -2689,7 +2689,11 @@ class t3lib_TCEmain	{
 				if ($table && is_array($TCA[$table]) && $table!='pages')	{	// all records under the page is copied.
 					$mres = $GLOBALS['TYPO3_DB']->exec_SELECTquery('uid', $table, 'pid='.intval($old_pid).$this->deleteClause($table));
 					while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($mres))	{
-						$this->copyRecord_raw($table,$row['uid'],$new_pid);	// Copying each of the underlying records (method RAW)
+							// Check, if this record has already been copied by a parent record as relation:
+						if (!$this->copyMappingArray[$table][$row['uid']]) {
+								// Copying each of the underlying records (method RAW)
+							$this->copyRecord_raw($table,$row['uid'],$new_pid);
+						}
 					}
 				}
 			}
@@ -2754,12 +2758,12 @@ class t3lib_TCEmain	{
 	 * @param	string		$value: Input value to be processed.
 	 * @param	array		$row: Record array
 	 * @param	array		$conf: TCA field configuration
-	 * @param 	boolean		$versionize: If child records should be versionized (happens, when called from copyRecord_raw)
+	 * @param 	boolean		$copyPid: Which method to use, copying relations (null: copyRecod, NOT '-1': copyRecord_raw, '-1': versionizeRecord)
 	 * @return	mixed		Processed value. Normally a string/integer, but can be an array for flexforms!
 	 * @access private
 	 * @see copyRecord()
 	 */
-	function copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf,$versionize=false)	{
+	function copyRecord_procBasedOnFieldType($table,$uid,$field,$value,$row,$conf,$copyPid=null)	{
 		global $TCA;
 
 			// Process references and files, currently that means only the files, prepending absolute paths (so the TCEmain engine will detect the file as new and one that should be made into a copy)
@@ -2786,9 +2790,13 @@ class t3lib_TCEmain	{
 
 				// walk through the items, copy them and remember the new id
 			foreach ($dbAnalysis->itemArray as $k => $v) {
-				$newId = $versionize == false
-					? $this->copyRecord($v['table'], $v['id'], -$v['id'])
-					: $this->versionizeRecord($v['table'], $v['id'], 'Auto-created for WS #'.$this->BE_USER->workspace);
+				if ($copyPid == null) {
+					$newId = $this->copyRecord($v['table'], $v['id'], -$v['id']);
+				} elseif ($copyPid == -1) {
+					$newId = $this->versionizeRecord($v['table'], $v['id'], 'Auto-created for WS #'.$this->BE_USER->workspace);
+				} elseif ($copyPid != -1) {
+					$newId = $this->copyRecord_raw($v['table'], $v['id'], $copyPid);
+				}
 				$dbAnalysis->itemArray[$k]['id'] = $newId;
 			}
 
