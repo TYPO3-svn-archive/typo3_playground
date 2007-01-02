@@ -3934,6 +3934,19 @@ class t3lib_TCEmain	{
 										$swapVersion['t3ver_tstamp'] = time();
 										$swapVersion['t3ver_stage'] = $swapVersion['t3ver_state'] = 0;
 
+											// Take care of relations in each field (e.g. IRRE):
+										if (is_array($GLOBALS['TCA'][$table]['columns'])) {
+											foreach ($GLOBALS['TCA'][$table]['columns'] as $field => $fieldConf) {
+												$this->version_swap_procBasedOnFieldType(
+													$table,
+													$field,
+													$fieldConf['config'],
+													$curVersion,
+													$swapVersion
+												);
+											}
+										}
+										
 											// Modify online version to become offline:
 										unset($curVersion['uid']);
 										$curVersion['pid'] = -1;	// Set pid for OFFLINE
@@ -3962,19 +3975,6 @@ class t3lib_TCEmain	{
 										}
 
 										if (!count($sqlErrors))	{
-												// Take care of relations in each field (e.g. IRRE):
-											if (is_array($GLOBALS['TCA'][$table]['columns'])) {
-												foreach ($GLOBALS['TCA'][$table]['columns'] as $field => $fieldConf) {
-													$value = $this->version_swap_procBasedOnFieldType(
-														$table,
-														$id,
-														$swapWith,
-														$field,
-														$curVersion[$field],
-														$fieldConf['config']
-													);
-												}
-											}
 
 												// Checking for delete:
 											if ($t3ver_state['swapVersion']==2)	{
@@ -4095,24 +4095,32 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	 * Update relations on version/workspace swapping.
 	 *
 	 * @param	string		$table: Record Table
-	 * @param	string		$curId: UID of the current (workspace/versionized) record
-	 * @param	string		$swapId: UID of the record to publish in or swap with
 	 * @param	string		$field: Record field
-	 * @param	string		$value: Record field value
 	 * @param	array		$conf: TCA configuration of current field
+	 * @param	string		$curVersion: Reference to the current (original) record
+	 * @param	string		$swapVersion: Reference to the record (workspace/versionized) to publish in or swap with
 	 */
-	function version_swap_procBasedOnFieldType($table,$curId,$swapId,$field,$value,$conf) {
+	function version_swap_procBasedOnFieldType($table,$field,$conf,&$curVersion,&$swapVersion) {
 		$inlineType = $this->getInlineFieldType($conf);
+		
+			// Process pointer fields on normalized database:
 		if ($inlineType == 'field') {
 				// Read relations that point to the current record (e.g. live record):
 			$dbAnalysisCur = t3lib_div::makeInstance('t3lib_loadDBGroup');
-			$dbAnalysisCur->start($value, $conf['foreign_table'], '', $curId, $table, $conf);
+			$dbAnalysisCur->start('', $conf['foreign_table'], '', $curVersion['uid'], $table, $conf);
 				// Read relations that point to the record to be swapped with e.g. draft record):
 			$dbAnalysisSwap = t3lib_div::makeInstance('t3lib_loadDBGroup');
-			$dbAnalysisSwap->start($value, $conf['foreign_table'], '', $swapId, $table, $conf);
+			$dbAnalysisSwap->start('', $conf['foreign_table'], '', $swapVersion['uid'], $table, $conf);
 				// Update relations for both (workspace/versioning) sites:
-			$dbAnalysisCur->writeForeignField($conf,$curId,$swapId);
-			$dbAnalysisSwap->writeForeignField($conf,$swapId,$curId);
+			$dbAnalysisCur->writeForeignField($conf,$curVersion['uid'],$swapVersion['uid']);
+			$dbAnalysisSwap->writeForeignField($conf,$swapVersion['uid'],$curVersion['uid']);
+			
+			// Swap field values (CSV):
+			// BUT: These values will be swapped back in the next steps, when the *CHILD RECORD ITSELF* is swapped!
+		} elseif ($inlineType == 'list') {
+			$tempValue = $curVersion[$field];
+			$curVersion[$field] = $swapVersion[$field];
+			$swapVersion[$field] = $tempValue;
 		}
 	}
 
