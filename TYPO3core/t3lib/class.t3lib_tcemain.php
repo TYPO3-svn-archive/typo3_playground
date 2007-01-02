@@ -523,6 +523,8 @@ class t3lib_TCEmain	{
 	 */
 	function process_datamap() {
 		global $TCA, $TYPO3_CONF_VARS;
+			// Keep versionized(!) relations here locally:
+		$registerDBList = array();
 
 			// Editing frozen:
 		if ($this->BE_USER->workspace!==0 && $this->BE_USER->workspaceRec['freeze'])	{
@@ -687,6 +689,11 @@ class t3lib_TCEmain	{
 										// Use the new id of the versionized record we're trying to write to:
 										// (This record is a child record of a parent and has already been versionized.)
 									if ($this->autoVersionIdMap[$table][$id]) {
+											// For the reason that creating a new version of this record, automatically
+											// created related child records (e.g. "IRRE"), update the accordant field:
+										$this->getVersionizedIncomindFieldArray($table, $id, $incomingFieldArray, $registerDBList);
+
+											// Use the new id of the copied/versionized record:
 										$id = $this->autoVersionIdMap[$table][$id];
 										$recordAccess = TRUE;
 										$this->autoVersioningUpdate = TRUE;
@@ -711,6 +718,7 @@ class t3lib_TCEmain	{
 											$tce->process_cmdmap();
 											$this->errorLog = array_merge($this->errorLog,$tce->errorLog);
 
+												// If copying was successful, share the new uids (also of related children):
 											if ($tce->copyMappingArray[$table][$id]) {
 												foreach ($tce->copyMappingArray as $origTable => $origIdArray) {
 													foreach ($origIdArray as $origId => $newId) {
@@ -719,31 +727,16 @@ class t3lib_TCEmain	{
 													}
 												}
 
+													// Update registerDBList, that holds the copied relations to child records:
+												$registerDBList = array_merge($registerDBList, $tce->registerDBList);
+													// For the reason that creating a new version of this record, automatically
+													// created related child records (e.g. "IRRE"), update the accordant field:
+												$this->getVersionizedIncomindFieldArray($table, $id, $incomingFieldArray, $registerDBList);
+												
 													// Use the new id of the copied/versionized record:
-												$oId = $id;
 												$id = $this->autoVersionIdMap[$table][$id];
 												$recordAccess = TRUE;
 												$this->autoVersioningUpdate = TRUE;
-												
-													// For the reason that creating a new version of this record, automatically
-													// created related child records (e.g. "IRRE"), update the accordant field:
-												if (is_array($tce->registerDBList[$table][$oId])) {
-													foreach ($incomingFieldArray as $field => $value) {
-														$fieldConf = $TCA[$table]['columns'][$field]['config'];
-														if ($tce->registerDBList[$table][$oId][$field] && $foreignTable = $fieldConf['foreign_table']) {
-															$newValueArray = array();
-															$origValueArray = explode(',', $value);
-																// Update the uids of the copied records, but also take care about new records:
-															foreach ($origValueArray as $childId) {
-																$newValueArray[] = $this->autoVersionIdMap[$foreignTable][$childId]
-																	? $this->autoVersionIdMap[$foreignTable][$childId]
-																	: $childId;
-															}
-																// Set the changed value to the $incomingFieldArray
-															$incomingFieldArray[$field] = implode(',', $newValueArray);
-														}
-													}
-												}												
 											} else $this->newlog("Could not be edited in offline workspace in the branch where found (failure state: '".$errorCode."'). Auto-creation of version failed!",1);
 										} else $this->newlog("Could not be edited in offline workspace in the branch where found (failure state: '".$errorCode."'). Auto-creation of version not allowed in workspace!",1);
 									}
@@ -2802,10 +2795,7 @@ class t3lib_TCEmain	{
 
 				// store the new values, we will set up the uids for the subtype later on
 			$value = implode(',',$dbAnalysis->getValueArray());
-				// if sub type is list (comma separated value list), no relation table is affected
-			if ($inlineSubType != 'list') {
-				$this->registerDBList[$table][$uid][$field] = $value;
-			}
+			$this->registerDBList[$table][$uid][$field] = $value;
 		}
 
 			// For "flex" fieldtypes we need to traverse the structure for two reasons: If there are file references they have to be prepended with absolute paths and if there are database reference they MIGHT need to be remapped (still done in remapListedDBRecords())
@@ -4395,6 +4385,41 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 		}
 		
 		return $info;
+	}
+	
+	/**
+	 * If a parent record was versionized on a workspace in $this->process_datamap,
+	 * it might be possible, that child records (e.g. on using IRRE) were affected.
+	 * This function finds these relations and updates their uids in the $incomingFieldArray.
+	 * The $incomingFieldArray is updated by reference!
+	 *
+	 * @param	string		$table: Table name of the parent record
+	 * @param	integer		$id: Uid of the parent record
+	 * @param	array		$incomingFieldArray: Reference to the incominfFieldArray of process_datamap
+	 * @param	array		$registerDBList: Reference to the $registerDBList array that was created/updated by versionizing calls to TCEmain in process_datamap.
+	 * @return 	void
+	 */
+	function getVersionizedIncomindFieldArray($table, $id, &$incomingFieldArray, &$registerDBList) {
+		if (is_array($registerDBList[$table][$id])) {
+			foreach ($incomingFieldArray as $field => $value) {
+				$fieldConf = $GLOBALS['TCA'][$table]['columns'][$field]['config'];
+				if ($registerDBList[$table][$id][$field] && $foreignTable = $fieldConf['foreign_table']) {
+					$newValueArray = array();
+					$origValueArray = explode(',', $value);
+						// Update the uids of the copied records, but also take care about new records:
+					foreach ($origValueArray as $childId) {
+						$newValueArray[] = $this->autoVersionIdMap[$foreignTable][$childId]
+							? $this->autoVersionIdMap[$foreignTable][$childId]
+							: $childId;
+					}
+						// Set the changed value to the $incomingFieldArray
+					$incomingFieldArray[$field] = implode(',', $newValueArray);
+				}
+			}
+				// Clean up the $registerDBList array:
+			unset($registerDBList[$table][$id]);
+			if (!count($registerDBList[$table])) unset($registerDBList[$table]);
+		}												
 	}
 
 
