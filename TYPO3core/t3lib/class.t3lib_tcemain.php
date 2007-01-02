@@ -3125,7 +3125,7 @@ class t3lib_TCEmain	{
 	 * @param	string		$table: Record Table
 	 * @param	string		$uid: Record UID
 	 * @param	string		$destPid: Position to move to
-	 * @return	[type]		...
+	 * @return	void
 	 */
 	function moveRecord_procFields($table,$uid,$destPid) {
 		t3lib_div::loadTCA($table);
@@ -3144,8 +3144,8 @@ class t3lib_TCEmain	{
 	 * @param	string		$destPid: Position to move to
 	 * @param	string		$field: Record field
 	 * @param	string		$value: Record field value
-	 * @param	array		$conf: TCA configuration on current field
-	 * @return	[type]		...
+	 * @param	array		$conf: TCA configuration of current field
+	 * @return	return		void
 	 */
 	function moveRecord_procBasedOnFieldType($table,$uid,$destPid,$field,$value,$conf) {
 		$moveTable = '';
@@ -3648,7 +3648,7 @@ class t3lib_TCEmain	{
 	 * @param	string		$uid: Record UID
 	 * @param	string		$field: Record field
 	 * @param	string		$value: Record field value
-	 * @param	array		$conf: TCA configuration on current field
+	 * @param	array		$conf: TCA configuration of current field
 	 * @param	boolean		$undeleteRecord: If a record should be undeleted (e.g. from history/undo)
 	 * @return	void
 	 * @see 	deleteRecord()
@@ -3936,15 +3936,6 @@ class t3lib_TCEmain	{
 										$swapVersion['t3ver_tstamp'] = time();
 										$swapVersion['t3ver_stage'] = $swapVersion['t3ver_state'] = 0;
 
-/*											// Take care of relations (e.g. IRRE):
-										if (is_array($GLOBALS['TCA'][$table]['columns'])) {
-											foreach ($GLOBALS['TCA'][$table]['columns'] as $fN => $field) {
-												if ($field['config']['type'] == 'inline') {
-													echo $fN.': IRRE!';
-												}
-											}
-										}
-*/
 											// Modify online version to become offline:
 										unset($curVersion['uid']);
 										$curVersion['pid'] = -1;	// Set pid for OFFLINE
@@ -3973,6 +3964,19 @@ class t3lib_TCEmain	{
 										}
 
 										if (!count($sqlErrors))	{
+												// Take care of relations in each field (e.g. IRRE):
+											if (is_array($GLOBALS['TCA'][$table]['columns'])) {
+												foreach ($GLOBALS['TCA'][$table]['columns'] as $field => $fieldConf) {
+													$value = $this->version_swap_procBasedOnFieldType(
+														$table,
+														$id,
+														$swapWith,
+														$field,
+														$curVersion[$field],
+														$fieldConf['config']
+													);
+												}
+											}
 
 												// Checking for delete:
 											if ($t3ver_state['swapVersion']==2)	{
@@ -4089,6 +4093,30 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 		} else $this->newlog('Attempt to set stage for record failed because you do not have edit access',1);
 	}
 
+	/**
+	 * Update relations on version/workspace swapping.
+	 *
+	 * @param	string		$table: Record Table
+	 * @param	string		$curId: UID of the current (workspace/versionized) record
+	 * @param	string		$swapId: UID of the record to publish in or swap with
+	 * @param	string		$field: Record field
+	 * @param	string		$value: Record field value
+	 * @param	array		$conf: TCA configuration of current field
+	 */
+	function version_swap_procBasedOnFieldType($table,$curId,$swapId,$field,$value,$conf) {
+		$inlineType = $this->getInlineFieldType($conf);
+		if ($inlineType == 'field') {
+				// Read relations that point to the current record (e.g. live record):
+			$dbAnalysisCur = t3lib_div::makeInstance('t3lib_loadDBGroup');
+			$dbAnalysisCur->start($value, $conf['foreign_table'], '', $curId, $table, $conf);
+				// Read relations that point to the record to be swapped with e.g. draft record):
+			$dbAnalysisSwap = t3lib_div::makeInstance('t3lib_loadDBGroup');
+			$dbAnalysisSwap->start($value, $conf['foreign_table'], '', $swapId, $table, $conf);
+				// Update relations for both (workspace/versioning) sites:
+			$dbAnalysisCur->writeForeignField($conf,$curId,$swapId);
+			$dbAnalysisSwap->writeForeignField($conf,$swapId,$curId);
+		}
+	}
 
 
 
