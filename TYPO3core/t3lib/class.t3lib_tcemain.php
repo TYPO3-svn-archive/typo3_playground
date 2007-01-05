@@ -690,7 +690,7 @@ class t3lib_TCEmain	{
 									if ($this->autoVersionIdMap[$table][$id]) {
 											// For the reason that creating a new version of this record, automatically
 											// created related child records (e.g. "IRRE"), update the accordant field:
-										$this->getVersionizedIncomindFieldArray($table, $id, $incomingFieldArray, $registerDBList);
+										$this->getVersionizedIncomingFieldArray($table, $id, $incomingFieldArray, $registerDBList);
 
 											// Use the new id of the copied/versionized record:
 										$id = $this->autoVersionIdMap[$table][$id];
@@ -730,7 +730,7 @@ class t3lib_TCEmain	{
 												$registerDBList = array_merge($registerDBList, $tce->registerDBList);
 													// For the reason that creating a new version of this record, automatically
 													// created related child records (e.g. "IRRE"), update the accordant field:
-												$this->getVersionizedIncomindFieldArray($table, $id, $incomingFieldArray, $registerDBList);
+												$this->getVersionizedIncomingFieldArray($table, $id, $incomingFieldArray, $registerDBList);
 												
 													// Use the new id of the copied/versionized record:
 												$id = $this->autoVersionIdMap[$table][$id];
@@ -4372,7 +4372,7 @@ $this->log($table,$id,6,0,0,'Stage raised...',30,array('comment'=>$comment,'stag
 	 * @param	array		$registerDBList: Reference to the $registerDBList array that was created/updated by versionizing calls to TCEmain in process_datamap.
 	 * @return 	void
 	 */
-	function getVersionizedIncomindFieldArray($table, $id, &$incomingFieldArray, &$registerDBList) {
+	function getVersionizedIncomingFieldArray($table, $id, &$incomingFieldArray, &$registerDBList) {
 		if (is_array($registerDBList[$table][$id])) {
 			foreach ($incomingFieldArray as $field => $value) {
 				$fieldConf = $GLOBALS['TCA'][$table]['columns'][$field]['config'];
