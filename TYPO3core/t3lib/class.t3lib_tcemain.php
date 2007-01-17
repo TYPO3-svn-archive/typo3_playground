@@ -3752,10 +3752,10 @@ class t3lib_TCEmain	{
 
 										// Create raw-copy and return result:
 									return $this->copyRecord_raw($table,$id,-1,$overrideArray);
-								} else $this->newlog('Record you wanted to versionize was already a version in the workspace (wsid='.$this->BE_USER->workspace.')!',1);
+								} else $this->newlog('Record "'.$table.':'.$id.'" you wanted to versionize was already a version in the workspace (wsid='.$this->BE_USER->workspace.')!',1);
 							} else $this->newlog('Record cannot be deleted: '.$this->cannotDeleteRecord($table,$id),1);
-						} else $this->newlog('Record you wanted to versionize was already a version in archive (pid=-1)!',1);
-					} else $this->newlog('Record you wanted to versionize did not exist!',1);
+						} else $this->newlog('Record "'.$table.':'.$id.'" you wanted to versionize was already a version in archive (pid=-1)!',1);
+					} else $this->newlog('Record "'.$table.':'.$id.'" you wanted to versionize did not exist!',1);
 				} else $this->newlog('The versioning type '.$versionizeTree.' mode you requested was not allowed',1);
 			} else $this->newlog('You didnt have correct permissions to make a new version (copy) of this record "'.$table.'" / '.$id,1);
 		} else $this->newlog('Versioning is not supported for this table "'.$table.'" / '.$id,1);
