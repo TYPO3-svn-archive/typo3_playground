@@ -764,6 +764,8 @@ class t3lib_TCEforms_inline {
 				)
 			);
 			return $this->getJSON($jsonArray);
+		} else {
+			$item = utf8_encode($item);
 		}
 
 		if (!$current['uid']) {
