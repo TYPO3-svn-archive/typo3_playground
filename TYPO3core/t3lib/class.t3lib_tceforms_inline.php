@@ -453,7 +453,6 @@ class t3lib_TCEforms_inline {
 
 			// If the table is NOT a read-only table, then show these links:
 		if (!$tcaTableCtrl['readOnly'])	{
-
 				// "New record after" link (ONLY if the records in the table are sorted by a "sortby"-row or if default values can depend on previous record):
 			if ($enableManualSorting || $tcaTableCtrl['useColumnsForDefaultValues'])	{
 				if (
@@ -862,9 +861,8 @@ class t3lib_TCEforms_inline {
 			// Perform modification of the selected items array:
 		$itemArray = t3lib_div::trimExplode(',',$PA['itemFormElValue'],1);
 		foreach($itemArray as $tk => $tv) {
-			$tvP = explode('|',$tv,2);
 				// get the records for this uid using t3lib_transferdata
-			$records[] = $this->getRecord($row['pid'], $config['foreign_table'], $tvP[0]);
+			$records[] = $this->getRecord($row['pid'], $config['foreign_table'], $this->normalizeUid($tv));
 		}
 
 		return $records;
@@ -953,7 +951,6 @@ class t3lib_TCEforms_inline {
 	function getRecord($pid, $table, $uid, $cmd='') {
 		$trData = t3lib_div::makeInstance('t3lib_transferData');
 		$trData->addRawData = TRUE;
-		# $trData->defVals = $this->defVals;
 		$trData->lockRecords=1;
 		$trData->disableRTE = $GLOBALS['SOBE']->MOD_SETTINGS['disableRTE'];
 			// if a new record should be created
