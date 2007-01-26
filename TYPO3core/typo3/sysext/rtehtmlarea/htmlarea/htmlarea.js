@@ -885,12 +885,12 @@ HTMLArea.prototype.sizeIframe = function(diff) {
 	var height = (this.config.height == "auto" ? (this._textArea.style.height) : this.config.height);
 	var textareaHeight = height;
 
-	this.inlineObject = RTEarea[this._editorNumber].tceformsInlineObject;
-	this.dynTabs = RTEarea[this._editorNumber].tceformsDynTabs;
+	var inlineObject = RTEarea[this._editorNumber].tceformsInlineObject;
+	var dynTabs = RTEarea[this._editorNumber].tceformsDynTabs;
 
 	var parentElements = new Array();
-	if (this.dynTabs) parentElements = this.dynTabs.split(',');
-	if (this.inlineObject) parentElements.push(this.inlineObject);
+	if (dynTabs) parentElements = dynTabs.split(',');
+	if (inlineObject) parentElements.push(inlineObject);
 
 	var dimensions = this.accessParentElements(parentElements, 'this.getDimensions()');
 			

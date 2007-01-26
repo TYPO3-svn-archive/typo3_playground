@@ -1,3 +1,94 @@
+2007-01-26  Oliver Hader  <oh@inpublica.de>
+
+	* Fixed bug 4814: Umlauts error in AJAX Pagetree
+	* Updated prototype.js to version 1.5.0
+	* Updated script.aculo.us to version 1.7.0
+	* Created new directory for external contributions typo3/contrib/ and moved files:
+		- typo3/prototype.js	-> typo3/contrib/prototype/prototype.js
+		- typo3/scriptaculous/*	-> typo3/contrib/scriptaculous/*
+		- typo3/json.php		-> typo3/contrib/json.php
+	* Changed paths to typo3/contrib in affected core files
+
+2007-01-25  Ingmar Schlecht  <ingmar@typo3.org>
+
+	* Added backwards compatibility to Pagetree for non AJAX-capable browsers (by Benjamin Mack)
+
+2007-01-24  Michael Stucki  <michael@typo3.org>
+
+	* Install Tool: Network 192.168.0.0/255.255.0.0 was allowed to enter the Install Tool regardless of the die() presence in typo3/install/index.php. This exception has been removed, only 127.0.0.1 may now enter the Install Tool regardless of any other conditions.
+	* !!! Install Tool: Instead of modifying typo3/install/index.php to enable the Install Tool, a new file "typo3conf/ENABLE_INSTALL_TOOL" can be created to enable it. Shared hosting servers: If you want to turn this off, you have to change the condition in typo3/install/index.php, line 50. See comment above.
+	* Removed access for 192.168.0.0/255.255.0.0 in misc/phpcheck/incfile.php
+
+2007-01-24  Dmitry Dulepov  <dmitry@typo3.org>
+
+	* Fixed bug 4846: EM: inconsistent line ending
+
+2007-01-24  Oliver Hader  <oh@inpublica.de>
+
+	* Fixed bug 4820: IRRE - Wrong character encoding in AJAX response
+	* Fixed feature request 4790: typolink.addQueryString - enable usage of merged POST and GET data
+	* Fixed bug 4824: typo3 not defined in jsfunc.tbe_editor.js
+	* Fixed bug 4809: require() in class.t3lib_tceforms_inline.php fails
+	* Fixed feature request 4780: TypoScript - add stdWrap to TMENU/GMENU
+	* Fixed bug 4827: Call to undefined method t3lib_BEfunc::getrecordtitleprep()
+
+2007-01-23  Ingmar Schlecht  <ingmar@typo3.org>
+
+	* Bugfix to mm-relation handling: writeMM() tried to set the "tablenames" field even for simple two-table relationships which then failed
+
+2007-01-23  Michael Stucki  <michael@typo3.org>
+
+	* Slightly changed the check for IE browsers in t3lib_div::clientInfo()
+	* !!! Removed function "netPrintApplication_offsiteLinkWrap" and TypoScript property "netprintApplicationLink" for IMGTEXT elements which were only used by one extension which is obsolete meanwhile...
+	* Fixed bug #4830: Right click in CM did not work anymore (thanks to Benjamin Mack)
+	* Fixed bug #4643: File Upload did not recognize BE-User option "defaultFileUploads" (thanks to Benjamin Mack)
+
+2007-01-20  Michael Stucki  <michael@typo3.org>
+
+	* Release of TYPO3 4.1beta3
+	* Update copyright information (just the year, of course) in t3lib/config_default.php
+
+2007-01-19  Ingmar Schlecht  <ingmar@typo3.org>
+
+	* AJAX pagetree and filetree by Benjamin Mack <bmack@xnos.org>! (Thanks also to Franz Holzinger and Stefan Regniet for their help)
+	* Patch by René Fritz regarding bidirectional mm-relations: It's now possible to save different relations to the same mm-table by means of so called "matchFields". This is used by DAM.
+
+2007-01-19  Andreas Otto  <andreas.otto@dkd.de>
+
+	* Fixed feature request 4656: The feature config.sys_language_softMergeIfNotBlank sets the "mergeIfNotBlank" for a field in the frontend context through TypoScript. It can be useful to have the same for "exclude" localization mode so a field is always overlaid in the frontend output. This patch simply copies the code from "softMergeIfNotBlank" and does the same for "exclude".
+
+2007-01-19  Dmitry Dulepov  <dmitry@typo3.org>
+
+	* !!! Added "prepend" to tt_content.stdWrap in css_styled_content to display anchor to localized content elements in addition to anchor to the default language version
+
+2007-01-19  Michael Stucki  <michael@typo3.org>
+
+	* Reverting patch for bug #4581 which was committed by mistake. The solution works well, but it depends on 4.3.0 currently...
+
+2007-01-18  Martin Kutschker  <martin.t.kutschker@blackbox.net>
+
+	* Added PATH_typo3 to index_ts.php (see related change on 2006-10-29)
+
+2007-01-09  Ingmar Schlecht  <ingmar@typo3.org>
+
+	* Alphabetically sorted TS tree in TS Object Browser (Thanks to Ingo Renner)
+
+2007-01-09  Sebastian Kurfuerst  <sebastian@typo3.org> (Thanks to Oliver Hader)
+
+	* rewrote TBE_EDITOR Javascript functions to use JS "objects" and outsourced them to an external file
+	* !!! Removed the variables TBE_EDITOR_isChanged and TBE_EDITOR_loadTime in TBE_EDITOR javascript
+	* change in getRecordTitle: a too long title is wrapped in a <span title="..."> tag to show a tooltip
+
+2007-01-03  Thorsten Kahler  <thorsten.kahler@dkd.de>
+
+	* Fixed bug 931: Typolink to a page with certain type doesn't work if type is zero
+
+2007-01-03  Dmitry Dulepov  <dmitry@typo3.org>
+
+	* Fixed bugs 3254, 3872, 4345: hide workspace selector if (1) no access to workspace module, or (2) only one workspace is available to user
+	* Fixed: publishing many records may cause PHP timeout and leave workspace in half-published state
+	* Fixed bug 4006: Load $GLOBALS['TSFE'] with image dimensions when IMG_RESOURCE is used (feature request!)
+
 2006-12-27  Dmitry Dulepov  <dmitry@typo3.org>
 
 	* Removed garbage characters in typo3/init.php

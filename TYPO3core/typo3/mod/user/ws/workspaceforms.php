@@ -2,7 +2,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 1999-2005 Dmitry Dulepov (typo3@accio.lv)
+*  (c) 1999-2006 Kasper Skaarhoj (kasperYYYY@typo3.com)
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -27,7 +27,7 @@
 /**
  * Module: Workspace manager
  *
- * $Id: workspaceforms.php 1731 2006-09-11 10:43:46Z ingmars $
+ * $Id: workspaceforms.php 1899 2007-01-09 12:55:52Z kurfuerst $
  *
  * @author	Dmitry Dulepov <typo3@accio.lv>
  */
@@ -128,7 +128,7 @@ class SC_mod_user_ws_workspaceForms extends t3lib_SCbase {
 		$this->doc = t3lib_div::makeInstance('mediumDoc');
 		$this->doc->backPath = $GLOBALS['BACK_PATH'];
 		$this->doc->docType = 'xhtml_trans';
-		$this->doc->form = '<form action="' . t3lib_div::getIndpEnv('SCRIPT_NAME').'" method="post" enctype="'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['form_enctype'].'" name="editform" onsubmit="return TBE_EDITOR_checkSubmit(1);">';
+		$this->doc->form = '<form action="' . t3lib_div::getIndpEnv('SCRIPT_NAME').'" method="post" enctype="'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['form_enctype'].'" name="editform" onsubmit="return TBE_EDITOR.checkSubmit(1);">';
 
 		$CMparts = $this->doc->getContextMenuCode();
 		$this->doc->JScode.= $CMparts[0];
@@ -645,8 +645,8 @@ class user_SC_mod_user_ws_workspaceForms {
 }
 
 // Include extension?
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['typo3/mod/user/ws/class.mod_user_ws_workspaceForms.php'])	{
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['typo3/mod/user/ws/class.mod_user_ws_workspaceForms.php']);
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['typo3/mod/user/ws/workspaceforms.php'])	{
+	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['typo3/mod/user/ws/workspaceforms.php']);
 }
 
 // Make instance:

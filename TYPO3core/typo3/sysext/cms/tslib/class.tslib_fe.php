@@ -278,7 +278,6 @@
 			JSCode : reserved
 			JSImgCode : reserved
 	*/
-	var $defaultBodyTag='<body>';		// Default bodytag, if nothing else is set. This can be overridden by applications like TemplaVoila.
 	var $additionalHeaderData=array();	// used to accumulate additional HTML-code for the header-section, <head>...</head>. Insert either associative keys (like additionalHeaderData['myStyleSheet'], see reserved keys above) or num-keys (like additionalHeaderData[] = '...')
 	var $additionalJavaScript=array();	// used to accumulate additional JavaScript-code. Works like additionalHeaderData. Reserved keys at 'openPic' and 'mouseOver'
 	var $additionalCSS=array();			// used to accumulate additional Style code. Works like additionalHeaderData.
@@ -290,6 +289,7 @@
 	var $JSCode='';						// Deprecated, use additionalJavaScript instead.
 	var $JSImgCode='';					// Used to accumulate JavaScript loaded images (by menus)
 	var $divSection='';					// Used to accumulate DHTML-layers.
+	var $defaultBodyTag='<body>';		// Default bodytag, if nothing else is set. This can be overridden by applications like TemplaVoila.
 
 		// RENDERING configuration, settings from TypoScript is loaded into these vars. See pagegen.php
 	var $debug='';						// Debug flag, may output special debug html-code.
@@ -2092,6 +2092,13 @@
 			list($tN,$fN) = explode(':',$TF);
 			$this->TCAcachedExtras[$tN]['l10n_mode'][$fN] = 'mergeIfNotBlank';
 		}
+
+			// Setting softExclude:
+		$table_fields = t3lib_div::trimExplode(',', $this->config['config']['sys_language_softExclude'],1);
+		foreach($table_fields as $TF)	{
+			list($tN,$fN) = explode(':',$TF);
+			$this->TCAcachedExtras[$tN]['l10n_mode'][$fN] = 'exclude';
+		}
 	}
 
 	/**
@@ -3372,8 +3379,8 @@ if (version == "n3") {
 	 * @see makeSimulFileName(), publish.php
 	 */
 	function getSimulFileName()	{
-		$url='';
-		$url.=$this->makeSimulFileName($this->page['title'], $this->page['alias']?$this->page['alias']:$this->id, $this->type).'.html';
+		$url = '';
+		$url.= $this->makeSimulFileName($this->page['title'], $this->page['alias']?$this->page['alias']:$this->id, $this->type).'.html';
 		return $url;
 	}
 
@@ -3405,14 +3412,14 @@ if (version == "n3") {
 	function fileNameASCIIPrefix($inTitle,$titleChars,$mergeChar='.')	{
 		$out = $this->csConvObj->specCharsToASCII($this->renderCharset, $inTitle);
 			// Get replacement character
-		$replacementChar = &$this->config['config']['simulateStaticDocuments_replacementChar'];
+		$replacementChar = $this->config['config']['simulateStaticDocuments_replacementChar'];
 		$replacementChars = '_\-' . ($replacementChar != '_' && $replacementChar != '-' ? $replacementChar : '');
 		$out = preg_replace('/[^A-Za-z0-9_-]/', $replacementChar, trim(substr($out, 0, $titleChars)));
 		$out = preg_replace('/([' . $replacementChars . ']){2,}/', '\1', $out);
 		$out = preg_replace('/[' . $replacementChars . ']?$/', '', $out);
 		$out = preg_replace('/^[' . $replacementChars . ']?/', '', $out);
 		if (strlen($out)) {
-			$out .= $mergeChar;
+			$out.= $mergeChar;
 		}
 
 		return $out;
