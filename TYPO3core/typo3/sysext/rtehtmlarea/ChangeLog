@@ -1,3 +1,8 @@
+2007-01-27  Oliver Hader  <oh@inpublica.de>
+
+	* Bugfix for using IRRE with tabs ("nested tabs") on Gecko browsers - hidden IFrames (on hidden tabs) were not editable
+	* this.dynTabs in htmlarea.js has a list of all tabs a IFrame is embedded in
+
 2007-01-23  Michael Stucki  <michael@typo3.org>
 
 	* Change label of EM setting "AspellDirectory": The value must be a path, not a directory. The description should make this clear now...

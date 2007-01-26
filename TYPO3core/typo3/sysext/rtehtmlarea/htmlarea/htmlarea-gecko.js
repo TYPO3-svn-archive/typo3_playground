@@ -41,27 +41,32 @@
  ***************************************************/
 
 HTMLArea.prototype._initEditMode = function () {
-		// We can't set designMode when we are in a hidden TYPO3 tab
+ 		// We can't set designMode when we are in a hidden TYPO3 tab
 		// Then we will set it when the tab comes in the front.
 	var inTYPO3Tab = false;
-	var DTMDiv = this._textArea;
-	while (DTMDiv && (DTMDiv.nodeType == 1) && (DTMDiv.tagName.toLowerCase() != "body")) {
-		if (DTMDiv.tagName.toLowerCase() == "div" && DTMDiv.id.indexOf("DTM-") != -1 && DTMDiv.id.indexOf("-DIV") != -1 && DTMDiv.className == "c-tablayer") {
-			inTYPO3Tab = true;
-			break;
-		} else {
-			DTMDiv = DTMDiv.parentNode;
+	var DTMDiv = {
+		current: this._textArea,
+		parents: null
+	};
+
+	if (this.dynTabs) {
+		inTYPO3Tab = true;
+		var tabsArray = this.dynTabs.split(',');
+		DTMDiv.current = document.getElementById(tabsArray.pop());
+		if (tabsArray.length > 0) {
+			DTMDiv.parents = tabsArray;
 		}
 	}
+	
 	if (!HTMLArea.is_wamcom) {
 		try {
-			if (!(inTYPO3Tab && DTMDiv.style.display == "none")) this._doc.designMode = "on";
+			if (!(inTYPO3Tab && DTMDiv.current.style.display == "none")) this._doc.designMode = "on";
 		} catch(e) { }
 	} else {
 		try { 
 			this._doc.designMode = "on"; 
 		} catch(e) {
-			if (!(inTYPO3Tab && DTMDiv.style.display == "none")) {
+			if (!(inTYPO3Tab && DTMDiv.current.style.display == "none")) {
 				this._doc.open();
 				this._doc.close();
 				this._initIframeTimer = window.setTimeout("HTMLArea.initIframe(" + this._editorNumber + ");", 500);
@@ -72,7 +77,19 @@ HTMLArea.prototype._initEditMode = function () {
 		// When the TYPO3 TCA feature div2tab is used, the editor iframe may become hidden with style.display = "none"
 		// This breaks the editor in Mozilla/Firefox browsers: the designMode attribute needs to be resetted after the style.display of the containing div is resetted to "block"
 		// Here we rely on TYPO3 naming conventions for the div id and class name
-	if (inTYPO3Tab) HTMLArea._addEvent(DTMDiv, "DOMAttrModified", HTMLArea.DTMDivHandler(this, DTMDiv));
+	if (inTYPO3Tab) {
+		HTMLArea._addEvent(DTMDiv.current, "DOMAttrModified", HTMLArea.DTMDivHandler(this, DTMDiv.current));
+
+			// Do the same for parent tabs ("nested tabs"):
+		if (DTMDiv.parents != null) {
+			var DTMDivParent;
+			for (var i=DTMDiv.parents.length; --i >= 0;) {
+				DTMDivParent = document.getElementById(DTMDiv.parents[i]);
+				HTMLArea._addEvent(DTMDivParent, "DOMAttrModified", HTMLArea.DTMDivHandler(this, DTMDivParent, true));
+			}
+		}
+	}
+
 	return true;
 };
 
@@ -284,7 +301,7 @@ HTMLArea.prototype.insertHTML = function(html) {
 /*
  * TYPO3 hidden tab handler
  */
-HTMLArea.DTMDivHandler = function (editor,DTMDiv) {
+HTMLArea.DTMDivHandler = function (editor,DTMDiv,noOpenCloseAction) {
 	return (function(ev) {
 		if(!ev) var ev = window.event;
 		var target = (ev.target) ? ev.target : ev.srcElement;
@@ -294,8 +311,12 @@ HTMLArea.DTMDivHandler = function (editor,DTMDiv) {
 					editor._doc.designMode = "on";
 					if (editor.config.sizeIncludesToolbar && editor._initialToolbarOffsetHeight != editor._toolbar.offsetHeight) editor.sizeIframe(-2);
 				} catch(e) {
-					editor._doc.open();
-					editor._doc.close();
+						// If an event of a parent tab ("nested tabs") is triggered, the following lines should not be
+						// processed, because this causes some trouble on all event handlers...
+					if (!noOpenCloseAction) {
+						editor._doc.open();
+						editor._doc.close();
+					}
 					editor.initIframe();
 				}
 			}, 20);
