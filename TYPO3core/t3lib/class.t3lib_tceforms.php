@@ -786,6 +786,8 @@ class t3lib_TCEforms	{
 
 				// If the field is NOT disabled from TSconfig (which it could have been) then render it
 			if (!$PA['fieldTSConfig']['disabled'])	{
+					// Override fieldConf by fieldTSconfig:
+				$PA['fieldConf']['config'] = $this->overrideFieldConf($PA['fieldConf']['config'], $PA['fieldTSConfig']);
 
 					// Init variables:
 				$PA['itemFormElName']=$this->prependFormFieldNames.'['.$table.']['.$row['uid'].']['.$field.']';		// Form field name
@@ -2783,6 +2785,44 @@ class t3lib_TCEforms	{
 		} else {
 			return $this->cachedTSconfig[$mainKey];
 		}
+	}
+
+	/**
+	 * Overrides the TCA field configuration by TSconfig settings.
+	 * 
+	 * Example TSconfig: TCEform.<table>.<field>.config.appearance.useSortable = 1
+	 * This overrides the setting in $TCA[<table>]['columns'][<field>]['config']['appearance']['useSortable'].
+	 *
+	 * @param	array		$fieldConfig: TCA field configuration
+	 * @param	array		$TSconfig: TSconfig
+	 * @return	array		Changed TCA field configuration
+	 */
+	function overrideFieldConf($fieldConfig, $TSconfig) {
+			// Define the keys for TCA type that could be changed:
+		$allowOverrideMatrix = array(
+			'select' => array('minitems', 'maxitems', 'size'),
+			'group' => array('minitems', 'maxitems', 'size'),
+			'inline' => array('minitems', 'maxitems', 'size', 'foreign_selector', 'foreign_unique', 'appearance'),
+		);
+
+		if (is_array($TSconfig)) {
+			$TSconfig = t3lib_div::removeDotsFromTS($TSconfig);
+			$type = $fieldConfig['type'];
+			if (is_array($allowOverrideMatrix[$type])) {
+					// Check if the keys in TSconfig['config'] are allowed to override TCA field config:			
+				foreach (array_keys($TSconfig['config']) as $key) {
+					if (!in_array($key, $allowOverrideMatrix[$type], true)) {
+						unset($TSconfig['config'][$key]);
+					}
+				}
+					// Override TCA field config by remaining TSconfig['config']:
+				if (count($TSconfig['config'])) {
+					$fieldConfig = array_merge($fieldConfig, $TSconfig['config']);
+				}
+			}
+		}
+		
+		return $fieldConfig;
 	}
 
 	/**
