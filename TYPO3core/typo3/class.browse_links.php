@@ -974,17 +974,50 @@ class browse_links {
 				}
 			}
 			function insertElement(table, uid, type, filename,fp,filetype,imagefile,action, close)	{	//
-				if (1=='.($pArr[0]&&!$pArr[1]&&!$pArr[2] ? 1 : 0).')	{
-					addElement(filename,table+"_"+uid,fp,close);
-				} else {
-					if (setReferences())	{
-						parent.window.opener.group_change("add","'.$pArr[0].'","'.$pArr[1].'","'.$pArr[2].'",elRef,targetDoc);
+				var checkResult = true;
+
+					// Call a check function in the opener window (e.g. for uniqueness handling):
+				if (1=='.($pArr[4]&&$pArr[5] ? 1 : 0).') {
+					if (parent.window.opener) {
+						var res = parent.window.opener.'.$pArr[5].'("'.addslashes($pArr[4]).'",table,uid,type);
+						if (!res.passed) {
+							if (res.message) alert(res.message);
+							checkResult = false;
+						}
 					} else {
 						alert("Error - reference to main window is not set properly!");
-					}
-					if (close)	{
-						parent.window.opener.focus();
 						parent.close();
+					}
+				}
+					// Call performing function and finish this action:
+				if (checkResult) {
+						// Call helper function to manage data in the opener window:
+					if (1=='.($pArr[4]&&$pArr[6] ? 1 : 0).') {
+						if (parent.window.opener) {
+							parent.window.opener.'.$pArr[6].'("'.addslashes($pArr[4]).'",table,uid,type,"'.addslashes($pArr[0]).'");
+						} else {
+							alert("Error - reference to main window is not set properly!");
+							parent.close();
+						}
+					}
+						// Call user defined handler function:
+					if (1=='.($pArr[4]&&$pArr[7] ? 1 : 0).') {
+						if (parent.window.opener) {
+							parent.window.opener.'.$pArr[7].'("'.addslashes($pArr[4]).'",table,uid,type);
+							focusOpenerAndClose(close);
+						} else {
+							alert("Error - reference to main window is not set properly!");
+							parent.close();
+						}
+					} else if (1=='.($pArr[0]&&!$pArr[1]&&!$pArr[2] ? 1 : 0).')	{
+						addElement(filename,table+"_"+uid,fp,close);
+					} else {
+						if (setReferences())	{
+							parent.window.opener.group_change("add","'.$pArr[0].'","'.$pArr[1].'","'.$pArr[2].'",elRef,targetDoc);
+						} else {
+							alert("Error - reference to main window is not set properly!");
+						}
+						focusOpenerAndClose(close);
 					}
 				}
 				return false;
@@ -992,12 +1025,15 @@ class browse_links {
 			function addElement(elName,elValue,altElValue,close)	{	//
 				if (parent.window.opener && parent.window.opener.setFormValueFromBrowseWin)	{
 					parent.window.opener.setFormValueFromBrowseWin("'.$pArr[0].'",altElValue?altElValue:elValue,elName);
-					if (close)	{
-						parent.window.opener.focus();
-						parent.close();
-					}
+					focusOpenerAndClose(close);
 				} else {
 					alert("Error - reference to main window is not set properly!");
+					parent.close();
+				}
+			}
+			function focusOpenerAndClose(close)	{	//
+				if (close)	{
+					parent.window.opener.focus();
 					parent.close();
 				}
 			}
@@ -1378,7 +1414,7 @@ class browse_links {
 	function main_db()	{
 
 			// Starting content:
-		$content=$this->doc->startPage('TBE file selector');
+		$content=$this->doc->startPage('TBE record selector');
 
 			// Init variable:
 		$pArr = explode('|',$this->bparams);
