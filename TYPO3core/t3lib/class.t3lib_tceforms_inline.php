@@ -224,7 +224,7 @@ class t3lib_TCEforms_inline {
 			$config['inline']['inlineNewButtonStyle'] = 'display: none;';
 		}
 			// add the "Create new record" link before all child records
-		if (in_array($config['appearance']['newRecordLinkPosition'], array('both', 'top'))) {
+		if ($config['appearance']['newRecordLinkPosition'] != 'bottom') {
 			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
 		}
 
@@ -239,7 +239,7 @@ class t3lib_TCEforms_inline {
 		$item .= '</div>';
 
 			// add the "Create new record" link after all child records
-		if (in_array($config['appearance']['newRecordLinkPosition'], array('both', 'bottom'))) {
+		if ($config['appearance']['newRecordLinkPosition'] != 'top') {
 			$item .= $this->getNewRecordLink($nameObject.'['.$foreign_table.']', $config);
 		}
 
@@ -283,13 +283,9 @@ class t3lib_TCEforms_inline {
 		$foreign_field = $config['foreign_field'];
 		$foreign_selector = $config['foreign_selector'];
 
-			// Send a mapping information to the browser via JSON:
-			// e.g. data[<curTable>][<curId>][<curField>] => data[<pid>][<parentTable>][<parentId>][<parentField>][<curTable>][<curId>][<curField>]
-		$this->inlineData['map'][$this->inlineNames['form']] = $this->inlineNames['object'];
-
-			// Set this variable if we handle a brand new unsaved record:
+			// record comes from storage (e.g. database)
 		$isNewRecord = t3lib_div::testInt($rec['uid']) ? false : true;
-			// If there is a selector field, normalize it:
+			// if there is a selector field, normalize it
 		if ($foreign_selector) {
 			$rec[$foreign_selector] = $this->normalizeUid($rec[$foreign_selector]);
 		}
@@ -298,7 +294,7 @@ class t3lib_TCEforms_inline {
 
 		if(!$hasAccess) return false;
 
-			// Get the current naming scheme for DOM name/id attributes:
+			// get the current prependObjectId
 		$nameObject = $this->inlineNames['object'];
 		$appendFormFieldNames = '['.$foreign_table.']['.$rec['uid'].']';
 		$formFieldNames = $nameObject.$appendFormFieldNames;
@@ -513,7 +509,7 @@ class t3lib_TCEforms_inline {
 				($isPagesTable && ($localCalcPerms&4)) || (!$isPagesTable && ($calcPerms&16))
 				)	{
 				$onClick = "inline.deleteRecord('".$nameObjectFtId."');";
-				$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$GLOBALS['LANG']->JScharCode($GLOBALS['LANG']->getLL('deleteWarning')).')) {	'.$onClick.' } return false;').'">'.
+				$cells[]='<a href="#" onclick="'.htmlspecialchars('if (confirm('.$GLOBALS['LANG']->JScharCode($GLOBALS['LANG']->getLL('deleteWarning').t3lib_BEfunc::referenceCount($foreign_table,$rec['uid'],' (There are %s reference(s) to this record!)')).')) {	'.$onClick.' } return false;').'">'.
 						'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/garbage.gif','width="11" height="12"').' title="'.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_mod_web_list.xml:delete',1).'" alt="" />'.
 						'</a>';
 			}
@@ -606,36 +602,6 @@ class t3lib_TCEforms_inline {
 		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_selector);
 		$config = $PA['fieldConf']['config'];
 
-		if ($config['type'] == 'select') {
-			$item = $this->renderPossibleRecordsSelectorTypeSelect($selItems, $conf, $PA, $uniqueIds);
-		} elseif ($config['type'] == 'group' && $config['internal_type'] == 'db') {
-			$item = $this->renderPossibleRecordsSelectorTypeGroupDB($conf, $PA);
-		}
-
-		return $item;
-	}
-
-
-	/**
-	 * Get a selector as used for the select type, to select from all available
-	 * records and to create a relation to the embedding record (e.g. like MM).
-	 *
-	 * @param	array		$selItems: Array of all possible records
-	 * @param	array		$conf: TCA configuration of the parent(!) field
-	 * @param	array		$PA: An array with additional configuration options
-	 * @param	array		$uniqueIds: The uids that have already been used and should be unique
-	 * @return	string		A HTML <select> box with all possible records
-	 */
-	function renderPossibleRecordsSelectorTypeSelect($selItems, $conf, &$PA, $uniqueIds=array()) {
-		$foreign_table = $conf['foreign_table'];
-		$foreign_selector = $conf['foreign_selector'];
-
-		$PA = array();
-		$PA['fieldConf'] = $GLOBALS['TCA'][$foreign_table]['columns'][$foreign_selector];
-		$PA['fieldConf']['config']['form_type'] = $PA['fieldConf']['config']['form_type'] ? $PA['fieldConf']['config']['form_type'] : $PA['fieldConf']['config']['type'];	// Using "form_type" locally in this script
-		$PA['fieldTSConfig'] = $this->fObj->setTSconfig($foreign_table,array(),$foreign_selector);
-		$config = $PA['fieldConf']['config'];
-
 		if(!$disabled) {
 				// Create option tags:
 			$opt = array();
@@ -654,14 +620,14 @@ class t3lib_TCEforms_inline {
 
 				// Put together the selector box:
 			$selector_itemListStyle = isset($config['itemListStyle']) ? ' style="'.htmlspecialchars($config['itemListStyle']).'"' : ' style="'.$this->fObj->defaultMultipleSelectorStyle.'"';
-			$size = intval($conf['size']);
-			$size = $conf['autoSizeMax'] ? t3lib_div::intInRange(count($itemArray)+1,t3lib_div::intInRange($size,1),$conf['autoSizeMax']) : $size;
-			$onChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$conf['foreign_table']."]')";
-			$item = '
+			$size = intval($config['size']);
+			$size = $config['autoSizeMax'] ? t3lib_div::intInRange(count($itemArray)+1,t3lib_div::intInRange($size,1),$config['autoSizeMax']) : $size;
+			$sOnChange = "return inline.importNewRecord('".$this->inlineNames['object']."[".$conf['foreign_table']."]')";
+			$itemsToSelect = '
 				<select id="'.$this->inlineNames['object'].'['.$conf['foreign_table'].']_selector"'.
 							$this->fObj->insertDefStyle('select').
 							($size ? ' size="'.$size.'"' : '').
-							' onchange="'.htmlspecialchars($onChange).'"'.
+							' onchange="'.htmlspecialchars($sOnChange).'"'.
 							$PA['onFocus'].
 							$selector_itemListStyle.
 							($conf['foreign_unique'] ? ' isunique="isunique"' : '').'>
@@ -674,43 +640,18 @@ class t3lib_TCEforms_inline {
 				// there is only one record item in the select-box, that is selected by default
 				// the selector-box creates a new relation on using a onChange event (see some line above)
 			$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
-			$item .=
-				'<a href="#" onclick="'.htmlspecialchars($onChange).'" align="abstop">'.
-					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' align="absmiddle" '.t3lib_BEfunc::titleAltAttrib($createNewRelationText).' /> '.$createNewRelationText.
+			$itemsToSelect .=
+				'<a href="#" onclick="'.htmlspecialchars($sOnChange).'" align="abstop">'.
+					'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/edit2.gif','width="11" height="12"').' title="'.$createNewRelationText.'" alt="" /> '.$createNewRelationText.
 				'</a>';
 				// wrap the selector and add a spacer to the bottom
-			$item = '<div style="margin-bottom: 20px;">'.$item.'</div>';
+			$itemsToSelect = '<div style="margin-bottom: 20px;">'.$itemsToSelect.'</div>';
 		}
 
-		return $item;
+		return $itemsToSelect;
 	}
 
-	
-	/**
-	 * Generate a link that ipens an element browser in a new window.
-	 *
-	 * @param	array		$conf: TCA configuration of the parent(!) field
-	 * @param	array		$PA: An array with additional configuration options
-	 * @return	string		A HTML link that opens an element browser in a new window
-	 */
-	function renderPossibleRecordsSelectorTypeGroupDB($conf, &$PA) {
-		$foreign_table = $conf['foreign_table'];
 
-		$config = $PA['fieldConf']['config'];
-		$allowed = $config['allowed'];
-		$objectPrefix = $this->inlineNames['object'].'['.$foreign_table.']';
-
-		$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation',1);
-		$onClick = "setFormValueOpenBrowser('db','".($objectPrefix.'|||'.$allowed.'|inline.importElement')."'); return false;";
-		$item =
-			'<a href="#" onclick="'.htmlspecialchars($onClick).'">'.
-				'<img'.t3lib_iconWorks::skinImg($this->backPath,'gfx/insert3.gif','width="14" height="14"').' align="absmiddle" '.t3lib_BEfunc::titleAltAttrib($createNewRelationText).' /> '.$createNewRelationText.
-			'</a>';
-			
-		return $item;
-	}
-	
-	
 	/**
 	 * Creates a link/button to create new records
 	 *
@@ -775,7 +716,7 @@ class t3lib_TCEforms_inline {
 		$parent = $this->getStructureLevel(-1);
 			// get TCA 'config' of the parent table
 		$config = $parent['config'];
-		
+
 			// dynamically create a new record using t3lib_transferData
 		if (!$foreignUid || !t3lib_div::testInt($foreignUid) || $config['foreign_selector']) {
 			$record = $this->getNewRecord($this->inlineFirstPid, $current['table']);
@@ -1225,7 +1166,7 @@ class t3lib_TCEforms_inline {
 
 		if (!is_array($config['appearance']))
 			$config['appearance'] = array();
-		if (!in_array($config['appearance']['newRecordLinkPosition'], array('top', 'bottom', 'both', 'none')))
+		if (!in_array($config['appearance']['newRecordLinkPosition'], array('top', 'bottom', 'both')))
 			$config['appearance']['newRecordLinkPosition'] = 'top';
 
 		return true;
@@ -1525,7 +1466,7 @@ class t3lib_TCEforms_inline {
 								'foreign_table' => $table,
 								'%OR' => array(
 									'%AND' => array(
-#										'appearance' => array('useCombination' => 1),
+										'appearance' => array('useCombination' => 1),
 										'foreign_selector' => $field,
 									),
 									'MM' => $config['MM']
@@ -1545,16 +1486,11 @@ class t3lib_TCEforms_inline {
 				// get the parent record from structure stack
 			$level = $this->getStructureLevel(-1);
 
-				// If this field is of type 'select', add an additinal criterium:
-				// (using a selector for select types doesn't matter, but useCombination does)
-			if ($config['type'] == 'select') {
-				$searchArray['%OR']['config'][0]['%AND']['%OR']['%AND']['appearance'] = array('useCombination' => 1);
-			}
-				// If we have symmetric fields, check on which side we are and hide fields, that are set automatically:
+				// if we have symmetric fields, check on which side we are and hide fields, that are set automatically
 			if (t3lib_loadDBGroup::isOnSymmetricSide($level['uid'], $level['config'], $row)) {
 				$searchArray['%OR']['config'][0]['%AND']['%OR']['symmetric_field'] = $field;
 				$searchArray['%OR']['config'][0]['%AND']['%OR']['symmetric_sortby'] = $field;
-				// Hide fields, that are set automatically:
+				// hide fields, that are set automatically
 			} else {
 				$searchArray['%OR']['config'][0]['%AND']['%OR']['foreign_field'] = $field;
 				$searchArray['%OR']['config'][0]['%AND']['%OR']['foreign_sortby'] = $field;

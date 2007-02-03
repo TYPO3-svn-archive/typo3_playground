@@ -113,6 +113,7 @@ var inline = {
 	},
 
 	setExpandedCollapsedState: function(objectId, expand, collapse) {
+		// alert(objectId+': '+expand+', '+collapse);
 		this.makeAjaxCall('setExpandedCollapsedState', objectId, expand, collapse);
 	},
 	
@@ -149,10 +150,6 @@ var inline = {
 			this.makeAjaxCall('createNewRecord', objectId, selectedValue);
 		}
 		return false;
-	},
-	
-	importElement: function(objectPrefix, table, uid, type) {
-		window.setTimeout(function() { inline.makeAjaxCall('createNewRecord', objectPrefix, uid); }, 10);
 	},
 	
 		// this function is applied to a newly inserted record by AJAX
@@ -440,7 +437,6 @@ var inline = {
 	},
 	
 	deleteRecord: function(objectId) {
-		var i, j, inlineRecords, records, childObjectId, childTable;
 		var objectPrefix = this.parseFormElementName('full', objectId, 0 , 1);
 		var elName = this.parseFormElementName('full', objectId, 2);
 		var shortName = this.parseFormElementName('parts', objectId, 2);
@@ -459,20 +455,8 @@ var inline = {
 			new Effect.Fade(objectId+'_div');
 		}
 
-			// Remove from TBE_EDITOR (required fields, required range, etc.):
+			// remove from TBE_EDITOR (required fields, required range, etc.):
 		if (TBE_EDITOR && TBE_EDITOR.removeElement) {
-			inlineRecords = document.getElementsByClassName('inlineRecord', objectId+'_div');
-				// Remove nested child records from TBE_EDITOR required/range checks:
-			for (i=inlineRecords.length-1; i>=0; i--) {
-				if (inlineRecords[i].value.length) {
-					records = inlineRecords[i].value.split(',');
-					childObjectId = this.data.map[inlineRecords[i].name];
-					childTable = this.data.config[childObjectId].table;
-					for (j=records.length-1; j>=0; j--) {
-						TBE_EDITOR.removeElement(this.prependFormFieldNames+'['+childTable+']['+records[j]+']');
-					}
-				}
-			}
 			TBE_EDITOR.removeElement(this.prependFormFieldNames+shortName);
 		}
 
